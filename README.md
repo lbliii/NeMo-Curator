@@ -92,3 +92,7 @@ The following figure shows that the use of different data curation modules imple
 NeMo Curator leverages NVIDIA RAPIDS™ libraries like cuDF, cuML, and cuGraph along with Dask to scale workloads across multi-node, multi-GPU environments, significantly reducing data processing time. With NeMo Curator, developers can achieve 16X faster processing for text. Refer to the chart below to learn more details.
 
 NeMo Curator scales near linearly which means that developers can accelerate their data processing by adding more compute. For  deduplicating the 1.96 Trillion token subset of the RedPajama V2 dataset, NeMo Curator took  0.5 hours with 32 NVIDIA H100 GPUs. Refer to the scaling chart below to learn more
+
+## Contribute to NeMo Curator
+
+We welcome community contributions! Please refer to [CONTRIBUTING.md](https://github.com/NVIDIA/NeMo/blob/stable/CONTRIBUTING.md) for the process.
