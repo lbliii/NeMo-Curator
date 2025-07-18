@@ -17,22 +17,24 @@ on:
   workflow_dispatch:
     inputs:
       docs_env:
-        description: 'Documentation build environment (ga, ea, internal, draft, or empty for default)'
+        description: 'Documentation build environment'
         required: false
         default: 'ga'
         type: choice
         options:
-          - ''
+          - 'default'
           - 'ga'
           - 'ea'
           - 'internal'
           - 'draft'
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages and PR comments
 permissions:
   contents: read
   pages: write
   id-token: write
+  issues: write
+  pull-requests: write
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
@@ -66,6 +68,9 @@ jobs:
           # Determine build environment
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             DOCS_ENV="${{ github.event.inputs.docs_env }}"
+            if [ "$DOCS_ENV" = "default" ]; then
+              DOCS_ENV=""  # Convert "default" to empty string for Makefile
+            fi
           elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
             DOCS_ENV="ga"  # Use GA (General Availability) for main branch
           else
