@@ -1,0 +1,167 @@
+name: Build and Deploy Documentation
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - 'Makefile'
+      - 'requirements-docs.txt'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - 'Makefile'
+      - 'requirements-docs.txt'
+  workflow_dispatch:
+    inputs:
+      docs_env:
+        description: 'Documentation build environment (ga, ea, internal, draft, or empty for default)'
+        required: false
+        default: 'ga'
+        type: choice
+        options:
+          - ''
+          - 'ga'
+          - 'ea'
+          - 'internal'
+          - 'draft'
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: "requirements-docs.txt"
+
+      - name: Setup documentation environment
+        run: make docs-env
+
+      - name: Activate virtual environment and build docs
+        run: |
+          # Determine build environment
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            DOCS_ENV="${{ github.event.inputs.docs_env }}"
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            DOCS_ENV="ga"  # Use GA (General Availability) for main branch
+          else
+            DOCS_ENV=""    # Use default for other branches/PRs
+          fi
+          
+          # Export for use in build command
+          export DOCS_ENV
+          
+          # Build documentation with fail-on-warning for production
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "Building documentation for production (fail on warnings)..."
+            make docs-publish DOCS_ENV="$DOCS_ENV"
+          else
+            echo "Building documentation for development..."
+            make docs-html DOCS_ENV="$DOCS_ENV"
+          fi
+
+      - name: Upload artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/_build/html
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  build-preview:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: "requirements-docs.txt"
+
+      - name: Setup documentation environment
+        run: make docs-env
+
+      - name: Build documentation preview
+        run: |
+          # Build with draft environment for PRs
+          make docs-html DOCS_ENV="draft"
+
+      - name: Upload preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-preview-${{ github.event.number }}
+          path: docs/_build/html
+          retention-days: 7
+
+      - name: Comment PR with preview info
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pr_number = context.issue.number;
+            
+            const comment = `## 📖 Documentation Preview
+            
+            The documentation has been built successfully for this PR.
+            
+            **Build Environment**: \`draft\`
+            **Artifact**: \`docs-preview-${pr_number}\`
+            **Retention**: 7 days
+            
+            You can download the built documentation from the [Actions artifacts](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) to preview the changes locally.
+            
+            ### Build Details
+            - **Commit**: ${{ github.event.pull_request.head.sha }}
+            - **Branch**: ${{ github.event.pull_request.head.ref }}
+            - **Workflow**: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+            
+            github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: pr_number,
+              body: comment
+            }); 
