@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from sphinx.application import Sphinx
 from sphinx.util import logging
 
 from docs._extensions.json_output.utils import get_setting
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 class JSONWriter:
     """Handles JSON file writing operations."""
 
-    def __init__(self, app):
+    def __init__(self, app: Sphinx):
         self.app = app
         self.config = app.config
 
@@ -41,8 +42,8 @@ class JSONWriter:
 
             logger.debug(f"Generated JSON: {json_path}")
 
-        except Exception as e:
-            logger.error(f"Failed to write JSON for {docname}: {e}")
+        except Exception:
+            logger.exception(f"Failed to write JSON for {docname}")
 
     def _write_separate_content(self, json_path: Path, data: dict[str, Any]) -> None:
         """Write content to separate file when separate_content is enabled."""

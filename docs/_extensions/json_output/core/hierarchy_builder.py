@@ -1,10 +1,16 @@
 """Hierarchy building for complex document structures like main index."""
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+from sphinx.application import Sphinx
 from sphinx.util import logging
 
 from docs._extensions.json_output.utils import get_setting
+
+if TYPE_CHECKING:
+    from .builder import JSONOutputBuilder
+    from .document_discovery import DocumentDiscovery
+    from .json_formatter import JSONFormatter
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +18,13 @@ logger = logging.getLogger(__name__)
 class HierarchyBuilder:
     """Handles complex hierarchy building for indexes."""
 
-    def __init__(self, app, json_builder, document_discovery, json_formatter):
+    def __init__(
+        self,
+        app: Sphinx,
+        json_builder: "JSONOutputBuilder",
+        document_discovery: "DocumentDiscovery",
+        json_formatter: "JSONFormatter"
+    ):
         self.app = app
         self.config = app.config
         self.json_builder = json_builder
@@ -63,7 +75,7 @@ class HierarchyBuilder:
                 try:
                     child_data = self.json_formatter.build_child_json_data(child_docname, include_content=False)
                     data["children"].append(child_data)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     logger.warning(f"Failed to build child metadata for {child_docname}: {e}")
 
         logger.info(f"Generated metadata-only search index with {len(data['children'])} documents")
@@ -87,7 +99,7 @@ class HierarchyBuilder:
                 try:
                     child_data = self.json_formatter.build_child_json_data(child_docname)
                     data["children"].append(child_data)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     logger.warning(f"Failed to build child data for {child_docname}: {e}")
 
         logger.info(f"Generated comprehensive search index with {len(data['children'])} documents")
@@ -101,7 +113,7 @@ class HierarchyBuilder:
             try:
                 child_data = self.json_formatter.build_child_json_data(child_docname)
                 data["children"].append(child_data)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001, PERF203
                 logger.warning(f"Failed to build child data for {child_docname}: {e}")
 
         logger.debug(f"Included {len(data['children'])} child documents for {docname}")

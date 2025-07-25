@@ -4,6 +4,7 @@ import fnmatch
 from typing import Any
 
 from sphinx.application import Sphinx
+from sphinx.config import Config
 from sphinx.util import logging
 
 logger = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ def validate_content_gating_integration(app: Sphinx) -> None:
             logger.debug("Could not determine active build tags")
 
 
-def get_setting(config, key: str, default=None):
+def get_setting(config: Config, key: str, default: Any = None) -> Any:  # noqa: ANN401
     """Get a setting from json_output_settings with fallback to old config names."""
     settings = getattr(config, "json_output_settings", {})
 
@@ -61,7 +62,7 @@ def get_setting(config, key: str, default=None):
     return default
 
 
-def is_content_gated(config: Any, docname: str) -> bool:
+def is_content_gated(config: Config, docname: str) -> bool:
     """
     Check if a document is content gated by checking Sphinx's exclude_patterns.
     This works with the content_gating extension that adds restricted documents
@@ -84,7 +85,7 @@ def is_content_gated(config: Any, docname: str) -> bool:
     return False
 
 
-def should_generate_json(config: Any, docname: str) -> bool:
+def should_generate_json(config: Config, docname: str) -> bool:
     """Check if JSON should be generated for this document."""
     if not get_setting(config, "enabled", True):
         return False
@@ -115,7 +116,7 @@ def get_document_url(app: Sphinx, docname: str) -> str:
     try:
         if hasattr(app.builder, "get_target_uri"):
             return app.builder.get_target_uri(docname)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning(f"Failed to get target URI for {docname}: {e}")
 
     return docname + ".html"

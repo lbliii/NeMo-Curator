@@ -1,9 +1,11 @@
 """Document processing and build orchestration for JSON output extension."""
 
 import multiprocessing
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 
 from sphinx.application import Sphinx
+from sphinx.config import Config
 from sphinx.util import logging
 
 from docs._extensions.json_output.core.builder import JSONOutputBuilder
@@ -19,20 +21,51 @@ def on_build_finished(app: Sphinx, exception: Exception) -> None:
 
     verbose = get_setting(app.config, "verbose", False)
     log_func = logger.info if verbose else logger.debug
-
     log_func("Generating JSON output files...")
 
-    # Validate content gating integration
+    # Setup and validation
+    json_builder = _setup_json_builder(app)
+    if not json_builder:
+        return
+
+    # Get and filter documents
+    all_docs = _filter_documents(app, json_builder, log_func)
+
+    # Process documents
+    generated_count, failed_count = _process_documents(app, json_builder, all_docs, log_func)
+
+    # Final logging
+    _log_results(log_func, generated_count, failed_count)
+
+
+def _setup_json_builder(app: Sphinx) -> JSONOutputBuilder | None:
+    """Setup and validate JSON builder."""
     validate_content_gating_integration(app)
 
     try:
-        json_builder = JSONOutputBuilder(app)
-    except Exception as e:
-        logger.error(f"Failed to initialize JSONOutputBuilder: {e}")
-        return
+        return JSONOutputBuilder(app)
+    except Exception:
+        logger.exception("Failed to initialize JSONOutputBuilder")
+        return None
 
-    # Get all documents to process
-    total_docs = len(app.env.all_docs)
+
+def _filter_documents(app: Sphinx, json_builder: JSONOutputBuilder, log_func: Callable[[str], None]) -> list[str]:
+    """Filter documents based on gating, incremental build, and size limits."""
+    all_docs, gated_docs = _get_initial_documents(app, json_builder)
+
+    if gated_docs:
+        log_func(f"Content gating: excluding {len(gated_docs)} documents from JSON generation")
+        verbose = get_setting(app.config, "verbose", False)
+        if verbose and gated_docs:
+            logger.debug(f"Gated documents: {', '.join(sorted(gated_docs))}")
+
+    all_docs = _apply_incremental_filtering(app, json_builder, all_docs, log_func)
+    return _apply_size_filtering(app, all_docs, log_func)
+
+
+
+def _get_initial_documents(app: Sphinx, json_builder: JSONOutputBuilder) -> tuple[list[str], list[str]]:
+    """Get initial document lists, separating processable from gated documents."""
     all_docs = []
     gated_docs = []
 
@@ -42,50 +75,64 @@ def on_build_finished(app: Sphinx, exception: Exception) -> None:
         else:
             gated_docs.append(docname)
 
-    if gated_docs:
-        log_func(f"Content gating: excluding {len(gated_docs)} documents from JSON generation")
-        if verbose and gated_docs:
-            logger.debug(f"Gated documents: {', '.join(sorted(gated_docs))}")
+    return all_docs, gated_docs
 
-    # Apply incremental build filtering
-    if get_setting(app.config, "incremental_build", False):
-        incremental_docs = [docname for docname in all_docs if json_builder.needs_update(docname)]
-        skipped_count = len(all_docs) - len(incremental_docs)
-        if skipped_count > 0:
-            log_func(f"Incremental build: skipping {skipped_count} unchanged files")
-        all_docs = incremental_docs
 
-    # Apply file size filtering if enabled
+def _apply_incremental_filtering(
+    app: Sphinx, json_builder: JSONOutputBuilder, all_docs: list[str], log_func: Callable[[str], None]
+) -> list[str]:
+    """Apply incremental build filtering if enabled."""
+    if not get_setting(app.config, "incremental_build", False):
+        return all_docs
+
+    incremental_docs = [docname for docname in all_docs if json_builder.needs_update(docname)]
+    skipped_count = len(all_docs) - len(incremental_docs)
+    if skipped_count > 0:
+        log_func(f"Incremental build: skipping {skipped_count} unchanged files")
+    return incremental_docs
+
+
+def _apply_size_filtering(app: Sphinx, all_docs: list[str], log_func: Callable[[str], None]) -> list[str]:
+    """Apply file size filtering if enabled."""
     skip_large_files = get_setting(app.config, "skip_large_files", 0)
-    if skip_large_files > 0:
-        filtered_docs = []
-        for docname in all_docs:
-            try:
-                source_path = app.env.doc2path(docname)
-                if source_path and source_path.stat().st_size <= skip_large_files:
-                    filtered_docs.append(docname)
-                else:
-                    log_func(f"Skipping large file: {docname} ({source_path.stat().st_size} bytes)")
-            except Exception:
-                filtered_docs.append(docname)  # Include if we can't check size
-        all_docs = filtered_docs
+    if skip_large_files <= 0:
+        return all_docs
 
-    generated_count = 0
-    failed_count = 0
+    filtered_docs = []
+    for docname in all_docs:
+        try:
+            source_path = app.env.doc2path(docname)
+            if source_path and source_path.stat().st_size <= skip_large_files:
+                filtered_docs.append(docname)
+            else:
+                log_func(f"Skipping large file: {docname} ({source_path.stat().st_size} bytes)")
+        except Exception:  # noqa: BLE001, PERF203
+            filtered_docs.append(docname)  # Include if we can't check size
+    return filtered_docs
 
-    # Process documents in parallel if enabled
+
+def _process_documents(
+    app: Sphinx, json_builder: JSONOutputBuilder, all_docs: list[str], log_func: Callable[[str], None]
+) -> tuple[int, int]:
+    """Process documents either in parallel or sequentially."""
     if get_setting(app.config, "parallel", False):
-        generated_count, failed_count = process_documents_parallel(json_builder, all_docs, app.config, log_func)
+        return process_documents_parallel(json_builder, all_docs, app.config, log_func)
     else:
-        generated_count, failed_count = process_documents_sequential(json_builder, all_docs)
+        return process_documents_sequential(json_builder, all_docs)
 
+
+def _log_results(log_func: Callable[[str], None], generated_count: int, failed_count: int) -> None:
+    """Log final processing results."""
     log_func(f"Generated {generated_count} JSON files")
     if failed_count > 0:
         logger.warning(f"Failed to generate {failed_count} JSON files")
 
 
 def process_documents_parallel(
-    json_builder: JSONOutputBuilder, all_docs: list[str], config, log_func
+    json_builder: JSONOutputBuilder,
+    all_docs: list[str],
+    config: Config,
+    log_func: Callable[[str], None]
 ) -> tuple[int, int]:
     """Process documents in parallel batches."""
     parallel_workers = get_setting(config, "parallel_workers", "auto")
@@ -119,8 +166,8 @@ def process_documents_parallel(
                         generated_count += 1
                     else:
                         failed_count += 1
-                except Exception as e:
-                    logger.error(f"Error generating JSON for {docname}: {e}")
+                except Exception:  # noqa: PERF203
+                    logger.exception(f"Error generating JSON for {docname}")
                     failed_count += 1
 
     return generated_count, failed_count
@@ -136,8 +183,8 @@ def process_documents_sequential(json_builder: JSONOutputBuilder, all_docs: list
             json_data = json_builder.build_json_data(docname)
             json_builder.write_json_file(docname, json_data)
             generated_count += 1
-        except Exception as e:
-            logger.error(f"Error generating JSON for {docname}: {e}")
+        except Exception:  # noqa: PERF203
+            logger.exception(f"Error generating JSON for {docname}")
             failed_count += 1
 
     return generated_count, failed_count
@@ -149,7 +196,8 @@ def process_document(json_builder: JSONOutputBuilder, docname: str) -> bool:
         json_data = json_builder.build_json_data(docname)
         json_builder.write_json_file(docname, json_data)
         json_builder.mark_updated(docname)  # Mark as processed for incremental builds
-        return True
-    except Exception as e:
-        logger.error(f"Error generating JSON for {docname}: {e}")
+    except Exception:
+        logger.exception(f"Error generating JSON for {docname}")
         return False
+    else:
+        return True

@@ -1,8 +1,9 @@
 """Caching and incremental build support for JSON output extension."""
 
+from collections.abc import Callable
 from pathlib import Path
 from threading import Lock
-from typing import Any
+from typing import Any, ClassVar
 
 from sphinx.util import logging
 
@@ -14,10 +15,10 @@ class JSONOutputCache:
 
     # Class-level shared caches with thread safety
     _shared_cache_lock = Lock()
-    _shared_metadata_cache: dict[str, Any] = {}
-    _shared_frontmatter_cache: dict[str, Any] = {}
-    _shared_content_cache: dict[str, Any] = {}
-    _file_timestamps: dict[str, float] = {}  # Track file modification times
+    _shared_metadata_cache: ClassVar[dict[str, Any]] = {}
+    _shared_frontmatter_cache: ClassVar[dict[str, Any]] = {}
+    _shared_content_cache: ClassVar[dict[str, Any]] = {}
+    _file_timestamps: ClassVar[dict[str, float]] = {}  # Track file modification times
 
     def __init__(self):
         """Initialize cache instance with shared caches."""
@@ -58,7 +59,7 @@ class JSONOutputCache:
                 self._timestamps[docname] = current_mtime
                 return True
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.debug(f"Error checking modification time for {docname}: {e}")
             return True  # Process if we can't determine modification time
 
@@ -67,8 +68,8 @@ class JSONOutputCache:
         try:
             if source_path and source_path.exists():
                 self._timestamps[docname] = source_path.stat().st_mtime
-        except Exception:
-            pass  # Ignore timestamp update errors
+        except Exception:  # noqa: BLE001
+            logger.debug(f"Could not update timestamp for {docname}")
 
     def clear_caches(self) -> None:
         """Clear all caches (useful for testing or memory cleanup)."""
@@ -87,7 +88,7 @@ class JSONOutputCache:
             "timestamps_size": len(self._timestamps),
         }
 
-    def with_cache_lock(self, func, *args, **kwargs):
+    def with_cache_lock(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
         """Execute function with cache lock held."""
         with self._shared_cache_lock:
             return func(*args, **kwargs)

@@ -65,18 +65,29 @@ def apply_config_defaults(settings: dict[str, Any]) -> dict[str, Any]:
 
 def validate_config(_app: Sphinx, config: Config) -> None:
     """Validate configuration values."""
-    settings = getattr(config, "json_output_settings", {})
+    settings = _ensure_settings_dict(config)
+    settings = apply_config_defaults(settings)
+    config.json_output_settings = settings
 
-    # Ensure settings is a dictionary
+    _validate_core_settings(settings)
+    _validate_content_limits(settings)
+    _validate_boolean_settings(settings)
+    _validate_integer_settings(settings)
+    _validate_parallel_workers(settings)
+
+
+def _ensure_settings_dict(config: Config) -> dict[str, Any]:
+    """Ensure settings is a valid dictionary."""
+    settings = getattr(config, "json_output_settings", {})
     if not isinstance(settings, dict):
         logger.warning("json_output_settings must be a dictionary. Using defaults.")
         settings = {}
         config.json_output_settings = settings
+    return settings
 
-    # Apply defaults for missing keys
-    settings = apply_config_defaults(settings)
-    config.json_output_settings = settings
 
+def _validate_core_settings(settings: dict[str, Any]) -> None:
+    """Validate core configuration settings."""
     # Validate main index mode
     valid_modes = ["disabled", "metadata_only", "full"]
     mode = settings.get("main_index_mode", "full")
@@ -84,68 +95,55 @@ def validate_config(_app: Sphinx, config: Config) -> None:
         logger.warning(f"Invalid main_index_mode '{mode}'. Using 'full'. Valid options: {valid_modes}")
         settings["main_index_mode"] = "full"
 
-    # Validate max docs limit (0 means no limit)
-    max_docs = settings.get("max_main_index_docs", 0)
-    if not isinstance(max_docs, int) or max_docs < 0:
-        logger.warning(f"Invalid max_main_index_docs '{max_docs}'. Using 0 (no limit).")
-        settings["max_main_index_docs"] = 0
-
-    # Validate content limits
-    content_limit = settings.get("content_max_length", 50000)
-    if not isinstance(content_limit, int) or content_limit < 0:
-        logger.warning(f"Invalid content_max_length '{content_limit}'. Using 50000 (0 = no limit).")
-        settings["content_max_length"] = 50000
-
-    summary_limit = settings.get("summary_max_length", 500)
-    if not isinstance(summary_limit, int) or summary_limit < 0:
-        logger.warning(f"Invalid summary_max_length '{summary_limit}'. Using 500.")
-        settings["summary_max_length"] = 500
-
-    keywords_limit = settings.get("keywords_max_count", 50)
-    if not isinstance(keywords_limit, int) or keywords_limit < 0:
-        logger.warning(f"Invalid keywords_max_count '{keywords_limit}'. Using 50.")
-        settings["keywords_max_count"] = 50
-
     # Validate exclude patterns
     patterns = settings.get("exclude_patterns", [])
     if not isinstance(patterns, list):
         logger.warning("exclude_patterns must be a list. Using default.")
         settings["exclude_patterns"] = ["_build", "_templates", "_static"]
 
-    # Validate boolean settings
+
+def _validate_content_limits(settings: dict[str, Any]) -> None:
+    """Validate content-related limit settings."""
+    limit_settings = {
+        "max_main_index_docs": (0, "0 (no limit)"),
+        "content_max_length": (50000, "50000 (0 = no limit)"),
+        "summary_max_length": (500, "500"),
+        "keywords_max_count": (50, "50"),
+    }
+
+    for setting, (default_val, description) in limit_settings.items():
+        value = settings.get(setting, default_val)
+        if not isinstance(value, int) or value < 0:
+            logger.warning(f"Invalid {setting} '{value}'. Using {description}.")
+            settings[setting] = default_val
+
+
+def _validate_boolean_settings(settings: dict[str, Any]) -> None:
+    """Validate boolean configuration settings."""
     bool_settings = [
-        "enabled",
-        "verbose",
-        "parallel",
-        "include_children",
-        "include_child_content",
-        "extract_code_blocks",
-        "extract_links",
-        "extract_images",
-        "extract_keywords",
-        "include_doc_type",
-        "include_section_path",
-        "minify_json",
-        "separate_content",
-        "cache_aggressive",
-        "lazy_extraction",
-        "incremental_build",
-        "fast_text_extraction",
-        "skip_complex_parsing",
-        "filter_search_clutter",
+        "enabled", "verbose", "parallel", "include_children", "include_child_content",
+        "extract_code_blocks", "extract_links", "extract_images", "extract_keywords",
+        "include_doc_type", "include_section_path", "minify_json", "separate_content",
+        "cache_aggressive", "lazy_extraction", "incremental_build", "fast_text_extraction",
+        "skip_complex_parsing", "filter_search_clutter",
     ]
+
     defaults = get_default_settings()
     for setting in bool_settings:
         if setting in settings and not isinstance(settings.get(setting), bool):
             logger.warning(f"Setting '{setting}' must be boolean. Using default.")
             settings[setting] = defaults[setting]
 
-    # Validate integer settings
+
+def _validate_integer_settings(settings: dict[str, Any]) -> None:
+    """Validate integer configuration settings with ranges."""
     int_settings = {
         "batch_size": (1, 1000),  # min, max
         "skip_large_files": (0, None),  # 0 = disabled
         "memory_limit_mb": (64, 8192),  # reasonable memory limits
     }
+
+    defaults = get_default_settings()
     for setting, (min_val, max_val) in int_settings.items():
         if setting in settings:
             value = settings[setting]
@@ -155,9 +153,12 @@ def validate_config(_app: Sphinx, config: Config) -> None:
                 )
                 settings[setting] = defaults[setting]
 
-    # Validate parallel_workers (can be 'auto' or integer)
+
+def _validate_parallel_workers(settings: dict[str, Any]) -> None:
+    """Validate parallel_workers setting (can be 'auto' or integer)."""
     if "parallel_workers" in settings:
         value = settings["parallel_workers"]
         if value != "auto" and (not isinstance(value, int) or value < 1 or value > MAX_PARALLEL_WORKERS):
             logger.warning(f"Setting 'parallel_workers' must be 'auto' or integer between 1 and {MAX_PARALLEL_WORKERS}. Using default.")
+            defaults = get_default_settings()
             settings["parallel_workers"] = defaults["parallel_workers"]

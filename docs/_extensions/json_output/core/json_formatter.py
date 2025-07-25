@@ -1,12 +1,18 @@
 """JSON data formatting and structure building."""
 
-from datetime import datetime
-from typing import Any
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, Any
 
 from docutils import nodes
+from sphinx.application import Sphinx
 from sphinx.util import logging
 
 from docs._extensions.json_output.utils import get_document_url, get_setting
+
+from .document_discovery import DocumentDiscovery
+
+if TYPE_CHECKING:
+    from .builder import JSONOutputBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +20,7 @@ logger = logging.getLogger(__name__)
 class JSONFormatter:
     """Handles JSON data structure building and formatting."""
 
-    def __init__(self, app, json_builder):
+    def __init__(self, app: Sphinx, json_builder: "JSONOutputBuilder"):
         self.app = app
         self.env = app.env
         self.config = app.config
@@ -48,7 +54,7 @@ class JSONFormatter:
         if metadata.get("only"):
             data["only"] = metadata["only"]
 
-    def build_child_json_data(self, docname: str, include_content: bool = None) -> dict[str, Any]:
+    def build_child_json_data(self, docname: str, include_content: bool | None = None) -> dict[str, Any]:
         """Build optimized JSON data for child documents (LLM/search focused)."""
         if include_content is None:
             include_content = get_setting(self.config, "include_child_content", True)
@@ -90,7 +96,7 @@ class JSONFormatter:
             "id": docname,
             "title": title,
             "url": get_document_url(self.app, docname),
-            "last_modified": datetime.now().isoformat(),
+            "last_modified": datetime.now(timezone.utc).isoformat(),
         }
 
         # Add metadata fields
@@ -113,41 +119,55 @@ class JSONFormatter:
         self, data: dict[str, Any], content_data: dict[str, Any], docname: str, title: str
     ) -> None:
         """Add content-related fields to JSON data."""
-        # Apply content length limit
+        self._add_primary_content(data, content_data)
+        self._add_summary_content(data, content_data)
+        self._add_headings_content(data, content_data)
+        self._add_optional_features(data, content_data)
+        self._add_document_metadata(data, content_data, docname, title)
+
+    def _add_primary_content(self, data: dict[str, Any], content_data: dict[str, Any]) -> None:
+        """Add primary content with length limits."""
+        if not content_data.get("content"):
+            return
+
         content_max_length = get_setting(self.config, "content_max_length", 50000)
+        content = content_data["content"]
 
-        # Primary content (markdown or text)
-        if content_data.get("content"):
-            content = content_data["content"]
-            if content_max_length > 0 and len(content) > content_max_length:
-                content = content[:content_max_length] + "..."
+        if content_max_length > 0 and len(content) > content_max_length:
+            content = content[:content_max_length] + "..."
 
-            data["content"] = content
-            data["format"] = content_data.get("format", "text")
+        data["content"] = content
+        data["format"] = content_data.get("format", "text")
+        data["content_length"] = len(content_data["content"])  # Original length
+        data["word_count"] = len(content_data["content"].split()) if content_data["content"] else 0
 
-            # Add search-optimized fields
-            data["content_length"] = len(content_data["content"])  # Original length
-            data["word_count"] = len(content_data["content"].split()) if content_data["content"] else 0
+    def _add_summary_content(self, data: dict[str, Any], content_data: dict[str, Any]) -> None:
+        """Add summary with length limits."""
+        if not content_data.get("summary"):
+            return
 
-        # Summary with length limit
-        if content_data.get("summary"):
-            summary_max_length = get_setting(self.config, "summary_max_length", 500)
-            summary = content_data["summary"]
-            if summary_max_length > 0 and len(summary) > summary_max_length:
-                summary = summary[:summary_max_length] + "..."
-            data["summary"] = summary
+        summary_max_length = get_setting(self.config, "summary_max_length", 500)
+        summary = content_data["summary"]
 
-        # Headings for structure/navigation
-        if content_data.get("headings"):
-            # Simplify headings for LLM use
-            data["headings"] = [
-                {"text": h["text"], "level": h["level"], "id": h.get("id", "")} for h in content_data["headings"]
-            ]
+        if summary_max_length > 0 and len(summary) > summary_max_length:
+            summary = summary[:summary_max_length] + "..."
 
-            # Add searchable heading text
-            data["headings_text"] = " ".join([h["text"] for h in content_data["headings"]])
+        data["summary"] = summary
 
-        # Optional search enhancement features
+    def _add_headings_content(self, data: dict[str, Any], content_data: dict[str, Any]) -> None:
+        """Add headings for structure/navigation."""
+        if not content_data.get("headings"):
+            return
+
+        # Simplify headings for LLM use
+        data["headings"] = [
+            {"text": h["text"], "level": h["level"], "id": h.get("id", "")} for h in content_data["headings"]
+        ]
+        # Add searchable heading text
+        data["headings_text"] = " ".join([h["text"] for h in content_data["headings"]])
+
+    def _add_optional_features(self, data: dict[str, Any], content_data: dict[str, Any]) -> None:
+        """Add optional search enhancement features."""
         if get_setting(self.config, "extract_keywords", True) and "keywords" in content_data:
             keywords_max_count = get_setting(self.config, "keywords_max_count", 50)
             keywords = (
@@ -164,17 +184,12 @@ class JSONFormatter:
         if get_setting(self.config, "extract_images", True) and "images" in content_data:
             data["images"] = content_data["images"]
 
-        # Add document type detection
+    def _add_document_metadata(self, data: dict[str, Any], content_data: dict[str, Any], docname: str, title: str) -> None:
+        """Add document type and section metadata."""
         if get_setting(self.config, "include_doc_type", True):
-            # Import here to avoid circular import
-            from .document_discovery import DocumentDiscovery
-
             discovery = DocumentDiscovery(self.app, self.json_builder)
             data["doc_type"] = discovery.detect_document_type(docname, title, content_data.get("content", ""))
 
-        # Add section hierarchy
         if get_setting(self.config, "include_section_path", True):
-            from .document_discovery import DocumentDiscovery
-
             discovery = DocumentDiscovery(self.app, self.json_builder)
             data["section_path"] = discovery.get_section_path(docname)

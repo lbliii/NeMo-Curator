@@ -9,6 +9,7 @@ from docs._extensions.json_output.content import extract_document_content as _ex
 from docs._extensions.json_output.content import extract_document_metadata as _extract_document_metadata
 from docs._extensions.json_output.processing.cache import JSONOutputCache
 from docs._extensions.json_output.utils import get_setting, should_generate_json
+
 from .document_discovery import DocumentDiscovery
 from .hierarchy_builder import HierarchyBuilder
 from .json_formatter import JSONFormatter

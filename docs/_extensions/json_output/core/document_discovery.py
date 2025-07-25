@@ -1,14 +1,19 @@
 """Document discovery and filtering functionality."""
 
+from typing import TYPE_CHECKING
+
 from sphinx.application import Sphinx
 
 from docs._extensions.json_output.utils import get_setting
+
+if TYPE_CHECKING:
+    from .builder import JSONOutputBuilder
 
 
 class DocumentDiscovery:
     """Handles document discovery, filtering, and hierarchical relationships."""
 
-    def __init__(self, app: Sphinx, json_builder):
+    def __init__(self, app: Sphinx, json_builder: "JSONOutputBuilder"):
         self.app = app
         self.env = app.env
         self.config = app.config
@@ -55,10 +60,7 @@ class DocumentDiscovery:
             return True
 
         # Skip documents that wouldn't generate JSON
-        if not self.json_builder.should_generate_json(docname):
-            return True
-
-        return False
+        return not self.json_builder.should_generate_json(docname)
 
     def get_all_documents_recursive(self) -> list[str]:
         """Get all non-hidden documents recursively."""
@@ -86,24 +88,22 @@ class DocumentDiscovery:
         title_lower = title.lower()
         content_lower = content.lower()[:1000]  # First 1000 chars
 
-        # Check for common document types
-        if "tutorial" in docname_lower or "tutorial" in title_lower:
-            return "tutorial"
-        elif "guide" in docname_lower or "guide" in title_lower:
-            return "guide"
-        elif "reference" in docname_lower or "api" in docname_lower:
-            return "reference"
-        elif "example" in docname_lower or "examples" in docname_lower:
-            return "example"
-        elif "troubleshoot" in docname_lower or "faq" in docname_lower:
-            return "troubleshooting"
-        elif "install" in docname_lower or "setup" in docname_lower:
-            return "installation"
-        elif docname.endswith("/index"):
-            return "overview"
-        elif any(word in content_lower for word in ["$ ", "pip install", "docker run", "git clone"]):
-            return "tutorial"
-        elif any(word in content_lower for word in ["class ", "def ", "function", "method", "parameter"]):
-            return "reference"
-        else:
-            return "documentation"
+        # Define document type checks in priority order
+        type_checks = [
+            ("tutorial", lambda: "tutorial" in docname_lower or "tutorial" in title_lower),
+            ("guide", lambda: "guide" in docname_lower or "guide" in title_lower),
+            ("reference", lambda: "reference" in docname_lower or "api" in docname_lower),
+            ("example", lambda: "example" in docname_lower or "examples" in docname_lower),
+            ("troubleshooting", lambda: "troubleshoot" in docname_lower or "faq" in docname_lower),
+            ("installation", lambda: "install" in docname_lower or "setup" in docname_lower),
+            ("overview", lambda: docname.endswith("/index")),
+            ("tutorial", lambda: any(word in content_lower for word in ["$ ", "pip install", "docker run", "git clone"])),
+            ("reference", lambda: any(word in content_lower for word in ["class ", "def ", "function", "method", "parameter"])),
+        ]
+
+        # Check each type in order and return the first match
+        for doc_type, check_func in type_checks:
+            if check_func():
+                return doc_type
+
+        return "documentation"

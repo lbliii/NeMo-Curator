@@ -51,34 +51,29 @@ def extract_frontmatter(file_path: str, frontmatter_cache: dict) -> dict[str, An
     if file_path in frontmatter_cache:
         return frontmatter_cache[file_path]
 
+    result = None
+
+    # Check prerequisites
     if not YAML_AVAILABLE:
         logger.debug("PyYAML not available, skipping frontmatter extraction")
-        frontmatter_cache[file_path] = None
-        return None
-
-    try:
-        with open(file_path, encoding="utf-8") as f:
-            content = f.read()
-
-        if not content.startswith("---"):
-            frontmatter_cache[file_path] = None
-            return None
-
-        end_marker = content.find("\n---\n", 3)
-        if end_marker == -1:
-            frontmatter_cache[file_path] = None
-            return None
-
-        frontmatter_text = content[3:end_marker]
-        result = yaml.safe_load(frontmatter_text)
-        frontmatter_cache[file_path] = result
-    except yaml.YAMLError as e:
-        logger.warning(f"YAML parsing error in frontmatter for {file_path}: {e}")
-        frontmatter_cache[file_path] = None
-        return None
-    except Exception as e:  # noqa: BLE001
-        logger.debug(f"Could not extract frontmatter from {file_path}: {e}")
-        frontmatter_cache[file_path] = None
-        return None
     else:
-        return result
+        try:
+            with open(file_path, encoding="utf-8") as f:
+                content = f.read()
+
+            # Check for valid frontmatter format
+            if content.startswith("---"):
+                end_marker = content.find("\n---\n", 3)
+                if end_marker != -1:
+                    frontmatter_text = content[3:end_marker]
+                    result = yaml.safe_load(frontmatter_text)
+
+        except yaml.YAMLError as e:
+            logger.warning(f"YAML parsing error in frontmatter for {file_path}: {e}")
+            result = None
+        except Exception as e:  # noqa: BLE001
+            logger.debug(f"Could not extract frontmatter from {file_path}: {e}")
+            result = None
+
+    frontmatter_cache[file_path] = result
+    return result

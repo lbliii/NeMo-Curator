@@ -138,62 +138,67 @@ def extract_images(doctree: nodes.document) -> list[dict[str, Any]]:
     """Extract images from document tree."""
     images = []
 
+    # Extract standalone images
+    images.extend(_extract_standalone_images(doctree))
+
+    # Extract images within figures
+    images.extend(_extract_figure_images(doctree))
+
+    return images
+
+
+def _extract_standalone_images(doctree: nodes.document) -> list[dict[str, Any]]:
+    """Extract standalone image nodes."""
+    images = []
+
     for node in doctree.traverse(nodes.image):
         if hasattr(node, "attributes"):
-            attrs = node.attributes
-
-            # Get image source
-            image_src = attrs.get("uri", "")
-            if not image_src:
-                continue
-
-            # Get alt text
-            alt_text = attrs.get("alt", "")
-
-            # Get title if available
-            title = attrs.get("title", "")
-
-            # Get width/height if specified
-            width = attrs.get("width", "")
-            height = attrs.get("height", "")
-
-            image_info = {"src": image_src, "alt": alt_text}
-
-            if title:
-                image_info["title"] = title
-            if width:
-                image_info["width"] = width
-            if height:
-                image_info["height"] = height
-
-            images.append(image_info)
-
-    # Also check for figure nodes (which contain images)
-    for node in doctree.traverse(nodes.figure):
-        # Find image within figure
-        for img_node in node.traverse(nodes.image):
-            if hasattr(img_node, "attributes"):
-                attrs = img_node.attributes
-                image_src = attrs.get("uri", "")
-                if not image_src:
-                    continue
-
-                # Get caption from figure
-                caption = ""
-                for caption_node in node.traverse(nodes.caption):
-                    caption = caption_node.astext().strip()
-                    break
-
-                image_info = {"src": image_src, "alt": attrs.get("alt", ""), "caption": caption}
-
-                # Add other attributes
-                if "title" in attrs:
-                    image_info["title"] = attrs["title"]
-                if "width" in attrs:
-                    image_info["width"] = attrs["width"]
-                if "height" in attrs:
-                    image_info["height"] = attrs["height"]
-
+            image_info = _build_image_info(node.attributes)
+            if image_info:
                 images.append(image_info)
 
     return images
+
+
+def _extract_figure_images(doctree: nodes.document) -> list[dict[str, Any]]:
+    """Extract images from figure nodes."""
+    images = []
+
+    for node in doctree.traverse(nodes.figure):
+        for img_node in node.traverse(nodes.image):
+            if hasattr(img_node, "attributes"):
+                image_info = _build_image_info(img_node.attributes)
+                if image_info:
+                    # Add caption from figure
+                    caption = _extract_figure_caption(node)
+                    if caption:
+                        image_info["caption"] = caption
+                    images.append(image_info)
+
+    return images
+
+
+def _build_image_info(attrs: dict[str, Any]) -> dict[str, Any] | None:
+    """Build image info dictionary from attributes."""
+    image_src = attrs.get("uri", "")
+    if not image_src:
+        return None
+
+    image_info = {
+        "src": image_src,
+        "alt": attrs.get("alt", "")
+    }
+
+    # Add optional attributes
+    for attr_name in ["title", "width", "height"]:
+        if attr_name in attrs:
+            image_info[attr_name] = attrs[attr_name]
+
+    return image_info
+
+
+def _extract_figure_caption(figure_node: nodes.figure) -> str:
+    """Extract caption text from figure node."""
+    for caption_node in figure_node.traverse(nodes.caption):
+        return caption_node.astext().strip()
+    return ""
