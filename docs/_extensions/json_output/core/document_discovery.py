@@ -2,7 +2,7 @@
 
 from sphinx.application import Sphinx
 
-from ..utils import get_setting
+from docs._extensions.json_output.utils import get_setting
 
 
 class DocumentDiscovery:

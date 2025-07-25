@@ -9,6 +9,12 @@ from sphinx.util import logging
 
 logger = logging.getLogger(__name__)
 
+# Constants
+MIN_SUBSTANTIAL_CONTENT_LENGTH = 50
+MAX_SUMMARY_LENGTH = 300
+MIN_KEYWORD_LENGTH = 3
+MAX_KEYWORDS_RETURNED = 50
+
 
 def extract_raw_markdown(env: BuildEnvironment, docname: str) -> str | None:
     """Extract raw markdown from source file."""
@@ -28,7 +34,7 @@ def extract_raw_markdown(env: BuildEnvironment, docname: str) -> str | None:
 
         return content.strip()
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.debug(f"Could not extract raw markdown from {docname}: {e}")
         return None
 
@@ -67,9 +73,8 @@ def extract_clean_text_content(doctree: nodes.document) -> str:
 
     # Clean up whitespace
     full_text = re.sub(r"\s+", " ", full_text)
-    full_text = full_text.strip()
 
-    return full_text
+    return full_text.strip()
 
 
 def clean_text_for_llm(text: str) -> str:
@@ -119,9 +124,7 @@ def clean_text_for_llm(text: str) -> str:
     text = "\n".join(cleaned_lines)
 
     # Final cleanup
-    text = text.strip()
-
-    return text
+    return text.strip()
 
 
 def extract_directive_content(directive_block: str) -> str:
@@ -157,18 +160,18 @@ def extract_summary(doctree: nodes.document) -> str:
     # Try to find the first substantial paragraph
     for node in doctree.traverse(nodes.paragraph):
         text = node.astext().strip()
-        if text and len(text) > 50:  # Substantial content
+        if text and len(text) > MIN_SUBSTANTIAL_CONTENT_LENGTH:  # Substantial content
             # Clean and truncate
             text = re.sub(r"\s+", " ", text)
-            if len(text) > 300:
+            if len(text) > MAX_SUMMARY_LENGTH:
                 text = text[:297] + "..."
             return text
 
-    # Fallback: use first 300 characters of any text
+    # Fallback: use first MAX_SUMMARY_LENGTH characters of any text
     text = extract_text_content(doctree)
     if text:
         text = re.sub(r"\s+", " ", text)
-        if len(text) > 300:
+        if len(text) > MAX_SUMMARY_LENGTH:
             text = text[:297] + "..."
         return text
 
@@ -249,7 +252,7 @@ def extract_keywords(content: str, headings: list[dict[str, Any]]) -> list[str]:
         "when",
         "will",
     }
-    keywords = {kw for kw in keywords if len(kw) >= 3 and kw not in stop_words}
+    keywords = {kw for kw in keywords if len(kw) >= MIN_KEYWORD_LENGTH and kw not in stop_words}
 
     # Return sorted list, limited to reasonable number
-    return sorted(list(keywords))[:50]
+    return sorted(keywords)[:MAX_KEYWORDS_RETURNED]

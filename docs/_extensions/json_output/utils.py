@@ -77,10 +77,9 @@ def is_content_gated(config: Any, docname: str) -> bool:
     for possible_path in possible_paths:
         # Check if this path matches any exclude pattern using fnmatch (supports glob patterns)
         for pattern in sphinx_exclude_patterns:
-            if isinstance(pattern, str):
-                if fnmatch.fnmatch(possible_path, pattern):
-                    logger.debug(f"Document {docname} is content gated (matches pattern: {pattern})")
-                    return True
+            if isinstance(pattern, str) and fnmatch.fnmatch(possible_path, pattern):
+                logger.debug(f"Document {docname} is content gated (matches pattern: {pattern})")
+                return True
 
     return False
 

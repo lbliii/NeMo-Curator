@@ -1,1 +1,1 @@
-"""Documentation configuration package.""" 
+"""Documentation configuration package."""

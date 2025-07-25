@@ -3,9 +3,13 @@
 from typing import Any
 
 from sphinx.application import Sphinx
+from sphinx.config import Config
 from sphinx.util import logging
 
 logger = logging.getLogger(__name__)
+
+# Constants
+MAX_PARALLEL_WORKERS = 32
 
 
 def get_default_settings() -> dict[str, Any]:
@@ -59,7 +63,7 @@ def apply_config_defaults(settings: dict[str, Any]) -> dict[str, Any]:
     return settings
 
 
-def validate_config(app: Sphinx, config) -> None:
+def validate_config(_app: Sphinx, config: Config) -> None:
     """Validate configuration values."""
     settings = getattr(config, "json_output_settings", {})
 
@@ -154,6 +158,6 @@ def validate_config(app: Sphinx, config) -> None:
     # Validate parallel_workers (can be 'auto' or integer)
     if "parallel_workers" in settings:
         value = settings["parallel_workers"]
-        if value != "auto" and (not isinstance(value, int) or value < 1 or value > 32):
-            logger.warning("Setting 'parallel_workers' must be 'auto' or integer between 1 and 32. Using default.")
+        if value != "auto" and (not isinstance(value, int) or value < 1 or value > MAX_PARALLEL_WORKERS):
+            logger.warning(f"Setting 'parallel_workers' must be 'auto' or integer between 1 and {MAX_PARALLEL_WORKERS}. Using default.")
             settings["parallel_workers"] = defaults["parallel_workers"]

@@ -6,7 +6,7 @@ from typing import Any
 
 from sphinx.util import logging
 
-from ..utils import get_setting
+from docs._extensions.json_output.utils import get_setting
 
 logger = logging.getLogger(__name__)
 

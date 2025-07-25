@@ -5,10 +5,10 @@ from typing import Any
 from sphinx.application import Sphinx
 from sphinx.util import logging
 
-from ..content import extract_document_content as _extract_document_content
-from ..content import extract_document_metadata as _extract_document_metadata
-from ..processing.cache import JSONOutputCache
-from ..utils import get_setting, should_generate_json
+from docs._extensions.json_output.content import extract_document_content as _extract_document_content
+from docs._extensions.json_output.content import extract_document_metadata as _extract_document_metadata
+from docs._extensions.json_output.processing.cache import JSONOutputCache
+from docs._extensions.json_output.utils import get_setting, should_generate_json
 from .document_discovery import DocumentDiscovery
 from .hierarchy_builder import HierarchyBuilder
 from .json_formatter import JSONFormatter
@@ -90,6 +90,6 @@ class JSONOutputBuilder:
         """Get all non-hidden documents recursively."""
         return self.document_discovery.get_all_documents_recursive()
 
-    def build_child_json_data(self, docname: str, include_content: bool = None) -> dict[str, Any]:
+    def build_child_json_data(self, docname: str, include_content: bool | None = None) -> dict[str, Any]:
         """Build optimized JSON data for child documents (LLM/search focused)."""
         return self.json_formatter.build_child_json_data(docname, include_content)

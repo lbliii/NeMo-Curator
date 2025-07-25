@@ -13,13 +13,15 @@ Usage:
 - Supports conditions like 'ga', 'not ga', 'ea', 'not ea', 'internal', 'not internal'
 """
 
+from typing import Any
+
 from sphinx.application import Sphinx
 
 from .conditional_directives import setup as setup_conditional_directives
 from .document_filter import setup as setup_document_filter
 
 
-def setup(app: Sphinx):
+def setup(app: Sphinx) -> dict[str, Any]:
     """
     Setup function for the content gating extension.
     """

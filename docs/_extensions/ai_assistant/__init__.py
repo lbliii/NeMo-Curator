@@ -5,14 +5,16 @@ Handles AI-powered analysis and responses using external AI services
 
 import os
 import shutil
+from typing import Any
 
 from sphinx.application import Sphinx
+from sphinx.config import Config
 from sphinx.util import logging
 
 logger = logging.getLogger(__name__)
 
 
-def bundle_javascript_modules(extension_dir, output_path, minify=False):
+def bundle_javascript_modules(extension_dir: str, output_path: str, minify: bool = False) -> None:
     """Bundle all JavaScript modules into a single file."""
 
     # Define the module loading order (dependencies first)
@@ -47,7 +49,7 @@ def bundle_javascript_modules(extension_dir, output_path, minify=False):
             # Simple minification if requested
             if minify:
                 # Remove extra whitespace and comments (basic minification)
-                import re
+                import re  # noqa: PLC0415
 
                 # Remove single-line comments but preserve URLs
                 content = re.sub(r"^\s*//.*$", "", content, flags=re.MULTILINE)
@@ -74,7 +76,7 @@ def bundle_javascript_modules(extension_dir, output_path, minify=False):
     logger.info(f"AI Assistant JavaScript bundle created: {output_path} ({size_kb:.1f}KB)")
 
 
-def add_template_path(app, config):
+def add_template_path(_app: Sphinx, config: Config) -> None:
     """Add AI assistant template path during config initialization."""
     extension_dir = os.path.dirname(os.path.abspath(__file__))
     templates_path = os.path.join(extension_dir, "assets", "templates")
@@ -90,7 +92,7 @@ def add_template_path(app, config):
             logger.info(f"AI assistant templates added: {templates_path}")
 
 
-def copy_assets(app, exc):
+def copy_assets(app: Sphinx, exc: Exception | None) -> None:
     """Copy all assets to _static after build completion."""
     if exc is not None:  # Only run if build succeeded
         return
@@ -113,11 +115,11 @@ def copy_assets(app, exc):
                     shutil.rmtree(dest_dir)
                 shutil.copytree(src_dir, dest_dir)
                 logger.info(f"AI assistant assets copied: {asset_dir}/")
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.warning(f"Failed to copy {asset_dir}/: {e}")
 
 
-def copy_assets_early(app, docname, source):
+def copy_assets_early(app: Sphinx, _docname: str, _source: list[str]) -> None:
     """Copy bundled assets to _static at the start of build process."""
     # Only copy once - use a flag to prevent multiple copies
     if hasattr(app, "_ai_assistant_assets_copied"):
@@ -140,14 +142,14 @@ def copy_assets_early(app, docname, source):
                 shutil.rmtree(dest_assets_dir)
             shutil.copytree(assets_dir, dest_assets_dir)
             logger.info("AI assistant CSS assets copied")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"Failed to copy CSS assets: {e}")
 
     # Mark as copied
-    app._ai_assistant_assets_copied = True
+    app._ai_assistant_assets_copied = True  # noqa: SLF001
 
 
-def setup(app: Sphinx):
+def setup(app: Sphinx) -> dict[str, Any]:
     """Setup the AI assistant extension."""
 
     # Get the directory where this extension is located

@@ -6,8 +6,8 @@ from concurrent.futures import ThreadPoolExecutor
 from sphinx.application import Sphinx
 from sphinx.util import logging
 
-from ..core.builder import JSONOutputBuilder
-from ..utils import get_setting, validate_content_gating_integration
+from docs._extensions.json_output.core.builder import JSONOutputBuilder
+from docs._extensions.json_output.utils import get_setting, validate_content_gating_integration
 
 logger = logging.getLogger(__name__)
 

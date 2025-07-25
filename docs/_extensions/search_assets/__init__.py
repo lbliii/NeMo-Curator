@@ -81,7 +81,7 @@ def bundle_javascript_modules(extension_dir: str, output_path: str, minify: bool
     logger.info(f"Enhanced Search JavaScript bundle created: {output_path} ({size_kb:.1f}KB)")
 
 
-def add_template_path(app: Sphinx, config: Config) -> None:
+def add_template_path(_app: Sphinx, config: Config) -> None:
     """Add template path during config initialization."""
     extension_dir = os.path.dirname(os.path.abspath(__file__))
     templates_path = os.path.join(extension_dir, "templates")
@@ -129,7 +129,7 @@ def copy_assets(app: Sphinx, exc: Exception | None) -> None:
         logger.info("Enhanced search modules copied")
 
 
-def copy_assets_early(app: Sphinx, docname: str, source: list[str]) -> None:
+def copy_assets_early(app: Sphinx, _docname: str, _source: list[str]) -> None:
     """Copy bundled assets to _static early in the build process."""
     # Only copy once - use a flag to prevent multiple copies
     if hasattr(app, "_search_assets_copied"):
@@ -150,7 +150,7 @@ def copy_assets_early(app: Sphinx, docname: str, source: list[str]) -> None:
     bundle_javascript_modules(extension_dir, bundle_path)
 
     # Mark as copied
-    app._search_assets_copied = True
+    app._search_assets_copied = True  # noqa: SLF001
 
 
 def setup(app: Sphinx) -> dict[str, Any]:

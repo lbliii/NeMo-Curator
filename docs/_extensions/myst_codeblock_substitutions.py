@@ -14,6 +14,7 @@ The substitutions will be replaced with their values from myst_substitutions in 
 """
 
 import re
+from typing import Any
 
 from sphinx.application import Sphinx
 from sphinx.util import logging
@@ -21,7 +22,7 @@ from sphinx.util import logging
 logger = logging.getLogger(__name__)
 
 
-def process_myst_source(app, docname, source):
+def process_myst_source(app: Sphinx, docname: str, source: list[str]) -> None:
     """
     Process MyST source files to handle substitutions in code blocks.
 
@@ -52,7 +53,7 @@ def process_codeblock_substitutions(content: str, substitutions: dict) -> str:
     commonly use {{ }} syntax natively.
     """
     # Languages that commonly use {{ }} syntax and should be skipped
-    TEMPLATE_LANGUAGES = {
+    template_languages = {
         "yaml",
         "yml",
         "helm",
@@ -76,12 +77,12 @@ def process_codeblock_substitutions(content: str, substitutions: dict) -> str:
     # This pattern handles multiline code blocks with optional language specifier
     code_block_pattern = r"```(\w*)\n(.*?)\n```"
 
-    def replace_in_code_block(match):
+    def replace_in_code_block(match: re.Match[str]) -> str:
         language = match.group(1).lower()
         code_content = match.group(2)
 
         # For template languages, be more selective
-        if language in TEMPLATE_LANGUAGES:
+        if language in template_languages:
             # Still process MyST substitutions, but be very careful
             processed_code = replace_substitutions_carefully(code_content, substitutions)
             return f"```{language}\n{processed_code}\n```"
@@ -98,9 +99,7 @@ def process_codeblock_substitutions(content: str, substitutions: dict) -> str:
         return f"```{language}\n{processed_code}\n```"
 
     # Process all code blocks
-    processed_content = re.sub(code_block_pattern, replace_in_code_block, content, flags=re.DOTALL)
-
-    return processed_content
+    return re.sub(code_block_pattern, replace_in_code_block, content, flags=re.DOTALL)
 
 
 def is_likely_template_syntax(content: str) -> bool:
@@ -124,11 +123,7 @@ def is_likely_template_syntax(content: str) -> bool:
         r"\{\{\s*with\s+",  # {{ with ... }} (Go templates)
     ]
 
-    for pattern in template_patterns:
-        if re.search(pattern, content):
-            return True
-
-    return False
+    return any(re.search(pattern, content) for pattern in template_patterns)
 
 
 def replace_substitutions(text: str, substitutions: dict) -> str:
@@ -136,7 +131,7 @@ def replace_substitutions(text: str, substitutions: dict) -> str:
     Replace {{ variable }} patterns with their values.
     """
 
-    def replace_var(match):
+    def replace_var(match: re.Match[str]) -> str:
         var_name = match.group(1).strip()
         if var_name in substitutions:
             replacement = str(substitutions[var_name])
@@ -157,17 +152,15 @@ def replace_substitutions_carefully(text: str, substitutions: dict) -> str:
     This is used for template languages where we want to avoid breaking existing template syntax.
     """
 
-    def replace_var(match):
+    def replace_var(match: re.Match[str]) -> str:
         full_match = match.group(0)
         var_name = match.group(1).strip()
 
         # Only replace if it's an exact match for one of our MyST variables
-        if var_name in substitutions:
-            # Double-check this isn't template syntax by looking for template patterns
-            if not re.search(r"[.|\-+]", full_match):  # No dots, pipes, or whitespace control
-                replacement = str(substitutions[var_name])
-                logger.debug(f"Carefully replacing {{ {var_name} }} with '{replacement}' in template language")
-                return replacement
+        if var_name in substitutions and not re.search(r"[.|\-+]", full_match):  # No dots, pipes, or whitespace control
+            replacement = str(substitutions[var_name])
+            logger.debug(f"Carefully replacing {{ {var_name} }} with '{replacement}' in template language")
+            return replacement
 
         # Leave everything else untouched
         return full_match
@@ -177,7 +170,7 @@ def replace_substitutions_carefully(text: str, substitutions: dict) -> str:
     return re.sub(substitution_pattern, replace_var, text)
 
 
-def setup(app: Sphinx):
+def setup(app: Sphinx) -> dict[str, Any]:
     """
     Setup function for the MyST code block substitution extension.
     """

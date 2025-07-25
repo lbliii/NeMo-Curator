@@ -77,7 +77,7 @@ def extract_document_content(env: BuildEnvironment, docname: str, content_cache:
                 if original_length != filtered_length:
                     logger.debug(f"Content filtering for {docname}: {original_length} -> {filtered_length} chars")
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"Error extracting main content from {docname}: {e}")
             content["content"] = ""
             content["format"] = "text"
@@ -88,13 +88,13 @@ def extract_document_content(env: BuildEnvironment, docname: str, content_cache:
             try:
                 content["headings"] = extract_headings(doctree)
                 logger.debug(f"Extracted {len(content['headings'])} headings from {docname}")
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.warning(f"Error extracting headings from {docname}: {e}")
                 content["headings"] = []
 
             try:
                 content["summary"] = extract_summary(doctree)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.warning(f"Error extracting summary from {docname}: {e}")
                 content["summary"] = ""
 
@@ -102,21 +102,21 @@ def extract_document_content(env: BuildEnvironment, docname: str, content_cache:
                 try:
                     content["code_blocks"] = extract_code_blocks(doctree)
                     logger.debug(f"Extracted {len(content['code_blocks'])} code blocks from {docname}")
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     logger.warning(f"Error extracting code blocks from {docname}: {e}")
                     content["code_blocks"] = []
 
                 try:
                     content["links"] = extract_links(doctree)
                     logger.debug(f"Extracted {len(content['links'])} links from {docname}")
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     logger.warning(f"Error extracting links from {docname}: {e}")
                     content["links"] = []
 
                 try:
                     content["images"] = extract_images(doctree)
                     logger.debug(f"Extracted {len(content['images'])} images from {docname}")
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     logger.warning(f"Error extracting images from {docname}: {e}")
                     content["images"] = []
             else:
@@ -130,7 +130,7 @@ def extract_document_content(env: BuildEnvironment, docname: str, content_cache:
                 try:
                     content["keywords"] = extract_keywords(content.get("content", ""), content.get("headings", []))
                     logger.debug(f"Extracted {len(content['keywords'])} keywords from {docname}")
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     logger.warning(f"Error extracting keywords from {docname}: {e}")
                     content["keywords"] = []
             else:
@@ -148,8 +148,8 @@ def extract_document_content(env: BuildEnvironment, docname: str, content_cache:
         content_cache[docname] = content
         logger.debug(f"Successfully extracted content for {docname}")
 
-    except Exception as e:
-        logger.error(f"Critical error extracting content from {docname}: {e}")
+    except Exception:  # noqa: BLE001
+        logger.exception(f"Critical error extracting content from {docname}")
         content = {
             "content": "",
             "format": "text",

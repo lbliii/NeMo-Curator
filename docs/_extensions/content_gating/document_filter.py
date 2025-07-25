@@ -15,6 +15,7 @@ import os
 
 import yaml
 from sphinx.application import Sphinx
+from sphinx.config import Config
 from sphinx.util import logging
 
 from .condition_evaluator import should_include_content
@@ -86,7 +87,7 @@ def extract_only_condition(file_path: str) -> str:
             logger.warning(f"Failed to parse frontmatter in {file_path}")
             return None
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning(f"Error reading {file_path}: {e}")
         return None
 
@@ -111,7 +112,7 @@ def should_exclude_document(app: Sphinx, docname: str) -> bool:
     return should_exclude
 
 
-def apply_build_filters(app: Sphinx, config):
+def apply_build_filters(app: Sphinx, config: Config) -> None:
     """
     Apply build filters by adding excluded documents to exclude_patterns.
     """
@@ -119,7 +120,7 @@ def apply_build_filters(app: Sphinx, config):
     source_dir = app.srcdir
     markdown_files = []
 
-    for root, dirs, files in os.walk(source_dir):
+    for root, _dirs, files in os.walk(source_dir):
         for file in files:
             if file.endswith((".md", ".rst")):
                 rel_path = os.path.relpath(os.path.join(root, file), source_dir)
@@ -140,7 +141,7 @@ def apply_build_filters(app: Sphinx, config):
         logger.info(f"Document filter applied: Excluding {len(excluded_files)} documents based on only conditions")
 
 
-def setup(app: Sphinx):
+def setup(app: Sphinx) -> None:
     """
     Setup function for the document filter component.
     """

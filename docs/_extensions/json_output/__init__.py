@@ -8,7 +8,7 @@ or other applications.
 See README.md for detailed configuration options and usage examples.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from sphinx.application import Sphinx
 

@@ -36,8 +36,9 @@ document3.md :only: ea
 """
 
 import re
+from typing import Any, ClassVar
 
-from docutils.nodes import container
+from docutils.nodes import Node, container
 from docutils.parsers.rst import Directive, directives
 from docutils.statemachine import StringList
 from sphinx.application import Sphinx
@@ -58,7 +59,7 @@ class ConditionalGridItemCardDirective(GridItemCardDirective):
     option_spec = GridItemCardDirective.option_spec.copy()
     option_spec["only"] = directives.unchanged
 
-    def run(self):
+    def run(self) -> list[Node]:
         """
         Run the directive, checking the :only: condition first.
         """
@@ -86,7 +87,7 @@ class ConditionalTocTreeDirective(TocTree):
     option_spec = TocTree.option_spec.copy()
     option_spec["only"] = directives.unchanged
 
-    def run(self):
+    def run(self) -> list[Node]:
         """
         Run the directive, applying both global and inline :only: conditions.
         """
@@ -119,7 +120,7 @@ class ConditionalTocTreeDirective(TocTree):
         # Step 4: Render normally with filtered content
         return super().run()
 
-    def _filter_content_lines(self, app: Sphinx):
+    def _filter_content_lines(self, app: Sphinx) -> list[str]:
         """
         Filter toctree content lines based on inline :only: conditions.
         """
@@ -167,11 +168,11 @@ class ConditionalContentDirective(Directive):
     """
 
     has_content = True
-    option_spec = {
+    option_spec: ClassVar[dict[str, Any]] = {
         "only": directives.unchanged,
     }
 
-    def run(self):
+    def run(self) -> list[Node]:
         """
         Run the directive, checking the :only: condition first.
         """
@@ -196,7 +197,7 @@ class ConditionalContentDirective(Directive):
         return [container_node]
 
 
-def setup(app: Sphinx):
+def setup(app: Sphinx) -> None:
     """
     Setup function for the conditional directives component.
     """
