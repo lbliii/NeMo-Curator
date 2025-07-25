@@ -255,7 +255,7 @@ kubectl delete daskcluster <name>
 python create_dask_cluster.py \
     --name rapids-dask \
     --n_workers 1 \
-    --image nvcr.io/nvidian/bignlp-train:nemofw-nightly \
+    --image nvcr.io/nvidia/nemo-curator:latest \
     --image_pull_secret ngc-registry \
     --pvcs nemo-workspace:/nemo-workspace
 
@@ -275,7 +275,7 @@ python create_dask_cluster.py \
     --name rapids-dask \
     --n_workers 2 \
     --n_gpus_per_worker 1 \
-    --image nvcr.io/nvidian/bignlp-train:nemofw-nightly \
+    --image nvcr.io/nvidia/nemo-curator:latest \
     --image_pull_secret ngc-registry \
     --pvcs nemo-workspace:/nemo-workspace
 ```
@@ -295,7 +295,7 @@ kubectl get pods -l "dask.org/cluster-name=$DASK_CLUSTER_NAME"
 
 ## (Option 1) Running Existing Module
 
-Here's an example of running the existing `gpu_exact_dedup` Curator module. The arguments and script name will need to be changed according to the module you wish to run:
+Here's an example of running the existing `gpu_exact_dups` Curator module. The arguments and script name will need to be changed according to the module you wish to run:
 
 ```bash
 # Set DASK_CLUSTER_NAME to the value of --name
@@ -318,7 +318,7 @@ mkdir -p /nemo-workspace/curator/{output,log,profile}
 LOGS="/nemo-workspace/curator/script.log /nemo-workspace/curator/script.log.$(date +%y_%m_%d-%H-%M-%S)"
 (
 echo "Writing to: $LOGS"
-gpu_exact_dedup \
+gpu_exact_dups \
     --input-data-dirs /nemo-workspace/my_dataset \
     --output-dir /nemo-workspace/curator/output \
     --hash-method md5 \
@@ -366,8 +366,8 @@ git clone https://github.com/NVIDIA/NeMo-Curator.git NeMo-Curator-dev
 # Checkout specific ref. This example uses a commit in the main branch
 git -C NeMo-Curator-dev checkout fc167a6edffd38a55c333742972a5a25b901cb26
 
-# Example NeMo base image. Change it according to your requirements
-BASE_IMAGE=nvcr.io/nvidian/bignlp-train:nemofw-nightly
+# Example NeMo Curator base image. Change it according to your requirements
+BASE_IMAGE=nvcr.io/nvidia/nemo-curator:latest
 docker build -t nemo-curator-custom ./NeMo-Curator-dev -f - <<EOF
 FROM ${BASE_IMAGE}
 
