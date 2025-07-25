@@ -21,7 +21,7 @@ NeMo Curator also provides pre-built pipelines for synthetic data generation for
 With NeMo Curator, you can process raw data and curate high-quality data for training and customizing generative AI models such as LLMs, VLMs and WFMs. NeMo Curator provides a collection of scalable data processing modules for text and image curation.
 
 ### Text Data Processing
-All of our text pipelines have great multilingual support. With NeMo Curator, you can pick and choose the features you want and build your data processing pipelines. There may be several stages of data processing, depending on your use case. A typical data processing pipeline for text consists of downloading the raw data from public resources or extracting it from internal documents. It's then followed by performing cleaning steps such as fixing Unicode character, removing low-quality documents.
+All of our text pipelines have great multilingual support. With NeMo Curator, you can pick and choose the features you want and build your data processing pipelines. There may be several stages of data processing, depending on your use case. A typical data processing pipeline for text consists of downloading the raw data from public resources or extracting it from internal documents. It's then followed by performing cleaning steps such as fixing Unicode characters and removing low-quality documents.
 
 Learn more about the various text processing features supported:
 
