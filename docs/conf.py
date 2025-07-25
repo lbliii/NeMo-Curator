@@ -24,10 +24,10 @@ import os
 import sys
 
 # Add custom extensions directory to Python path
-sys.path.insert(0, os.path.abspath('_extensions'))
+sys.path.insert(0, os.path.abspath("_extensions"))
 
 project = "NeMo-Curator"
-copyright = "2025, NVIDIA Corporation"
+project_copyright = "2025, NVIDIA Corporation"
 author = "NVIDIA Corporation"
 release = "0.0.1"
 
@@ -43,7 +43,7 @@ extensions = [
     "sphinx_copybutton",  # For copy button in code blocks,
     "sphinx_design",  # For grid layout
     "sphinx.ext.ifconfig",  # For conditional content
-    "content_gating",  # Unified content gating extension 
+    "content_gating",  # Unified content gating extension
     "myst_codeblock_substitutions",  # Our custom MyST substitutions in code blocks
     "json_output",  # Generate JSON output for each page
     "search_assets",  # Enhanced search assets extension
@@ -54,13 +54,13 @@ extensions = [
 
 templates_path = ["_templates"]
 exclude_patterns = [
-    "_build", 
-    "Thumbs.db", 
+    "_build",
+    "Thumbs.db",
     ".DS_Store",
-    "_extensions/*/README.md",     # Exclude README files in extension directories
-    "_extensions/README.md",       # Exclude main extensions README
-    "_extensions/*/__pycache__",   # Exclude Python cache directories
-    "_extensions/*/*/__pycache__", # Exclude nested Python cache directories
+    "_extensions/*/README.md",  # Exclude README files in extension directories
+    "_extensions/README.md",  # Exclude main extensions README
+    "_extensions/*/__pycache__",  # Exclude Python cache directories
+    "_extensions/*/*/__pycache__",  # Exclude nested Python cache directories
 ]
 
 # -- Options for Intersphinx -------------------------------------------------
@@ -83,7 +83,7 @@ intersphinx_timeout = 30
 # -- Options for JSON Output -------------------------------------------------
 # Configure the JSON output extension for comprehensive search indexes
 json_output_settings = {
-    'enabled': True,
+    "enabled": True,
 }
 
 # -- Options for MyST Parser (Markdown) --------------------------------------
@@ -95,10 +95,10 @@ myst_enable_extensions = [
     "deflist",  # Supports definition lists with term: definition format
     "fieldlist",  # Enables field lists for metadata like :author: Name
     "tasklist",  # Adds support for GitHub-style task lists with [ ] and [x]
-    "attrs_inline", # Enables inline attributes for markdown
-    "substitution", # Enables substitution for markdown
-    "html_admonition", # Better admonition support for notes/warnings
-    "html_image", # Enhanced image handling
+    "attrs_inline",  # Enables inline attributes for markdown
+    "substitution",  # Enables substitution for markdown
+    "html_admonition",  # Better admonition support for notes/warnings
+    "html_image",  # Enhanced image handling
 ]
 
 # Better MyST rendering for docstrings
@@ -126,11 +126,7 @@ myst_substitutions = {
 numfig = True
 
 # Optional: customize numbering format
-numfig_format = {
-    'figure': 'Figure %s',
-    'table': 'Table %s',
-    'code-block': 'Listing %s'
-}
+numfig_format = {"figure": "Figure %s", "table": "Table %s", "code-block": "Listing %s"}
 
 # Optional: number within sections
 numfig_secnum_depth = 1  # Gives you "Figure 1.1, 1.2, 2.1, etc."
@@ -139,9 +135,8 @@ numfig_secnum_depth = 1  # Gives you "Figure 1.1, 1.2, 2.1, etc."
 # Suppress expected warnings for conditional content builds
 suppress_warnings = [
     "toc.not_included",  # Expected when video docs are excluded from GA builds
-    "toc.no_title",      # Expected for helm docs that include external README files
-    "docutils",          # Expected for autodoc2-generated content with regex patterns and complex syntax
-
+    "toc.no_title",  # Expected for helm docs that include external README files
+    "docutils",  # Expected for autodoc2-generated content with regex patterns and complex syntax
 ]
 
 # -- Options for Autodoc2 ---------------------------------------------------
@@ -152,30 +147,23 @@ sys.path.insert(0, os.path.abspath(".."))
 autodoc2_packages_list = [
     # Core data handling
     "../nemo_curator/datasets",
-    "../nemo_curator/download", 
-    
+    "../nemo_curator/download",
     # Data processing
     "../nemo_curator/filters",
-    "../nemo_curator/modifiers", 
+    "../nemo_curator/modifiers",
     "../nemo_curator/modules",
-    
     # Classification and analysis
     "../nemo_curator/classifiers",
     "../nemo_curator/image",
-    
     # Privacy and security
     "../nemo_curator/pii",
-    
     # Synthetic data
     "../nemo_curator/synthetic",
-    
-    # Services and infrastructure  
+    # Services and infrastructure
     "../nemo_curator/services",
     "../nemo_curator/nemo_run",
-    
     # Evaluation and tasks
     "../nemo_curator/tasks",
-    
     # Utilities
     "../nemo_curator/utils",
 ]
@@ -191,55 +179,44 @@ for pkg_path in autodoc2_packages_list:
 if autodoc2_packages:
     if "autodoc2" not in extensions:
         extensions.append("autodoc2")
-    
+
     # NOTE: autodoc2 currently outputs files in a flat directory structure
     # with dot-notation filenames (e.g., nemo_curator.datasets.doc_dataset.md).
     # It does NOT support hierarchical directory organization.
-    # 
-    # If you need hierarchical output (e.g., nemo_curator/datasets/doc_dataset.md),
-    # consider using sphinx.ext.autosummary with :recursive: instead:
     #
-    # extensions = ["sphinx.ext.autosummary", "sphinx.ext.autodoc", "sphinx.ext.napoleon"]
-    # autosummary_generate = True
-    # autosummary_recursive = True  # Sphinx 3.1+
-    # 
-    # Then use autosummary directive in your docs:
-    # .. autosummary::
-    #    :toctree: api/
-    #    :recursive:
-    #    
-    #    nemo_curator
-    
+    # If you need hierarchical output (e.g., nemo_curator/datasets/doc_dataset.md),
+    # consider using sphinx.ext.autosummary with :recursive: instead.
+
     # ==================== SANE DEFAULTS (good for most projects) ====================
-    
+
     autodoc2_render_plugin = "myst"  # Use MyST for rendering docstrings
     autodoc2_output_dir = "apidocs"  # Output directory for autodoc2 (relative to docs/)
-    
+
     # Hide implementation details - good defaults for cleaner docs
     autodoc2_hidden_objects = [
-        "dunder",     # Hide __methods__ like __init__, __str__, etc.  
-        "private",    # Hide _private methods and variables
+        "dunder",  # Hide __methods__ like __init__, __str__, etc.
+        "private",  # Hide _private methods and variables
         "inherited",  # Hide inherited methods to reduce clutter
     ]
-    
+
     # Enable module summaries for better organization
     autodoc2_module_summary = True
-    
+
     # Sort by name for consistent organization
     autodoc2_sort_names = True
-    
+
     # Enhanced docstring processing for better formatting
     autodoc2_docstrings = "all"  # Include all docstrings for comprehensive docs
-    
+
     # Include class inheritance information - useful for users
     autodoc2_class_inheritance = True
-    
+
     # Handle class docstrings properly (merge __init__ with class doc)
     autodoc2_class_docstring = "merge"
-    
+
     # Better type annotation handling - use correct autodoc2 options
     autodoc2_type_guard_imports = True
-    
+
     # Replace common type annotations for better readability
     autodoc2_replace_annotations = [
         ("typing.Union", "Union"),
@@ -250,38 +227,38 @@ if autodoc2_packages:
         ("pandas.core.frame.DataFrame", "pd.DataFrame"),
         ("cudf.core.dataframe.DataFrame", "cudf.DataFrame"),
     ]
-    
+
     # ==================== PROJECT-SPECIFIC CONFIGURATION ====================
-    
+
     # Skip internal/testing modules and scripts - CUSTOMIZE FOR YOUR PROJECT
     autodoc2_skip_module_regexes = [
-        r".*\.tests?.*",           # Skip test modules
-        r".*\.test_.*",            # Skip test files  
-        r".*\._.*",                # Skip private modules
-        r".*\.conftest",           # Skip conftest files
-        r".*\.hello$",             # Skip hello.py example file (NeMo-Curator specific)
-        r".*\.package_info$",      # Skip package metadata (NeMo-Curator specific)
-        r".*\.scripts\..*",        # Skip CLI scripts (NeMo-Curator specific - documented elsewhere)
-        r".*\.log$",               # Skip logging utilities (NeMo-Curator specific)
-        r".*\._compat$",           # Skip compatibility modules (NeMo-Curator specific)  
+        r".*\.tests?.*",  # Skip test modules
+        r".*\.test_.*",  # Skip test files
+        r".*\._.*",  # Skip private modules
+        r".*\.conftest",  # Skip conftest files
+        r".*\.hello$",  # Skip hello.py example file (NeMo-Curator specific)
+        r".*\.package_info$",  # Skip package metadata (NeMo-Curator specific)
+        r".*\.scripts\..*",  # Skip CLI scripts (NeMo-Curator specific - documented elsewhere)
+        r".*\.log$",  # Skip logging utilities (NeMo-Curator specific)
+        r".*\._compat$",  # Skip compatibility modules (NeMo-Curator specific)
     ]
-    
+
     # Hide specific internal utilities and constants - CUSTOMIZE FOR YOUR PROJECT
     autodoc2_hidden_regexes = [
         r".*\.MAJOR$",
-        r".*\.MINOR$", 
+        r".*\.MINOR$",
         r".*\.PATCH$",
         r".*\.VERSION$",
         r".*\.DEV$",
         r".*\.PRE_RELEASE$",
-        r".*\.__.*__$",            # Hide dunder variables
-        r".*\.cudf$",              # Hide import aliases (NeMo-Curator specific)
+        r".*\.__.*__$",  # Hide dunder variables
+        r".*\.cudf$",  # Hide import aliases (NeMo-Curator specific)
         r".*\.gpu_only_import.*",  # Hide import utilities (NeMo-Curator specific)
     ]
-    
+
     # Load index template from external file for better maintainability
-    template_path = os.path.join(os.path.dirname(__file__), '_templates', 'autodoc2_index.rst')
-    with open(template_path, 'r') as f:
+    template_path = os.path.join(os.path.dirname(__file__), "_templates", "autodoc2_index.rst")
+    with open(template_path) as f:
         autodoc2_index_template = f.read()
 
     # Don't require __all__ to be defined - document all public members
@@ -300,7 +277,7 @@ napoleon_include_init_with_doc = False
 napoleon_include_private_with_doc = False
 napoleon_include_special_with_doc = True
 napoleon_use_admonition_for_examples = True  # Makes examples stand out
-napoleon_use_admonition_for_notes = True    # Makes notes/warnings stand out
+napoleon_use_admonition_for_notes = True  # Makes notes/warnings stand out
 napoleon_use_param = True
 napoleon_use_rtype = True
 napoleon_preprocess_types = True  # Cleans up type annotations in docs
@@ -331,16 +308,15 @@ html_theme_options = {
 }
 
 # Improve readability and navigation
-html_compact_lists = False  # Prevents cramped parameter lists  
+html_compact_lists = False  # Prevents cramped parameter lists
 html_show_sourcelink = True  # Useful "View page source" links
-html_copy_source = True      # Copy source files to output
-html_use_index = True        # Generate comprehensive index
-html_domain_indices = True   # Generate domain-specific indices (Python, etc.)
+html_copy_source = True  # Copy source files to output
+html_use_index = True  # Generate comprehensive index
+html_domain_indices = True  # Generate domain-specific indices (Python, etc.)
 
-# Add our static files directory  
-# html_static_path = ["_static"]
+# Add our static files directory
 
 html_extra_path = ["project.json", "versions1.json"]
 
-# Note: JSON output configuration has been moved to the consolidated 
+# Note: JSON output configuration has been moved to the consolidated
 # json_output_settings dictionary above for better organization and new features!

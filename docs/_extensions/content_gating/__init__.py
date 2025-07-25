@@ -14,8 +14,9 @@ Usage:
 """
 
 from sphinx.application import Sphinx
-from .document_filter import setup as setup_document_filter
+
 from .conditional_directives import setup as setup_conditional_directives
+from .document_filter import setup as setup_document_filter
 
 
 def setup(app: Sphinx):
@@ -24,12 +25,12 @@ def setup(app: Sphinx):
     """
     # Setup document-level filtering
     setup_document_filter(app)
-    
+
     # Setup conditional directives (toctree and grid-item-card)
     setup_conditional_directives(app)
-    
+
     return {
-        'version': '1.0',
-        'parallel_read_safe': True,
-        'parallel_write_safe': True,
-    } 
+        "version": "1.0",
+        "parallel_read_safe": True,
+        "parallel_write_safe": True,
+    }
