@@ -4,6 +4,7 @@ Handles AI-powered analysis and responses using external AI services
 """
 
 import os
+import re
 import shutil
 from typing import Any
 
@@ -49,7 +50,6 @@ def bundle_javascript_modules(extension_dir: str, output_path: str, minify: bool
             # Simple minification if requested
             if minify:
                 # Remove extra whitespace and comments (basic minification)
-                import re  # noqa: PLC0415
 
                 # Remove single-line comments but preserve URLs
                 content = re.sub(r"^\s*//.*$", "", content, flags=re.MULTILINE)
