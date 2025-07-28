@@ -28,7 +28,6 @@
   - Updated examples and tutorials to use correct `DocumentDataset` API
   - Replaced deprecated `write_to_disk(result, output_dir, output_type="parquet")` with `result.to_parquet(output_dir)`
   - Updated exact deduplication workflows: `deduplicator.remove()` now returns `DocumentDataset` directly
-  - Removed deprecated `add_filename` parameter from `read_json` calls where appropriate
 
 ## NVIDIA NeMo Curator 0.8.0
 
