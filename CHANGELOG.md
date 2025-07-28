@@ -18,17 +18,17 @@
 ### Bug Fixes
 
 - FastText Download URL Fix
-  - Corrected the fasttext model download URL in nemotron-cc tutorial
-  - Changed from dl.fbaipublicfiles.com/fastText/ to dl.fbaipublicfiles.com/fasttext/
+  - Corrected the `fasttext` model download URL in nemotron-cc tutorial
+  - Changed from `dl.fbaipublicfiles.com/fastText/` to `dl.fbaipublicfiles.com/fasttext/`
   - Ensures reliable model downloads for language identification
 - NeMo Retriever Tutorial Bug Fix
-  - Fixed lambda function bug in RetrieverEvalSetGenerator
-  - Corrected score assignment from df["question"].apply(lambda: 1) to df["score"] = 1
+  - Fixed lambda function bug in `RetrieverEvalSetGenerator`
+  - Corrected score assignment from `df["question"].apply(lambda: 1)` to `df["score"] = 1`
 - API Usage Updates
-  - Updated examples and tutorials to use correct DocumentDataset API
-  - Replaced deprecated write_to_disk(result, output_dir, output_type="parquet") with result.to_parquet(output_dir)
-  - Updated exact deduplication workflows: deduplicator.remove() now returns DocumentDataset directly
-  - Removed deprecated add_filename parameter from read_json calls where appropriate
+  - Updated examples and tutorials to use correct `DocumentDataset` API
+  - Replaced deprecated `write_to_disk(result, output_dir, output_type="parquet")` with `result.to_parquet(output_dir)`
+  - Updated exact deduplication workflows: `deduplicator.remove()` now returns `DocumentDataset` directly
+  - Removed deprecated `add_filename` parameter from `read_json` calls where appropriate
 
 ## NVIDIA NeMo Curator 0.8.0
 
