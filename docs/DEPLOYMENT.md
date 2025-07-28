@@ -1,8 +1,36 @@
 # Documentation Deployment to S3
 
-This guide explains how to deploy the NeMo Curator documentation to the S3 hosting environment.
+This guide explains how to deploy the NeMo Curator documentation to the S3 hosting environment using both automated GitHub Actions and manual deployment methods.
 
-## Prerequisites
+## 🤖 Automated Deployment (Recommended)
+
+The repository includes a GitHub Action that automatically deploys documentation:
+
+### **Automatic Triggers:**
+- **📦 Releases**: Automatically deploys when a new release is published
+- **📝 Documentation Updates**: Deploys latest docs when changes are pushed to `main` branch (docs/ files, *.md, CHANGELOG.md)
+
+### **Manual Triggers:**
+Go to **Actions** → **Deploy Documentation** → **Run workflow** with options:
+- **Version**: Override auto-detected version
+- **Dry Run**: Preview changes without deploying  
+- **Skip Backup**: Skip backing up current latest version
+- **Skip Akamai**: Skip CDN cache purging (changes may take up to 1 hour to appear)
+
+### **Required Setup:**
+1. **AWS IAM Role**: Configure `AWS_ROLE_ARN` secret with S3 permissions
+2. **GitHub Secrets**: Add the role ARN to repository secrets
+3. **Akamai Credentials** (Optional): For automatic CDN cache purging
+   - `AKAMAI_CLIENT_TOKEN`
+   - `AKAMAI_CLIENT_SECRET` 
+   - `AKAMAI_ACCESS_TOKEN`
+   - `AKAMAI_HOST`
+
+## 📋 Manual Deployment
+
+For local testing or manual deployments, you can use the deployment script directly.
+
+### Prerequisites
 
 1. **AWS CLI**: Install and configure AWS CLI with appropriate credentials
    ```bash
@@ -53,6 +81,14 @@ Deploy with a specific version override:
 
 ```bash
 make docs-deploy-version VERSION=1.2.3
+```
+
+### Deploy Without Cache Purging
+
+Deploy to S3 but skip Akamai CDN cache purging:
+
+```bash
+make docs-deploy-no-cache
 ```
 
 ### Direct Script Usage
@@ -169,4 +205,74 @@ The deployment script sets appropriate cache headers:
 - **Documentation files**: `public, max-age=3600` (1 hour)
 - **Version files**: `public, max-age=300` (5 minutes)
 
-This ensures reasonable caching while allowing version updates to propagate quickly. 
+This ensures reasonable caching while allowing version updates to propagate quickly.
+
+## 🚀 Akamai CDN Cache Purging
+
+After deploying to S3, the deployment system automatically purges the Akamai CDN cache to ensure users see updated content immediately.
+
+### Setup Options
+
+#### Option 1: Akamai CLI (Recommended)
+
+Install and configure the Akamai CLI:
+
+```bash
+# Install Akamai CLI
+npm install -g akamai-cli
+
+# Configure credentials (creates ~/.edgerc)
+akamai configure
+
+# Test configuration
+akamai purge --help
+```
+
+#### Option 2: API Credentials
+
+Set environment variables for Fast Purge API:
+
+```bash
+export AKAMAI_CLIENT_TOKEN="your-client-token"
+export AKAMAI_CLIENT_SECRET="your-client-secret"  
+export AKAMAI_ACCESS_TOKEN="your-access-token"
+export AKAMAI_HOST="your-akamai-host.luna.akamaiapis.net"
+```
+
+### What Gets Purged
+
+The deployment automatically purges these URLs:
+
+- `https://docs.nvidia.com/nemo/curator/latest/`
+- `https://docs.nvidia.com/nemo/curator/latest/*` (all latest content)
+- `https://docs.nvidia.com/nemo/curator/versions1.json` (version switcher)
+- `https://docs.nvidia.com/nemo/curator/{VERSION}/` (specific version)
+- `https://docs.nvidia.com/nemo/curator/{VERSION}/*` (all version content)
+
+### Manual Cache Purging
+
+If automatic purging fails or you need to purge manually:
+
+```bash
+# Using Akamai CLI
+akamai purge invalidate "https://docs.nvidia.com/nemo/curator/latest/*"
+
+# Using the deployment script without S3 update
+./scripts/deploy-docs.sh --skip-backup --dry-run  # See what would be purged
+```
+
+### Troubleshooting Cache Issues
+
+**Cache not clearing:**
+1. Check Akamai CLI configuration: `akamai configure --list`
+2. Verify API credentials have Fast Purge permissions
+3. Check for rate limiting (max 1000 URLs per 5 minutes)
+
+**Deployment works but cache purging fails:**
+```bash
+# Deploy without cache purging first
+make docs-deploy-no-cache
+
+# Then manually purge
+akamai purge invalidate "https://docs.nvidia.com/nemo/curator/latest/*"
+``` 

@@ -22,6 +22,7 @@ NC='\033[0m' # No Color
 DRY_RUN=false
 VERSION=""
 BACKUP_LATEST=true
+SKIP_AKAMAI=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -37,13 +38,18 @@ while [[ $# -gt 0 ]]; do
             BACKUP_LATEST=false
             shift
             ;;
+        --skip-akamai)
+            SKIP_AKAMAI=true
+            shift
+            ;;
         -h|--help)
-            echo "Usage: $0 [--version VERSION] [--dry-run] [--no-backup]"
+            echo "Usage: $0 [--version VERSION] [--dry-run] [--no-backup] [--skip-akamai]"
             echo ""
             echo "Options:"
             echo "  --version VERSION    Specify version to deploy (default: auto-detect)"
             echo "  --dry-run           Show what would be done without executing"
             echo "  --no-backup         Skip backing up current latest to versioned directory"
+            echo "  --skip-akamai       Skip Akamai CDN cache purging"
             echo "  -h, --help          Show this help message"
             exit 0
             ;;
@@ -222,13 +228,90 @@ deploy_to_s3() {
     # Also copy versions1.json to root level (sibling to version directories)
     execute "aws s3 cp ${BUILD_DIR}/versions1.json ${S3_BUCKET}/versions1.json --cache-control 'public, max-age=300'"
     
-    log_success "Deployment complete!"
+    log_success "S3 deployment complete!"
+}
+
+# Purge Akamai CDN cache
+purge_akamai_cache() {
+    log_info "Purging Akamai CDN cache..."
     
-    if [[ "$DRY_RUN" != "true" ]]; then
-        log_info "Documentation available at:"
-        log_info "  Latest: https://docs.nvidia.com/nemo/curator/latest/"
-        log_info "  Versioned: https://docs.nvidia.com/nemo/curator/${VERSION}/"
+    # Check if Akamai CLI is available
+    if command -v akamai &> /dev/null; then
+        log_info "Using Akamai CLI for cache purging..."
+        
+        # Base URLs to purge
+        local urls=(
+            "https://docs.nvidia.com/nemo/curator/latest/"
+            "https://docs.nvidia.com/nemo/curator/latest/*"
+            "https://docs.nvidia.com/nemo/curator/versions1.json"
+            "https://docs.nvidia.com/nemo/curator/${VERSION}/"
+            "https://docs.nvidia.com/nemo/curator/${VERSION}/*"
+        )
+        
+        # Purge URLs using Akamai CLI
+        for url in "${urls[@]}"; do
+            log_info "Purging: $url"
+            if [[ "$DRY_RUN" == "true" ]]; then
+                echo "[DRY-RUN] akamai purge invalidate $url"
+            else
+                execute "akamai purge invalidate '$url'" || {
+                    log_warning "Failed to purge $url via CLI, will try API fallback"
+                    return 1
+                }
+            fi
+        done
+        
+        log_success "Akamai cache purged via CLI"
+        return 0
+        
+    elif [[ -n "${AKAMAI_CLIENT_TOKEN:-}" && -n "${AKAMAI_CLIENT_SECRET:-}" && -n "${AKAMAI_ACCESS_TOKEN:-}" ]]; then
+        log_info "Using Akamai Fast Purge API..."
+        purge_akamai_api
+        
+    else
+        log_warning "Akamai CLI not found and API credentials not configured"
+        log_info "To enable Akamai cache purging:"
+        log_info "  Option 1: Install Akamai CLI: npm install -g akamai-cli"
+        log_info "  Option 2: Set environment variables: AKAMAI_CLIENT_TOKEN, AKAMAI_CLIENT_SECRET, AKAMAI_ACCESS_TOKEN, AKAMAI_HOST"
+        return 1
     fi
+}
+
+# Purge Akamai cache using Fast Purge API
+purge_akamai_api() {
+    local akamai_host="${AKAMAI_HOST:-akaa-baseurl-xxxxxxxxxxx-xxxxxxxxxxxxx.luna.akamaiapis.net}"
+    
+    # Prepare URLs for API purge
+    local purge_urls='[
+        "https://docs.nvidia.com/nemo/curator/latest/",
+        "https://docs.nvidia.com/nemo/curator/latest/*",
+        "https://docs.nvidia.com/nemo/curator/versions1.json",
+        "https://docs.nvidia.com/nemo/curator/'${VERSION}'/",
+        "https://docs.nvidia.com/nemo/curator/'${VERSION}'/*"
+    ]'
+    
+    # Create authorization header using EdgeGrid auth
+    local timestamp=$(date -u +%Y%m%dT%H:%M:%S+0000)
+    local nonce=$(openssl rand -hex 16)
+    
+    # For simplicity, use curl with pre-configured .edgerc file if available
+    if [[ -f "$HOME/.edgerc" ]]; then
+        log_info "Using .edgerc configuration for API authentication"
+        
+        # Use httpie with akamai auth plugin if available, otherwise fall back to curl
+        if command -v http &> /dev/null && pip list | grep -q akamai-http-auth; then
+            execute "echo '$purge_urls' | http --auth-type=akamai POST https://${akamai_host}/ccu/v3/invalidate/url/production objects:=@-"
+        else
+            log_warning "Advanced Akamai API auth requires akamai-http-auth plugin or manual EdgeGrid implementation"
+            log_info "Consider using Akamai CLI instead: npm install -g akamai-cli"
+            return 1
+        fi
+    else
+        log_warning "No .edgerc file found for Akamai API authentication"
+        return 1
+    fi
+    
+    log_success "Akamai cache purged via API"
 }
 
 # Validate build directory
@@ -276,7 +359,31 @@ main() {
     update_versions_json
     deploy_to_s3
     
+    # Purge CDN cache if not skipped
+    if [[ "$SKIP_AKAMAI" != "true" ]]; then
+        purge_akamai_cache || {
+            log_warning "Akamai cache purging failed, but deployment completed successfully"
+            log_info "You may need to manually purge the cache or wait for TTL expiration"
+        }
+    else
+        log_info "Skipping Akamai cache purging (--skip-akamai specified)"
+    fi
+    
+    # Final success message
     log_success "Documentation deployment complete!"
+    
+    if [[ "$DRY_RUN" != "true" ]]; then
+        log_info "Documentation available at:"
+        log_info "  📚 Latest: https://docs.nvidia.com/nemo/curator/latest/"
+        log_info "  🔗 Version $VERSION: https://docs.nvidia.com/nemo/curator/${VERSION}/"
+        log_info "  📋 All versions: https://docs.nvidia.com/nemo/curator/versions1.json"
+        
+        if [[ "$SKIP_AKAMAI" == "true" ]]; then
+            log_warning "⚠️  Cache not purged - changes may take up to 1 hour to appear"
+        else
+            log_info "✅ CDN cache purged - changes should be visible immediately"
+        fi
+    fi
 }
 
 # Run main function

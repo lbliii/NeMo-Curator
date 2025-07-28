@@ -116,10 +116,34 @@ docs-deploy-dry-run: docs-publish-ga
 	@echo "Showing what would be deployed to S3 (dry run)..."
 	./scripts/deploy-docs.sh --dry-run
 
+docs-deploy-no-cache: docs-publish-ga
+	@echo "Deploying documentation to S3 without Akamai cache purging..."
+	./scripts/deploy-docs.sh --skip-akamai
+
 docs-deploy-version: docs-publish-ga
 	@echo "Deploying specific version to S3..."
 	@if [ -z "$(VERSION)" ]; then \
 		echo "Error: VERSION parameter is required. Usage: make docs-deploy-version VERSION=1.0.0"; \
 		exit 1; \
 	fi
-	./scripts/deploy-docs.sh --version $(VERSION) 
+	./scripts/deploy-docs.sh --version $(VERSION)
+
+# GitHub Actions integration
+
+docs-workflow-trigger:
+	@echo "Triggering GitHub Actions documentation deployment workflow..."
+	@if ! command -v gh &> /dev/null; then \
+		echo "Error: GitHub CLI (gh) is required. Install with: brew install gh"; \
+		exit 1; \
+	fi
+	@echo "This will trigger the GitHub Action to deploy documentation."
+	@echo "Make sure you have committed and pushed your changes first."
+	gh workflow run deploy-docs.yml
+
+docs-workflow-status:
+	@echo "Checking GitHub Actions documentation workflow status..."
+	@if ! command -v gh &> /dev/null; then \
+		echo "Error: GitHub CLI (gh) is required. Install with: brew install gh"; \
+		exit 1; \
+	fi
+	gh run list --workflow=deploy-docs.yml --limit=5 
