@@ -105,15 +105,6 @@ Service clients and integrations.
 {bdg-secondary}`openai-client`
 :::
 
-:::{grid-item-card} {octicon}`terminal;1.5em;sd-mr-1` Scripts API
-:link: /apidocs/scripts/scripts.html
-:link-type: url
-Scripts for data processing and management.
-+++
-{bdg-secondary}`data-processing`
-{bdg-secondary}`training`
-:::
-
 :::{grid-item-card} {octicon}`zap;1.5em;sd-mr-1` Synthetic Data API
 :link: /apidocs/synthetic/synthetic.html
 :link-type: url
