@@ -55,8 +55,8 @@ Create and run an ArXiv processing pipeline and write outputs to JSONL:
 ```python
 from ray_curator.pipeline.pipeline import Pipeline
 from ray_curator.backends.xenna.executor import XennaExecutor
-from ray_curator.stages.download.text.arxiv.stage import ArxivDownloadExtractStage
-from ray_curator.stages.io.writer.jsonl import JsonlWriter
+from ray_curator.stages.download.text import ArxivDownloadExtractStage
+from ray_curator.stages.io.writer import JsonlWriter
 
 def main():
     pipeline = Pipeline(

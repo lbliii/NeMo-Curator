@@ -36,8 +36,8 @@ Here's how to create and run a Common Crawl processing pipeline:
 ```python
 from ray_curator.pipeline.pipeline import Pipeline
 from ray_curator.backends.xenna.executor import XennaExecutor
-from ray_curator.stages.download.text.common_crawl.stage import CommonCrawlDownloadExtractStage
-from ray_curator.stages.io.writer.jsonl import JsonlWriter
+from ray_curator.stages.download.text import CommonCrawlDownloadExtractStage
+from ray_curator.stages.io.writer import JsonlWriter
 
 def main():
     # Create pipeline

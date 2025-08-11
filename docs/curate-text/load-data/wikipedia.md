@@ -42,8 +42,8 @@ Here's how to download and extract Wikipedia data using Curator:
 ```python
 from ray_curator.pipeline.pipeline import Pipeline
 from ray_curator.backends.xenna.executor import XennaExecutor
-from ray_curator.stages.download.text.wikipedia.stage import WikipediaDownloadExtractStage
-from ray_curator.stages.io.writer.jsonl import JsonlWriter
+from ray_curator.stages.download.text import WikipediaDownloadExtractStage
+from ray_curator.stages.io.writer import JsonlWriter
 
 # Create the Wikipedia processing stage
 wikipedia_stage = WikipediaDownloadExtractStage(
