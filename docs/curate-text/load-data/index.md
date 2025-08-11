@@ -148,31 +148,6 @@ Read and process your own text datasets in standard formats
 
 ::::
 
-## Key Components
-
-### Tasks
-
-Curator operates on **Tasks** - batches of data that flow through the pipeline:
-
-- **Start**: Internal placeholder that kicks off pipelines that generate data (no user action required)
-- **`FileGroupTask`**: Contains file paths (URLs or local files)  
-- **`DocumentBatch`**: Contains text documents as pandas DataFrame or PyArrow Table
-
-### Stages
-
-**ProcessingStages** transform tasks through the pipeline:
-
-- **Composite Stages**: High-level stages like `CommonCrawlDownloadExtractStage` that decompose into several steps
-- **Atomic Stages**: Individual processing steps like `DocumentDownloadStage`, `JsonlReaderStage`
-- **I/O Stages**: File readers (`JsonlReader`) and writers (`JsonlWriter`, `ParquetWriter`)
-
-### Executors
-
-**Executors** run pipelines on different backends:
-
-- **`XennaExecutor`**: Production-ready executor using Cosmos framework
-- **`RayDataExecutor`**: Experimental executor using Ray Data
-
 ```{toctree}
 :maxdepth: 4
 :titlesonly:
