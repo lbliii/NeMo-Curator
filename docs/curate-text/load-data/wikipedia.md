@@ -40,10 +40,10 @@ Curator uses `wget` to download Wikipedia dumps. You must have `wget` installed 
 Here's how to download and extract Wikipedia data using Curator:
 
 ```python
-from ray_curator.pipeline import Pipeline
-from ray_curator.backends.xenna import XennaExecutor
-from ray_curator.stages.download.text import WikipediaDownloadExtractStage
-from ray_curator.stages.io.writer import JsonlWriter
+from ray_curator.pipeline.pipeline import Pipeline
+from ray_curator.backends.xenna.executor import XennaExecutor
+from ray_curator.stages.download.text.wikipedia.stage import WikipediaDownloadExtractStage
+from ray_curator.stages.io.writer.jsonl import JsonlWriter
 
 # Create the Wikipedia processing stage
 wikipedia_stage = WikipediaDownloadExtractStage(
@@ -105,7 +105,7 @@ for lang in languages:
 
 ### Parameters
 
-```{list-table}
+```{list-table} WikipediaDownloadExtractStage Parameters
 :header-rows: 1
 :widths: 20 20 20 40
 
@@ -156,7 +156,7 @@ Wikipedia creates new dumps twice per month (around the 1st and 20th). You can f
 ::::
 
 ```{note}
-The extractor uses the `mwparserfromhell` library internally to process MediaWiki markup, which is installed with Curator.
+Extraction uses `mwparserfromhell` under the hood to process MediaWiki markup.
 ```
 
 ## Output Format

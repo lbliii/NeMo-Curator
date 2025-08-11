@@ -53,10 +53,10 @@ The ArXiv `s3://arxiv/src/` bucket is requester-pays. All listing and copy opera
 Create and run an ArXiv processing pipeline and write outputs to JSONL:
 
 ```python
-from ray_curator.pipeline import Pipeline
-from ray_curator.backends.xenna import XennaExecutor
-from ray_curator.stages.download.text import ArxivDownloadExtractStage
-from ray_curator.stages.io.writer import JsonlWriter
+from ray_curator.pipeline.pipeline import Pipeline
+from ray_curator.backends.xenna.executor import XennaExecutor
+from ray_curator.stages.download.text.arxiv.stage import ArxivDownloadExtractStage
+from ray_curator.stages.io.writer.jsonl import JsonlWriter
 
 def main():
     pipeline = Pipeline(
@@ -134,7 +134,7 @@ The extractor returns per-paper text; the filename column is optionally added by
 ```json
 {
   "text": "Main body text extracted from LaTeX after cleaning...",
-  "file_name": "arXiv-2401.01234.tar"  
+  "file_name": "arXiv_src_2024_01.tar"  
 }
 ```
 

@@ -34,10 +34,10 @@ The pipeline outputs structured data that you can write to JSONL or Parquet file
 Here's how to create and run a Common Crawl processing pipeline:
 
 ```python
-from ray_curator.pipeline import Pipeline
-from ray_curator.backends.xenna import XennaExecutor
-from ray_curator.stages.download.text import CommonCrawlDownloadExtractStage
-from ray_curator.stages.io.writer import JsonlWriter
+from ray_curator.pipeline.pipeline import Pipeline
+from ray_curator.backends.xenna.executor import XennaExecutor
+from ray_curator.stages.download.text.common_crawl.stage import CommonCrawlDownloadExtractStage
+from ray_curator.stages.io.writer.jsonl import JsonlWriter
 
 def main():
     # Create pipeline
@@ -77,7 +77,7 @@ if __name__ == "__main__":
 To write Parquet instead of JSONL, use `ParquetWriter`:
 
 ```python
-from ray_curator.stages.io.writer import ParquetWriter
+from ray_curator.stages.io.writer.parquet import ParquetWriter
 
 # Replace the JSONL writer with ParquetWriter
 writer = ParquetWriter(output_dir="./cc_output_parquet")
@@ -113,7 +113,7 @@ pipeline.add_stage(writer)
 * - `html_extraction`
   - HTMLExtractorAlgorithm | str | None
   - Text extraction algorithm to use
-  - JusTextExtractor()
+  - JusTextExtractor() if not specified
 * - `html_extraction_kwargs`
   - dict | None
   - Additional arguments for the HTML extractor
@@ -238,7 +238,7 @@ cc_stage = CommonCrawlDownloadExtractStage(
 ```
 
 ```{note}
-When `html_extraction` is passed as an extractor instance (for example, `JusTextExtractor()`), the `html_extraction_kwargs` parameter is ignored. To customize the extractor in this case, pass keyword arguments directly to the extractor constructor.
+If `html_extraction` is a concrete extractor object (e.g., `JusTextExtractor()`), `html_extraction_kwargs` is ignored. Pass kwargs to the extractor’s constructor instead. If `html_extraction` is a string ("justext", "resiliparse", or "trafilatura"), `html_extraction_kwargs` is forwarded.
 ```
 
 ### Language Processing

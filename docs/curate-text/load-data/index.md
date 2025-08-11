@@ -38,10 +38,10 @@ Data sources provide composite stages that combine these steps into complete dow
 :::{tab-item} Python
 
 ```python
-from ray_curator.pipeline import Pipeline
-from ray_curator.backends.xenna import XennaExecutor
-from ray_curator.stages.download.text import CommonCrawlDownloadExtractStage
-from ray_curator.stages.io.writer import JsonlWriter
+from ray_curator.pipeline.pipeline import Pipeline
+from ray_curator.backends.xenna.executor import XennaExecutor
+from ray_curator.stages.download.text.common_crawl.stage import CommonCrawlDownloadExtractStage
+from ray_curator.stages.io.writer.jsonl import JsonlWriter
 
 # Create a pipeline for downloading Common Crawl data
 pipeline = Pipeline(
@@ -74,8 +74,8 @@ results = pipeline.run(executor)
 :::{tab-item} Reading Custom Data
 
 ```python
-from ray_curator.pipeline import Pipeline
-from ray_curator.backends.xenna import XennaExecutor
+from ray_curator.pipeline.pipeline import Pipeline
+from ray_curator.backends.xenna.executor import XennaExecutor
 from ray_curator.stages.io.reader.jsonl import JsonlReader
 from ray_curator.stages.text.modules.score_filter import ScoreFilter
 from ray_curator.stages.text.filters.heuristic_filter import WordCountFilter
