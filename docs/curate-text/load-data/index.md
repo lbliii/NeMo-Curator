@@ -1,5 +1,5 @@
 ---
-description: "Load text data from various sources including Common Crawl, Wikipedia, and custom datasets using NeMo Curator's ray-curator framework"
+description: "Load text data from various sources including Common Crawl, Wikipedia, and custom datasets using NeMo Curator's data-loading framework"
 categories: ["workflows"]
 tags: ["data-loading", "common-crawl", "wikipedia", "custom-data", "distributed", "ray"]
 personas: ["data-scientist-focused", "mle-focused"]
@@ -12,13 +12,13 @@ modality: "text-only"
 
 # Text Data Loading
 
-Load text data from a variety of data sources using NeMo Curator's ray-curator framework.
+Load text data from a variety of data sources using NeMo Curator's Curator framework.
 
 NeMo Curator provides a task-centric pipeline framework for downloading and processing large-scale public text datasets. The framework uses Ray as the distributed backend and converts raw data formats like Common Crawl's `.warc.gz` to processing-friendly formats like `.jsonl`.
 
 ## How it Works
 
-Ray-curator's data loading framework uses a **4-step pipeline pattern** where data flows through stages as tasks:
+Curator's data loading framework uses a **4-step pipeline pattern** where data flows through stages as tasks:
 
 1. **URL Generation**: Generate URLs from configuration (`URLGenerationStage`)
 2. **Download**: Retrieve files from URLs to local storage (`DocumentDownloadStage`)
@@ -113,7 +113,7 @@ results = pipeline.run(executor)
 
 ## Data Sources & File Formats
 
-Load data from public datasets and custom data sources using ray-curator stages.
+Load data from public datasets and custom data sources using Curator stages.
 
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2
@@ -154,7 +154,7 @@ Read and process your own text datasets in standard formats
 
 ### Tasks
 
-Ray-curator operates on **Tasks** - batches of data that flow through the pipeline:
+Curator operates on **Tasks** - batches of data that flow through the pipeline:
 
 - **`_EmptyTask`**: Starting point for pipelines that generate data
 - **`FileGroupTask`**: Contains file paths (URLs or local files)  

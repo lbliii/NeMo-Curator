@@ -1,5 +1,5 @@
 ---
-description: "Download and extract text from Common Crawl web archives using ray-curator's pipeline framework"
+description: "Download and extract text from Common Crawl web archives using Curator's pipeline framework"
 categories: ["how-to-guides"]
 tags: ["common-crawl", "web-data", "warc", "language-detection", "distributed", "html-extraction", "pipeline"]
 personas: ["data-scientist-focused", "mle-focused"]
@@ -12,13 +12,13 @@ modality: "text-only"
 
 # Common Crawl
 
-Download and extract text from Common Crawl snapshots using ray-curator's pipeline framework.
+Download and extract text from Common Crawl snapshots using Curator's pipeline framework.
 
 Common Crawl provides petabytes of web data collected over years of web crawling. The data uses a compressed web archive format (`.warc.gz`), which requires processing to extract useful text for language model training.
 
 ## How it Works
 
-Ray-curator's Common Crawl processing pipeline consists of four sequential stages:
+Curator's Common Crawl processing pipeline consists of four sequential stages:
 
 1. **URL Generation**: Generates WARC file URLs from Common Crawl's index for the specified snapshot range
 2. **Download**: Downloads the compressed WARC files from Common Crawl's servers (optionally using S3 for faster downloads)
@@ -189,7 +189,7 @@ If you enable `add_filename_column`, the output includes an extra field `file_na
 
 ### HTML Text Extraction Algorithms
 
-Ray-curator supports several HTML text extraction algorithms, each with different strengths:
+Curator supports several HTML text extraction algorithms, each with different strengths:
 
 ```{list-table} Available HTML Extractors
 :header-rows: 1
@@ -264,14 +264,14 @@ cc_stage = CommonCrawlDownloadExtractStage(
 ```
 
 ```{note}
-If no custom stop lists are provided, ray-curator uses jusText's default stop lists with additional support for Thai, Chinese, and Japanese languages.
+If no custom stop lists are provided, Curator uses jusText's default stop lists with additional support for Thai, Chinese, and Japanese languages.
 ```
 
 ## Advanced Usage
 
 ### Using Different Executors
 
-Ray-curator supports several execution backends:
+Curator supports several execution backends:
 
 ```python
 # Ray Data executor (recommended for most use cases)

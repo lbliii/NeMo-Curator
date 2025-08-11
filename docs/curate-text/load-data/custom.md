@@ -1,7 +1,7 @@
 ---
 description: "Create custom data loading pipelines using Ray Curator's stage-based architecture with composable components"
 categories: ["how-to-guides"]
-tags: ["custom-data", "stages", "pipelines", "data-loading", "ray-curator"]
+tags: ["custom-data", "stages", "pipelines", "data-loading"]
 personas: ["data-scientist-focused", "mle-focused"]
 difficulty: "advanced"
 content_type: "how-to"

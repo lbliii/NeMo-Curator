@@ -1,7 +1,7 @@
 ---
-description: "Download and extract text from arXiv using ray-curator's pipeline framework"
+description: "Download and extract text from arXiv using Curator's pipeline framework"
 categories: ["how-to-guides"]
-tags: ["arxiv", "academic-papers", "latex", "data-loading", "scientific-data", "ray-curator"]
+tags: ["arxiv", "academic-papers", "latex", "data-loading", "scientific-data"]
 personas: ["data-scientist-focused", "mle-focused"]
 difficulty: "intermediate"
 content_type: "how-to"
@@ -12,13 +12,13 @@ modality: "text-only"
 
 (text-load-data-arxiv)=
 
-Download and extract text from ArXiv LaTeX source bundles using ray-curator's pipeline framework.
+Download and extract text from ArXiv LaTeX source bundles using Curator's pipeline framework.
 
 ArXiv hosts millions of scholarly papers, typically distributed as LaTeX source inside `.tar` archives under the `s3://arxiv/src/` requester-pays bucket.
 
 ## How it Works
 
-The ArXiv pipeline in ray-curator consists of four stages:
+The ArXiv pipeline in Curator consists of four stages:
 
 1. URL Generation: Lists available ArXiv source tar files from the S3 bucket
 2. Download: Downloads `.tar` archives via s5cmd (requester-pays)

@@ -1,7 +1,7 @@
 ---
-description: "Download and extract text from Wikipedia dumps using ray-curator's pipeline-based processing"
+description: "Download and extract text from Wikipedia dumps using Curator's pipeline-based processing"
 categories: ["how-to-guides"]
-tags: ["wikipedia", "dumps", "multilingual", "articles", "data-loading", "ray-curator"]
+tags: ["wikipedia", "dumps", "multilingual", "articles", "data-loading"]
 personas: ["data-scientist-focused", "mle-focused"]
 difficulty: "intermediate"
 content_type: "how-to"
@@ -12,13 +12,13 @@ modality: "text-only"
 
 # Wikipedia
 
-Download and extract text from [Wikipedia Dumps](https://dumps.wikimedia.org/backup-index.html) using ray-curator's pipeline-based processing system.
+Download and extract text from [Wikipedia Dumps](https://dumps.wikimedia.org/backup-index.html) using Curator's pipeline-based processing system.
 
-Wikipedia releases compressed dumps of all its content in XML format twice per month. ray-curator provides a complete pipeline to automatically download, parse, and extract clean text from these dumps.
+Wikipedia releases compressed dumps of all its content in XML format twice per month. Curator provides a complete pipeline to automatically download, parse, and extract clean text from these dumps.
 
 ## How it Works
 
-The Wikipedia pipeline in ray-curator consists of four stages:
+The Wikipedia pipeline in Curator consists of four stages:
 
 1. **URL Generation**: Automatically discovers Wikipedia dump URLs for the specified language and date
 2. **Download**: Downloads compressed .bz2 dump files using `wget`
@@ -27,7 +27,7 @@ The Wikipedia pipeline in ray-curator consists of four stages:
 
 ## Before You Start
 
-ray-curator uses `wget` to download Wikipedia dumps. You must have `wget` installed on your system:
+Curator uses `wget` to download Wikipedia dumps. You must have `wget` installed on your system:
 
 - **On macOS**:  `brew install wget`
 - **On Ubuntu/Debian**: `sudo apt-get install wget`
@@ -37,7 +37,7 @@ ray-curator uses `wget` to download Wikipedia dumps. You must have `wget` instal
 
 ## Usage
 
-Here's how to download and extract Wikipedia data using ray-curator:
+Here's how to download and extract Wikipedia data using Curator:
 
 ```python
 from ray_curator.pipeline import Pipeline
