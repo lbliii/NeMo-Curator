@@ -8,9 +8,9 @@ content_type: "how-to"
 modality: "text-only"
 ---
 
-# ArXiv
-
 (text-load-data-arxiv)=
+
+# ArXiv
 
 Download and extract text from ArXiv LaTeX source bundles using Curator's pipeline framework.
 
