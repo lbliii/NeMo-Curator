@@ -14,11 +14,11 @@ modality: "text-only"
 
 Load text data from Common Crawl, Wikipedia, and custom sources using Curator.
 
-Curator provides a task-centric pipeline framework for downloading and processing large-scale public text datasets. The framework uses Ray as the distributed backend and converts raw data formats like Common Crawl's `.warc.gz` to processing-friendly formats like `.jsonl`.
+Curator provides a task-centric pipeline for downloading and processing large-scale public text datasets. It runs on Ray and converts raw formats like Common Crawl's `.warc.gz` into JSONL.
 
 ## How it Works
 
-Curator's data loading framework uses a **4-step pipeline pattern** where data flows through stages as tasks:
+Curator pipelines use a **4-step pattern** where data flows through stages as tasks:
 
 1. **URL Generation**: Generate URLs from configuration (`URLGenerationStage`)
 2. **Download**: Retrieve files from URLs to local storage (`DocumentDownloadStage`)
