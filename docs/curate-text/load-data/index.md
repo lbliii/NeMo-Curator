@@ -1,5 +1,5 @@
 ---
-description: "Load text data from various sources including Common Crawl, Wikipedia, and custom datasets using Curator's data-loading framework"
+description: "Load text data from Common Crawl, Wikipedia, and custom datasets using Curator."
 categories: ["workflows"]
 tags: ["data-loading", "common-crawl", "wikipedia", "custom-data", "distributed", "ray"]
 personas: ["data-scientist-focused", "mle-focused"]
@@ -12,7 +12,7 @@ modality: "text-only"
 
 # Text Data Loading
 
-Load text data from a variety of data sources using Curator's framework.
+Load text data from Common Crawl, Wikipedia, and custom sources using Curator.
 
 Curator provides a task-centric pipeline framework for downloading and processing large-scale public text datasets. The framework uses Ray as the distributed backend and converts raw data formats like Common Crawl's `.warc.gz` to processing-friendly formats like `.jsonl`.
 

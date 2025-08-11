@@ -1,5 +1,5 @@
 ---
-description: "Create custom data loading pipelines using Curator's stage-based architecture with composable components"
+description: "Create custom data loading pipelines using Curator."
 categories: ["how-to-guides"]
 tags: ["custom-data", "stages", "pipelines", "data-loading"]
 personas: ["data-scientist-focused", "mle-focused"]
@@ -12,7 +12,7 @@ modality: "text-only"
 
 # Custom Data Loading
 
-Create custom data loading pipelines using Curator's modular stage-based architecture. This guide shows how to build custom components that integrate seamlessly with Curator's distributed processing framework.
+Create custom data loading pipelines using Curator. This guide shows how to build modular stages that run on Curator's distributed processing.
 
 ## How It Works
 

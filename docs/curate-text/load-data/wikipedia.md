@@ -1,5 +1,5 @@
 ---
-description: "Download and extract text from Wikipedia dumps using Curator's pipeline-based processing"
+description: "Download and extract text from Wikipedia dumps using Curator."
 categories: ["how-to-guides"]
 tags: ["wikipedia", "dumps", "multilingual", "articles", "data-loading"]
 personas: ["data-scientist-focused", "mle-focused"]
@@ -12,7 +12,7 @@ modality: "text-only"
 
 # Wikipedia
 
-Download and extract text from [Wikipedia Dumps](https://dumps.wikimedia.org/backup-index.html) using Curator's pipeline-based processing system.
+Download and extract text from [Wikipedia Dumps](https://dumps.wikimedia.org/backup-index.html) using Curator.
 
 Wikipedia releases compressed dumps of all its content in XML format twice per month. Curator provides a complete pipeline to automatically download, parse, and extract clean text from these dumps.
 

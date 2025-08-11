@@ -1,5 +1,5 @@
 ---
-description: "Download and extract text from Common Crawl web archives using Curator's pipeline framework"
+description: "Download and extract text from Common Crawl web archives using Curator."
 categories: ["how-to-guides"]
 tags: ["common-crawl", "web-data", "warc", "language-detection", "distributed", "html-extraction", "pipeline"]
 personas: ["data-scientist-focused", "mle-focused"]
@@ -12,7 +12,7 @@ modality: "text-only"
 
 # Common Crawl
 
-Download and extract text from Common Crawl snapshots using Curator's pipeline framework.
+Download and extract text from Common Crawl snapshots using Curator.
 
 Common Crawl provides petabytes of web data collected over years of web crawling. The data uses a compressed web archive format (`.warc.gz`), which requires processing to extract useful text for language model training.
 

@@ -1,5 +1,5 @@
 ---
-description: "Download and extract text from arXiv using Curator's pipeline framework"
+description: "Download and extract text from arXiv using Curator."
 categories: ["how-to-guides"]
 tags: ["arxiv", "academic-papers", "latex", "data-loading", "scientific-data"]
 personas: ["data-scientist-focused", "mle-focused"]
@@ -12,7 +12,7 @@ modality: "text-only"
 
 # ArXiv
 
-Download and extract text from ArXiv LaTeX source bundles using Curator's pipeline framework.
+Download and extract text from ArXiv LaTeX source bundles using Curator.
 
 ArXiv hosts millions of scholarly papers, typically distributed as LaTeX source inside `.tar` archives under the `s3://arxiv/src/` requester-pays bucket.
 
