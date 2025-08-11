@@ -1,5 +1,5 @@
 ---
-description: "Create custom data loading pipelines using Ray Curator's stage-based architecture with composable components"
+description: "Create custom data loading pipelines using Curator's stage-based architecture with composable components"
 categories: ["how-to-guides"]
 tags: ["custom-data", "stages", "pipelines", "data-loading"]
 personas: ["data-scientist-focused", "mle-focused"]
@@ -12,11 +12,11 @@ modality: "text-only"
 
 # Custom Data Loading
 
-Create custom data loading pipelines using Ray Curator's modular stage-based architecture. This guide shows how to build custom components that integrate seamlessly with Ray Curator's distributed processing framework.
+Create custom data loading pipelines using Curator's modular stage-based architecture. This guide shows how to build custom components that integrate seamlessly with Curator's distributed processing framework.
 
 ## How It Works
 
-Ray Curator uses a **4-step pipeline pattern** for custom data loading:
+Curator uses a **4-step pipeline pattern** for custom data loading:
 
 1. **URL Generation**: Generate URLs from configuration or input parameters
 2. **Download**: Download files from URLs to local storage  
