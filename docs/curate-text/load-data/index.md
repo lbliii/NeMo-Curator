@@ -42,7 +42,7 @@ from ray_curator.pipeline import Pipeline
 from ray_curator.backends.xenna import XennaExecutor
 from ray_curator.stages.download.text.common_crawl import CommonCrawlDownloadExtractStage
 from ray_curator.stages.io.writer import JsonlWriter
-from ray_curator.tasks import _EmptyTask
+from ray_curator.tasks import EmptyTask
 
 # Create a pipeline for downloading Common Crawl data
 pipeline = Pipeline(
@@ -68,9 +68,8 @@ pipeline.add_stage(writer)
 pipeline.build()
 executor = XennaExecutor()
 
-# Create initial empty task to start the pipeline
-initial_task = _EmptyTask(task_id="start", dataset_name="common_crawl")
-results = pipeline.run(executor, initial_tasks=[initial_task])
+# Start with an empty task to trigger URL generation
+results = pipeline.run(executor, initial_tasks=[EmptyTask])
 ```
 
 :::

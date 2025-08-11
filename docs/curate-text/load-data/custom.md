@@ -277,10 +277,7 @@ def create_full_pipeline():
     ))
     
     # Output
-    pipeline.add_stage(JsonlWriter(
-        output_dir="/output/processed",
-        file_extension="jsonl"
-    ))
+    pipeline.add_stage(JsonlWriter(output_dir="/output/processed"))
     
     return pipeline
 ```
@@ -352,7 +349,7 @@ def create_pipeline_from_config(config_path: str):
   - None
 * - `add_filename_column`
   - bool | str
-  - Add filename column to output
+  - Add filename column to output; if str, uses it as the column name (default name: "file_name")
   - True
 ```
 
@@ -369,7 +366,7 @@ Processed data flows through the pipeline as `DocumentBatch` tasks containing pa
     "text": "This is the processed document text",
     "id": "unique-document-id",
     "source": "example.com",
-    "filename": "dataset1.jsonl"  # If add_filename_column=True
+    "file_name": "dataset1.jsonl"  # If add_filename_column=True (default column name)
 }
 ```
 

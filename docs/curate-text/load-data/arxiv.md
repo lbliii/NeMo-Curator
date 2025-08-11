@@ -53,11 +53,11 @@ The ArXiv `s3://arxiv/src/` bucket is requester-pays. All listing and copy opera
 Create and run an ArXiv processing pipeline and write outputs to JSONL:
 
 ```python
-from ray_curator.pipeline.pipeline import Pipeline
-from ray_curator.backends.experimental.ray_data.executor import RayDataExecutor
-from ray_curator.stages.download.text.arxiv.stage import ArxivDownloadExtractStage
-from ray_curator.stages.io.writer.jsonl import JsonlWriter
-from ray_curator.tasks.tasks import _EmptyTask as EmptyTask
+from ray_curator.pipeline import Pipeline
+from ray_curator.backends.experimental.ray_data import RayDataExecutor
+from ray_curator.stages.download.text.arxiv import ArxivDownloadExtractStage
+from ray_curator.stages.io.writer import JsonlWriter
+from ray_curator.tasks import EmptyTask
 
 def main():
     pipeline = Pipeline(
@@ -81,10 +81,7 @@ def main():
 
     # Execute
     executor = RayDataExecutor()
-    results = pipeline.run(
-        executor,
-        initial_tasks=[EmptyTask(task_id="arxiv_start", dataset_name="arxiv", data=None)]
-    )
+    results = pipeline.run(executor, initial_tasks=[EmptyTask])
     print(f"Completed with {len(results) if results else 0} output files")
 
 if __name__ == "__main__":

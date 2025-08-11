@@ -73,7 +73,7 @@ pipeline.add_stage(writer_stage)
 executor = XennaExecutor()
 
 # Start with an empty task to trigger URL generation
-initial_tasks = [EmptyTask(task_id="wikipedia_start", dataset_name="wikipedia")]
+initial_tasks = [EmptyTask]
 
 # Execute the pipeline
 results = pipeline.run(executor, initial_tasks=initial_tasks)
@@ -104,10 +104,7 @@ for lang in languages:
     pipeline.add_stage(writer_stage)
     
     # Execute
-    results = pipeline.run(executor, initial_tasks=[EmptyTask(
-        task_id=f"start_{lang}", 
-        dataset_name=f"wikipedia_{lang}"
-    )])
+    results = pipeline.run(executor, initial_tasks=[EmptyTask])
 ```
 
 ### Parameters
@@ -151,7 +148,7 @@ for lang in languages:
 * - `add_filename_column`
   - bool | str
   - True
-  - Whether to add source filename column to output
+  - Whether to add source filename column to output; if str, uses it as the column name (default name: "file_name")
 * - `log_frequency`
   - int
   - 1000
@@ -172,6 +169,8 @@ The processed Wikipedia articles become JSONL files, with each line containing a
 - `url`: The constructed Wikipedia URL for the article
 - `language`: The language code of the article
 - `source_id`: Identifier of the source dump file
+
+If you enable `add_filename_column`, the output includes an extra field `file_name` (or your custom column name).
 
 ### Example Output Record
 
