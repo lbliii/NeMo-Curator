@@ -1,222 +1,169 @@
 ---
-description: "Implementation guide for downloading and extracting text from arXiv academic papers using ray-curator's modular pipeline architecture"
+description: "Download and extract text from arXiv using ray-curator's pipeline framework"
 categories: ["how-to-guides"]
-tags: ["arxiv", "academic-papers", "latex", "pdf", "data-loading", "scientific-data", "ray-curator"]
+tags: ["arxiv", "academic-papers", "latex", "data-loading", "scientific-data", "ray-curator"]
 personas: ["data-scientist-focused", "mle-focused"]
-difficulty: "advanced"
+difficulty: "intermediate"
 content_type: "how-to"
 modality: "text-only"
 ---
 
-(text-load-data-arxiv)=
-
 # ArXiv
 
-Implementation guide for downloading and extracting text from ArXiv papers using ray-curator's pipeline architecture.
+(text-load-data-arxiv)=
 
-ArXiv is a free distribution service and open-access archive for scholarly articles, primarily in fields like physics, mathematics, computer science, and more. ArXiv contains millions of scholarly papers, most of them available in LaTeX source format.
+Download and extract text from ArXiv LaTeX source bundles using ray-curator's pipeline framework.
 
-```{admonition} Implementation Required
-:class: warning
+ArXiv hosts millions of scholarly papers, typically distributed as LaTeX source inside `.tar` archives under the `s3://arxiv/src/` requester-pays bucket.
 
-ArXiv functionality is not currently implemented in ray-curator. This guide explains how to create ArXiv support using ray-curator's modular pipeline architecture. For reference implementations, see {ref}`Common Crawl <text-load-data-common-crawl>` and {ref}`Wikipedia <text-load-data-wikipedia>`.
-```
+## How it Works
 
-## Architecture Overview
+The ArXiv pipeline in ray-curator consists of four stages:
 
-Ray-curator uses a 4-step pipeline pattern for document downloading and processing:
+1. URL Generation: Lists available ArXiv source tar files from the S3 bucket
+2. Download: Downloads `.tar` archives via s5cmd (requester-pays)
+3. Iteration: Extracts LaTeX projects and yields per-paper records
+4. Extraction: Cleans LaTeX and produces plain text
 
-1. **URL Generation**: Generate ArXiv tar file URLs from S3 bucket listings
-2. **Download**: Download tar files from S3 using s5cmd
-3. **Iteration**: Extract and iterate through LaTeX files within tar archives
-4. **Extraction**: Process LaTeX content and extract clean text
+Internals (implemented):
 
-## Implementation Guide
+- URL generation: `ray_curator/stages/download/text/arxiv/url_generation.py`
+- Download: `ray_curator/stages/download/text/arxiv/download.py`
+- Iterator: `ray_curator/stages/download/text/arxiv/iterator.py`
+- Extractor: `ray_curator/stages/download/text/arxiv/extract.py`
+- Composite stage: `ray_curator/stages/download/text/arxiv/stage.py`
 
-To create ArXiv support in ray-curator, you'll need to create the following components:
+## Before You Start
 
-### 1. URL Generator
+You must have s5cmd installed and AWS credentials configured for requester-pays.
 
-Create an ArXiv URL generator that lists S3 bucket contents:
+- Install s5cmd: see `https://github.com/peak/s5cmd`
+- Configure AWS credentials in your environment (or `~/.aws/credentials`) with access to requester-pays buckets
 
-```python
-from ray_curator.stages.download.text import URLGenerator
-
-class ArxivURLGenerator(URLGenerator):
-    def __init__(self, limit: int | None = None):
-        self.limit = limit
-    
-    def generate_urls(self) -> list[str]:
-        """Generate ArXiv tar file URLs from S3 bucket listing."""
-        # Implementation would use boto3 or s5cmd to list s3://arxiv/src/
-        # and return list of tar file URLs
-        pass
-```
-
-### 2. Document Download Component
-
-Create the S3 download component using s5cmd:
-
-```python
-from ray_curator.stages.download.text import DocumentDownloader
-
-class ArxivDownloader(DocumentDownloader):
-    def _get_output_filename(self, url: str) -> str:
-        return url.split('/')[-1]  # Extract filename from S3 URL
-    
-    def _download_to_path(self, url: str, path: str) -> tuple[bool, str | None]:
-        """Download using s5cmd with requester-pays."""
-        cmd = ["s5cmd", "--request-payer=requester", "cp", url, path]
-        # Implementation details...
-        pass
-    
-    def num_workers_per_node(self) -> int | None:
-        return 4  # Limit concurrent downloads
-```
-
-### 3. Document Iterator
-
-Extract and iterate through LaTeX files in tar archives:
-
-```python
-from ray_curator.stages.download.text import DocumentIterator
-
-class ArxivIterator(DocumentIterator):
-    def iterate(self, file_path: str) -> Iterator[dict[str, Any]]:
-        """Extract LaTeX files from tar archive and yield records."""
-        with tarfile.open(file_path, "r") as tar:
-            for member in tar.getmembers():
-                if member.name.endswith('.tex'):
-                    # Extract and yield LaTeX content
-                    pass
-    
-    def output_columns(self) -> list[str]:
-        return ["raw_content", "file_name", "tar_source"]
-```
-
-### 4. Document Extractor
-
-Process LaTeX content to extract clean text:
-
-```python
-from ray_curator.stages.download.text import DocumentExtractor
-
-class ArxivExtractor(DocumentExtractor):
-    def extract(self, record: dict[str, Any]) -> dict[str, Any] | None:
-        """Clean LaTeX and extract main text content."""
-        raw_content = record["raw_content"]
-        # Process LaTeX: remove comments, expand macros, extract sections
-        cleaned_text = self._clean_latex(raw_content)
-        
-        return {
-            "text": cleaned_text,
-            "id": self._extract_arxiv_id(record["file_name"]),
-            "source_id": record["tar_source"],
-            "file_name": record["file_name"]
-        }
-    
-    def input_columns(self) -> list[str]:
-        return ["raw_content", "file_name", "tar_source"]
-    
-    def output_columns(self) -> list[str]:
-        return ["text", "id", "source_id", "file_name"]
-```
-
-### 5. Composite Stage
-
-Combine all components into a single stage:
-
-```python
-from ray_curator.stages.download.text import DocumentDownloadExtractStage
-
-class ArxivDownloadExtractStage(DocumentDownloadExtractStage):
-    def __init__(
-        self,
-        download_dir: str,
-        url_limit: int | None = None,
-        record_limit: int | None = None,
-        **kwargs
-    ):
-        super().__init__(
-            url_generator=ArxivURLGenerator(limit=url_limit),
-            downloader=ArxivDownloader(download_dir),
-            iterator=ArxivIterator(),
-            extractor=ArxivExtractor(),
-            url_limit=url_limit,
-            record_limit=record_limit,
-            **kwargs
-        )
-```
-
-## Usage Pattern
-
-Once implemented, ArXiv processing would follow the standard ray-curator pattern:
-
-```python
-from ray_curator.pipeline import Pipeline
-from ray_curator.backends.experimental.ray_data import RayDataExecutor
-
-# Create pipeline
-pipeline = Pipeline(
-    name="arxiv_processing",
-    stages=[
-        ArxivDownloadExtractStage(
-            download_dir="/tmp/arxiv_downloads",
-            url_limit=100,  # For testing
-            record_limit=1000
-        )
-    ]
-)
-
-# Execute
-executor = RayDataExecutor()
-results = pipeline.run(executor)
-```
-
-## Prerequisites
-
-For ArXiv implementation, you would need:
-
-1. **AWS Configuration**: Properly configured credentials in `~/.aws/config`
-2. **s5cmd**: Installed for efficient S3 transfers (included in NVIDIA NeMo Framework Container)
-3. **LaTeX Processing**: Libraries for LaTeX parsing and macro expansion
-
-```{admonition} Text Processing with Stop Words
+```{admonition} S3 Requester Pays
 :class: tip
 
-When processing academic papers from ArXiv, you may want to customize text extraction and analysis using stop words. Stop words can help identify section boundaries, distinguish main content from references, and support language-specific processing. For a comprehensive guide to stop words in NeMo Curator, see {ref}`Stop Words in Text Processing <text-process-data-languages-stop-words>`.
+The ArXiv `s3://arxiv/src/` bucket is requester-pays. All listing and copy operations set requester-pays via s5cmd.
 ```
 
-## Expected Output Format
+---
 
-The implemented ArXiv extractor would produce DocumentBatch objects with the following schema:
+## Usage
 
-```{list-table} ArXiv Output Fields
+Create and run an ArXiv processing pipeline and write outputs to JSONL:
+
+```python
+from ray_curator.pipeline.pipeline import Pipeline
+from ray_curator.backends.experimental.ray_data.executor import RayDataExecutor
+from ray_curator.stages.download.text.arxiv.stage import ArxivDownloadExtractStage
+from ray_curator.stages.io.writer.jsonl import JsonlWriter
+from ray_curator.tasks.tasks import _EmptyTask as EmptyTask
+
+def main():
+    pipeline = Pipeline(
+        name="arxiv_pipeline",
+        description="Download and process ArXiv LaTeX sources"
+    )
+
+    # Add ArXiv stage
+    arxiv_stage = ArxivDownloadExtractStage(
+        download_dir="./arxiv_downloads",
+        url_limit=5,        # optional: number of tar files to process
+        record_limit=1000,  # optional: max papers per tar
+        add_filename_column=True,
+        verbose=True,
+    )
+    pipeline.add_stage(arxiv_stage)
+
+    # Add writer stage
+    writer = JsonlWriter(output_dir="./arxiv_output")
+    pipeline.add_stage(writer)
+
+    # Execute
+    executor = RayDataExecutor()
+    results = pipeline.run(
+        executor,
+        initial_tasks=[EmptyTask(task_id="arxiv_start", dataset_name="arxiv", data=None)]
+    )
+    print(f"Completed with {len(results) if results else 0} output files")
+
+if __name__ == "__main__":
+    main()
+```
+
+### Parameters
+
+```{list-table} ArxivDownloadExtractStage Parameters
 :header-rows: 1
-:widths: 20 20 60
+:widths: 25 20 35 20
 
-* - Field
+* - Parameter
   - Type
   - Description
-* - `text`
+  - Default
+* - `download_dir`
   - str
-  - The main text content extracted from LaTeX files (cleaned and processed)
-* - `id`
-  - str
-  - A unique identifier for the paper (formatted ArXiv ID)
-* - `source_id`
-  - str
-  - The source tar file name where the paper was found
-* - `file_name`
-  - str
-  - The original LaTeX filename
+  - Directory to store downloaded `.tar` files
+  - "./arxiv_downloads"
+* - `url_limit`
+  - int | None
+  - Maximum number of ArXiv tar files to download (useful for testing)
+  - None
+* - `record_limit`
+  - int | None
+  - Maximum number of papers to extract per tar file
+  - None
+* - `add_filename_column`
+  - bool | str
+  - Whether to add a source filename column to output; if str, use it as the column name
+  - True (column name defaults to `file_name`)
+* - `log_frequency`
+  - int
+  - How often to log progress while iterating papers
+  - 1000
+* - `verbose`
+  - bool
+  - Enable verbose logging during download
+  - False
 ```
 
-## Reference Implementations
+```{note}
+URL generation and download use s5cmd with requester-pays to list and copy from `s3://arxiv/src/`.
+```
 
-For guidance on implementing these components, examine the existing implementations:
+## Output Format
 
-- **Common Crawl**: `ray_curator/stages/download/text/common_crawl/`
-- **Wikipedia**: `ray_curator/stages/download/text/wikipedia/`
+The extractor returns per-paper text; the filename column is optionally added by the pipeline:
 
-Both follow the same 4-step pipeline pattern and provide concrete examples of each component.
+```json
+{
+  "text": "Main body text extracted from LaTeX after cleaning...",
+  "file_name": "arXiv-2401.01234.tar"  
+}
+```
+
+```{list-table} Output Fields
+:header-rows: 1
+:widths: 20 80
+
+* - Field
+  - Description
+* - `text`
+  - Extracted and cleaned paper text (LaTeX macros inlined where supported, comments and references removed)
+* - `file_name`
+  - Optional. Name of the source tar file (enabled by `add_filename_column`)
+```
+
+```{admonition} Intermediate Fields
+:class: note
+
+During iteration the pipeline yields `id` (ArXiv identifier), `source_id` (tar basename), and `content` (list of LaTeX files). The final extractor stage emits only `text` plus the optional filename column.
+```
+
+## Advanced Notes
+
+- The pipeline validates paths and extracts tar files with path traversal protection.
+- The iterator and extractor adapt RedPajama preprocessing with safety and robustness improvements.
+- Macro expansion handles non-argument macros; macros with arguments are not expanded.
+
+See also: {ref}`Common Crawl <text-load-data-common-crawl>`, {ref}`Wikipedia <text-load-data-wikipedia>`

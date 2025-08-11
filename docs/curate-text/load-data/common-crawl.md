@@ -73,6 +73,18 @@ if __name__ == "__main__":
     main()
 ```
 
+### Writing to Parquet
+
+To write Parquet instead of JSONL, use `ParquetWriter`:
+
+```python
+from ray_curator.stages.io.writer import ParquetWriter
+
+# Replace the JSONL writer with ParquetWriter
+writer = ParquetWriter(output_dir="./cc_output_parquet")
+pipeline.add_stage(writer)
+```
+
 ### Parameters
 
 ```{list-table} CommonCrawlDownloadExtractStage Parameters
@@ -129,7 +141,7 @@ if __name__ == "__main__":
   - None
 * - `add_filename_column`
   - bool | str
-  - Whether to add source filename column to output
+  - Whether to add source filename column to output; if str, uses it as the column name (default name: "file_name")
   - True
 ```
 
@@ -170,6 +182,8 @@ The pipeline processes Common Crawl data through several stages, ultimately prod
 * - `text`
   - Extracted and cleaned text content
 ```
+
+If you enable `add_filename_column`, the output includes an extra field `file_name` (or your custom column name).
 
 ## Customization Options
 
@@ -224,6 +238,10 @@ cc_stage = CommonCrawlDownloadExtractStage(
         max_repetitions=3
     )
 )
+```
+
+```{note}
+When `html_extraction` is passed as an extractor instance (for example, `JusTextExtractor()`), the `html_extraction_kwargs` parameter is ignored. To customize the extractor in this case, pass keyword arguments directly to the extractor constructor.
 ```
 
 ### Language Processing
@@ -295,7 +313,7 @@ cc_stage = CommonCrawlDownloadExtractStage(
 )
 ```
 
-```{admonition} S3 Download Requirements
+::::{admonition} S3 Download Requirements
 :class: tip
 
 To use `use_aws_to_download=True`, you must install [s5cmd](https://github.com/peak/s5cmd):
@@ -305,4 +323,4 @@ To use `use_aws_to_download=True`, you must install [s5cmd](https://github.com/p
 go install github.com/peak/s5cmd/v2@latest
 ```
 
-```
+::::
