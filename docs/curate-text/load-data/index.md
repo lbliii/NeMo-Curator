@@ -28,7 +28,7 @@ Curator's data loading framework uses a **4-step pipeline pattern** where data f
 Each step uses a `ProcessingStage` that transforms tasks. The pipeline flow is:
 
 ```text
-_EmptyTask → FileGroupTask(URLs) → FileGroupTask(Files) → DocumentBatch → DocumentBatch
+Start → FileGroupTask(URLs) → FileGroupTask(Files) → DocumentBatch → DocumentBatch
 ```
 
 Data sources provide composite stages that combine these steps into complete download-extract pipelines, producing `DocumentBatch` tasks for further processing.
@@ -38,10 +38,10 @@ Data sources provide composite stages that combine these steps into complete dow
 :::{tab-item} Python
 
 ```python
-from ray_curator.pipeline.pipeline import Pipeline
+from ray_curator.pipeline import Pipeline
 from ray_curator.backends.xenna.executor import XennaExecutor
-from ray_curator.stages.download.text.common_crawl.stage import CommonCrawlDownloadExtractStage
-from ray_curator.stages.io.writer.jsonl import JsonlWriter
+from ray_curator.stages.download.text import CommonCrawlDownloadExtractStage
+from ray_curator.stages.io.writer import JsonlWriter
 
 # Create a pipeline for downloading Common Crawl data
 pipeline = Pipeline(
@@ -74,11 +74,11 @@ results = pipeline.run(executor)
 :::{tab-item} Reading Custom Data
 
 ```python
-from ray_curator.pipeline.pipeline import Pipeline
+from ray_curator.pipeline import Pipeline
 from ray_curator.backends.xenna.executor import XennaExecutor
-from ray_curator.stages.io.reader.jsonl import JsonlReader
-from ray_curator.stages.text.modules.score_filter import ScoreFilter
-from ray_curator.stages.text.filters.heuristic_filter import WordCountFilter
+from ray_curator.stages.io.reader import JsonlReader
+from ray_curator.stages.modules import ScoreFilter
+from ray_curator.stages.filters import WordCountFilter
 
 # Create pipeline for processing existing JSONL files
 pipeline = Pipeline(name="custom_data_processing")
@@ -154,7 +154,7 @@ Read and process your own text datasets in standard formats
 
 Curator operates on **Tasks** - batches of data that flow through the pipeline:
 
-- **`_EmptyTask`**: Starting point for pipelines that generate data
+- **Start**: Internal placeholder that kicks off pipelines that generate data (no user action required)
 - **`FileGroupTask`**: Contains file paths (URLs or local files)  
 - **`DocumentBatch`**: Contains text documents as pandas DataFrame or PyArrow Table
 

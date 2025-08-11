@@ -27,6 +27,21 @@ Curator's Common Crawl processing pipeline consists of four sequential stages:
 
 The pipeline outputs structured data that you can write to JSONL or Parquet files for further processing.
 
+## Before You Start
+
+Choose your download method and ensure you have the prerequisites:
+
+- HTTPS downloads (default): No AWS account required.
+- S3 downloads (set `use_aws_to_download=True`):
+  - An AWS account with credentials configured (profile, environment, or instance role).
+  - Common Crawl's S3 access uses Requester Pays; you incur charges for requests and data transfer.
+  - `s5cmd` installed for fast S3 listing and copy operations:
+
+```bash
+# Install s5cmd for faster S3 downloads
+go install github.com/peak/s5cmd/v2@latest
+```
+
 ---
 
 ## Usage
@@ -34,7 +49,7 @@ The pipeline outputs structured data that you can write to JSONL or Parquet file
 Here's how to create and run a Common Crawl processing pipeline:
 
 ```python
-from ray_curator.pipeline.pipeline import Pipeline
+from ray_curator.pipeline import Pipeline
 from ray_curator.backends.xenna.executor import XennaExecutor
 from ray_curator.stages.download.text import CommonCrawlDownloadExtractStage
 from ray_curator.stages.io.writer import JsonlWriter
@@ -77,7 +92,7 @@ if __name__ == "__main__":
 To write Parquet instead of JSONL, use `ParquetWriter`:
 
 ```python
-from ray_curator.stages.io.writer.parquet import ParquetWriter
+from ray_curator.stages.io.writer import ParquetWriter
 
 # Replace the JSONL writer with ParquetWriter
 writer = ParquetWriter(output_dir="./cc_output_parquet")
@@ -211,8 +226,8 @@ Curator supports several HTML text extraction algorithms, each with different st
 #### Configuring HTML Extractors
 
 ```python
-from ray_curator.stages.download.text.html_extractors.resiliparse import ResiliparseExtractor
-from ray_curator.stages.download.text.html_extractors.trafilatura import TrafilaturaExtractor
+from ray_curator.stages.download.text.html_extractors import ResiliparseExtractor
+from ray_curator.stages.download.text.html_extractors import TrafilaturaExtractor
 
 # Use Resiliparse for extraction
 cc_stage = CommonCrawlDownloadExtractStage(
@@ -308,15 +323,3 @@ cc_stage = CommonCrawlDownloadExtractStage(
     # record_limit=None
 )
 ```
-
-::::{admonition} S3 Download Requirements
-:class: tip
-
-To use `use_aws_to_download=True`, you must install [s5cmd](https://github.com/peak/s5cmd):
-
-```bash
-# Install s5cmd for faster S3 downloads
-go install github.com/peak/s5cmd/v2@latest
-```
-
-::::

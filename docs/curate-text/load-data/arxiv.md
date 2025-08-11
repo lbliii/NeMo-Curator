@@ -20,30 +20,22 @@ ArXiv hosts millions of scholarly papers, typically distributed as LaTeX source 
 
 The ArXiv pipeline in Curator consists of four stages:
 
-1. URL Generation: Lists available ArXiv source tar files from the S3 bucket
-2. Download: Downloads `.tar` archives via s5cmd (requester-pays)
-3. Iteration: Extracts LaTeX projects and yields per-paper records
-4. Extraction: Cleans LaTeX and produces plain text
-
-Internals (implemented):
-
-- URL generation: `ray_curator/stages/download/text/arxiv/url_generation.py`
-- Download: `ray_curator/stages/download/text/arxiv/download.py`
-- Iterator: `ray_curator/stages/download/text/arxiv/iterator.py`
-- Extractor: `ray_curator/stages/download/text/arxiv/extract.py`
-- Composite stage: `ray_curator/stages/download/text/arxiv/stage.py`
+1. **URL Generation**: Lists available ArXiv source tar files from the S3 bucket
+2. **Download**: Downloads `.tar` archives via s5cmd (requester-pays)
+3. **Iteration**: Extracts LaTeX projects and yields per-paper records
+4. **Extraction**: Cleans LaTeX and produces plain text
 
 ## Before You Start
 
-You must have s5cmd installed and AWS credentials configured for requester-pays.
+You must have:
 
-- Install s5cmd: see `https://github.com/peak/s5cmd`
-- Configure AWS credentials in your environment (or `~/.aws/credentials`) with access to requester-pays buckets
+- An AWS account with credentials configured (profile, environment, or instance role). Accessing `s3://arxiv/src/` uses S3 Requester Pays; you incur charges for listing and data transfer.
+- [`s5cmd` installed](https://github.com/peak/s5cmd)
 
 ```{admonition} S3 Requester Pays
 :class: tip
 
-The ArXiv `s3://arxiv/src/` bucket is requester-pays. All listing and copy operations set requester-pays via s5cmd.
+The ArXiv bucket `s3://arxiv/src/` is Requester Pays. The examples on this page already pass the Requester Pays option via `s5cmd`, so you can run them as-is. If you use other tools (for example, `aws s3`), include the equivalent flag (AWS CLI: `--request-payer requester`) and ensure your AWS credentials are active.
 ```
 
 ---
@@ -53,7 +45,7 @@ The ArXiv `s3://arxiv/src/` bucket is requester-pays. All listing and copy opera
 Create and run an ArXiv processing pipeline and write outputs to JSONL:
 
 ```python
-from ray_curator.pipeline.pipeline import Pipeline
+from ray_curator.pipeline import Pipeline
 from ray_curator.backends.xenna.executor import XennaExecutor
 from ray_curator.stages.download.text import ArxivDownloadExtractStage
 from ray_curator.stages.io.writer import JsonlWriter
@@ -123,10 +115,6 @@ if __name__ == "__main__":
   - False
 ```
 
-```{note}
-URL generation and download use s5cmd with requester-pays to list and copy from `s3://arxiv/src/`.
-```
-
 ## Output Format
 
 The extractor returns per-paper text; the filename column is optionally added by the pipeline:
@@ -155,11 +143,3 @@ The extractor returns per-paper text; the filename column is optionally added by
 
 During iteration the pipeline yields `id` (ArXiv identifier), `source_id` (tar basename), and `content` (list of LaTeX files). The final extractor stage emits only `text` plus the optional filename column.
 ```
-
-## Advanced Notes
-
-- The pipeline validates paths and extracts tar files with path traversal protection.
-- The iterator and extractor adapt RedPajama preprocessing with safety and robustness improvements.
-- Macro expansion handles non-argument macros; macros with arguments are not expanded.
-
-See also: {ref}`Common Crawl <text-load-data-common-crawl>`, {ref}`Wikipedia <text-load-data-wikipedia>`

@@ -39,8 +39,8 @@ Each step uses an abstract base class with corresponding processing stages that 
 ### Data Flow
 
 ```text
-_EmptyTask → FileGroupTask → DocumentBatch
-     ↓             ↓              ↓
+Start → FileGroupTask → DocumentBatch
+   ↓         ↓              ↓
 URLGeneration → Download → Iterate → Extract
 ```
 
@@ -257,8 +257,8 @@ if __name__ == "__main__":
 ### Adding Processing Stages
 
 ```python
-from ray_curator.stages.text.modules.score_filter import ScoreFilter
-from ray_curator.stages.text.filters.heuristic_filter import WordCountFilter
+from ray_curator.stages.modules import ScoreFilter
+from ray_curator.stages.filters import WordCountFilter
 from ray_curator.stages.io.writer import JsonlWriter
 
 def create_full_pipeline():
