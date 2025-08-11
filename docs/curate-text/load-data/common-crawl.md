@@ -35,10 +35,9 @@ Here's how to create and run a Common Crawl processing pipeline:
 
 ```python
 from ray_curator.pipeline import Pipeline
-from ray_curator.backends.experimental.ray_data import RayDataExecutor
-from ray_curator.stages.download.text.common_crawl import CommonCrawlDownloadExtractStage
+from ray_curator.backends.xenna import XennaExecutor
+from ray_curator.stages.download.text import CommonCrawlDownloadExtractStage
 from ray_curator.stages.io.writer import JsonlWriter
-from ray_curator.tasks import EmptyTask
 
 def main():
     # Create pipeline
@@ -46,7 +45,7 @@ def main():
         name="common_crawl_pipeline",
         description="Download and process Common Crawl data"
     )
-    
+
     # Add Common Crawl processing stage
     cc_stage = CommonCrawlDownloadExtractStage(
         start_snapshot="2020-50",  # YYYY-WW format for CC-MAIN
@@ -58,15 +57,15 @@ def main():
         record_limit=1000,  # Limit records per WARC file
     )
     pipeline.add_stage(cc_stage)
-    
+
     # Add output writer stage
     writer = JsonlWriter(output_dir="./cc_output")
     pipeline.add_stage(writer)
-    
+
     # Create executor and run pipeline
-    executor = RayDataExecutor()
-    results = pipeline.run(executor, initial_tasks=[EmptyTask])
-    
+    executor = XennaExecutor()
+    results = pipeline.run(executor)
+
     print(f"Pipeline completed. Results: {len(results) if results else 0} output files")
 
 if __name__ == "__main__":
@@ -212,10 +211,8 @@ Curator supports several HTML text extraction algorithms, each with different st
 #### Configuring HTML Extractors
 
 ```python
-from ray_curator.stages.download.text.html_extractors import (
-    ResiliparseExtractor,
-    TrafilaturaExtractor
-)
+from ray_curator.stages.download.text.html_extractors.resiliparse import ResiliparseExtractor
+from ray_curator.stages.download.text.html_extractors.trafilatura import TrafilaturaExtractor
 
 # Use Resiliparse for extraction
 cc_stage = CommonCrawlDownloadExtractStage(
@@ -274,13 +271,12 @@ If no custom stop lists are provided, Curator uses jusText's default stop lists 
 Curator supports several execution backends:
 
 ```python
-# Ray Data executor (recommended for most use cases)
-from ray_curator.backends.experimental.ray_data import RayDataExecutor
-executor = RayDataExecutor()
-
-# Xenna executor (for specialized workflows)
 from ray_curator.backends.xenna import XennaExecutor
 executor = XennaExecutor()
+
+# Experimental Ray Data executor (optional)
+from ray_curator.backends.experimental.ray_data.executor import RayDataExecutor
+executor = RayDataExecutor()
 ```
 
 ### Processing CC-NEWS Data

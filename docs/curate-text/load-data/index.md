@@ -40,9 +40,8 @@ Data sources provide composite stages that combine these steps into complete dow
 ```python
 from ray_curator.pipeline import Pipeline
 from ray_curator.backends.xenna import XennaExecutor
-from ray_curator.stages.download.text.common_crawl import CommonCrawlDownloadExtractStage
+from ray_curator.stages.download.text import CommonCrawlDownloadExtractStage
 from ray_curator.stages.io.writer import JsonlWriter
-from ray_curator.tasks import EmptyTask
 
 # Create a pipeline for downloading Common Crawl data
 pipeline = Pipeline(
@@ -53,7 +52,7 @@ pipeline = Pipeline(
 # Add data loading stage
 cc_stage = CommonCrawlDownloadExtractStage(
     start_snapshot="2020-50",
-    end_snapshot="2020-50", 
+    end_snapshot="2020-50",
     download_dir="/tmp/cc_downloads",
     crawl_type="main",
     url_limit=10  # Limit for testing
@@ -67,9 +66,7 @@ pipeline.add_stage(writer)
 # Build and execute pipeline
 pipeline.build()
 executor = XennaExecutor()
-
-# Start with an empty task to trigger URL generation
-results = pipeline.run(executor, initial_tasks=[EmptyTask])
+results = pipeline.run(executor)
 ```
 
 :::
@@ -78,9 +75,10 @@ results = pipeline.run(executor, initial_tasks=[EmptyTask])
 
 ```python
 from ray_curator.pipeline import Pipeline
-from ray_curator.stages.io.reader import JsonlReader
-from ray_curator.stages.modules import ScoreFilter
-from ray_curator.stages.filters import WordCountFilter
+from ray_curator.backends.xenna import XennaExecutor
+from ray_curator.stages.io.reader.jsonl import JsonlReader
+from ray_curator.stages.text.modules.score_filter import ScoreFilter
+from ray_curator.stages.text.filters.heuristic_filter import WordCountFilter
 
 # Create pipeline for processing existing JSONL files
 pipeline = Pipeline(name="custom_data_processing")

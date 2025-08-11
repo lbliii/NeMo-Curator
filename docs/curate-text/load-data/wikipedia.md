@@ -42,9 +42,8 @@ Here's how to download and extract Wikipedia data using Curator:
 ```python
 from ray_curator.pipeline import Pipeline
 from ray_curator.backends.xenna import XennaExecutor
-from ray_curator.stages.download.text.wikipedia import WikipediaDownloadExtractStage
+from ray_curator.stages.download.text import WikipediaDownloadExtractStage
 from ray_curator.stages.io.writer import JsonlWriter
-from ray_curator.tasks import EmptyTask
 
 # Create the Wikipedia processing stage
 wikipedia_stage = WikipediaDownloadExtractStage(
@@ -72,11 +71,8 @@ pipeline.add_stage(writer_stage)
 # Create executor and run pipeline
 executor = XennaExecutor()
 
-# Start with an empty task to trigger URL generation
-initial_tasks = [EmptyTask]
-
 # Execute the pipeline
-results = pipeline.run(executor, initial_tasks=initial_tasks)
+results = pipeline.run(executor)
 print(f"Pipeline completed with {len(results) if results else 0} output files")
 ```
 
@@ -104,7 +100,7 @@ for lang in languages:
     pipeline.add_stage(writer_stage)
     
     # Execute
-    results = pipeline.run(executor, initial_tasks=[EmptyTask])
+    results = pipeline.run(XennaExecutor())
 ```
 
 ### Parameters
@@ -158,6 +154,10 @@ for lang in languages:
 ::::{note}
 Wikipedia creates new dumps twice per month (around the 1st and 20th). You can find available dump dates at <https://dumps.wikimedia.org/enwiki/>.
 ::::
+
+```{note}
+The extractor uses the `mwparserfromhell` library internally to process MediaWiki markup, which is installed with Curator.
+```
 
 ## Output Format
 

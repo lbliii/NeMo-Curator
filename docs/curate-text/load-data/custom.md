@@ -65,7 +65,7 @@ your_data_source/
 #### URL Generator (`url_generation.py`)
 
 ```python
-from ray_curator.stages.download.text import URLGenerator
+from ray_curator.stages.download.text.base.url_generation import URLGenerator
 
 class CustomURLGenerator(URLGenerator):
     def __init__(self, config_param: str):
@@ -84,7 +84,7 @@ class CustomURLGenerator(URLGenerator):
 
 ```python
 import requests
-from ray_curator.stages.download.text import DocumentDownloader
+from ray_curator.stages.download.text.base.download import DocumentDownloader
 
 class CustomDownloader(DocumentDownloader):
     def __init__(self, download_dir: str, verbose: bool = False):
@@ -115,7 +115,7 @@ class CustomDownloader(DocumentDownloader):
 import json
 from collections.abc import Iterator
 from typing import Any
-from ray_curator.stages.download.text import DocumentIterator
+from ray_curator.stages.download.text.base.iterator import DocumentIterator
 
 class CustomIterator(DocumentIterator):
     def __init__(self, record_format: str = "jsonl"):
@@ -139,7 +139,7 @@ class CustomIterator(DocumentIterator):
 
 ```python
 from typing import Any
-from ray_curator.stages.download.text import DocumentExtractor
+from ray_curator.stages.download.text.base.extract import DocumentExtractor
 
 class CustomExtractor(DocumentExtractor):
     def extract(self, record: dict[str, str]) -> dict[str, Any] | None:
@@ -180,7 +180,7 @@ class CustomExtractor(DocumentExtractor):
 ### 3. Create Composite Stage (`stage.py`)
 
 ```python
-from ray_curator.stages.download.text import DocumentDownloadExtractStage
+from ray_curator.stages.download.text.base.stage import DocumentDownloadExtractStage
 from .url_generation import CustomURLGenerator
 from .download import CustomDownloader
 from .iterator import CustomIterator
@@ -227,21 +227,21 @@ def main():
         download_dir="/tmp/downloads",
         record_limit=1000  # Limit for testing
     )
-    
+
     # Create pipeline
     pipeline = Pipeline(
         name="custom_data_pipeline",
         description="Load and process custom dataset"
     )
     pipeline.add_stage(data_stage)
-    
+
     # Create executor
     executor = XennaExecutor()
-    
+
     # Run pipeline
     print("Starting pipeline...")
     results = pipeline.run(executor)
-    
+
     # Process results
     if results:
         for task in results:
@@ -257,28 +257,28 @@ if __name__ == "__main__":
 ### Adding Processing Stages
 
 ```python
-from ray_curator.stages.modules import ScoreFilter
-from ray_curator.stages.filters import WordCountFilter
+from ray_curator.stages.text.modules.score_filter import ScoreFilter
+from ray_curator.stages.text.filters.heuristic_filter import WordCountFilter
 from ray_curator.stages.io.writer import JsonlWriter
 
 def create_full_pipeline():
     pipeline = Pipeline(name="full_processing")
-    
+
     # Data loading
     pipeline.add_stage(CustomDataStage(
         config_param="production",
         download_dir="/tmp/downloads"
     ))
-    
+
     # Text filtering
     pipeline.add_stage(ScoreFilter(
         filter_obj=WordCountFilter(min_words=10, max_words=1000),
         text_field="text"
     ))
-    
+
     # Output
     pipeline.add_stage(JsonlWriter(output_dir="/output/processed"))
-    
+
     return pipeline
 ```
 
