@@ -11,13 +11,13 @@ modality: "text-only"
 (text-process-data-filter)=
 # Quality Assessment & Filtering
 
-Score and remove low-quality content using heuristics and ML classifiers to prepare your data for model training using NeMo Curator's tools and utilities.
+Score and remove low-quality content using heuristics and ML classifiers to prepare your data for model training using NVIDIA NeMo Curator tools and utilities.
 
-Large datasets often contain many documents considered to be "low quality." In this context, "low quality" data simply means data we don't want a downstream model to learn from, and "high quality" data is data that we do want a downstream model to learn from. The metrics that define quality can vary widely.
+Large datasets often contain documents considered to be "low quality." In this context, "low quality" data means data we do not want a downstream model to learn from, and "high quality" data is data that we do want a downstream model to learn from. The metrics that define quality can vary by use case.
 
 ## How It Works
 
-NeMo Curator's filtering framework is built around several key components:
+NeMo Curator filtering uses several key components:
 
 ::::{tab-set}
 
@@ -26,27 +26,19 @@ NeMo Curator's filtering framework is built around several key components:
 The `ScoreFilter` is at the center of filtering in NeMo Curator. It applies a filter to a document and optionally saves the score as metadata:
 
 ```python
-import nemo_curator as nc
-from nemo_curator.datasets import DocumentDataset
-from nemo_curator.utils.file_utils import get_all_files_paths_under
-from nemo_curator.filters import WordCountFilter
+from ray_curator.pipeline.pipeline import Pipeline
+from ray_curator.backends.xenna.executor import XennaExecutor
+from ray_curator.stages.text.io.reader.jsonl import JsonlReader
+from ray_curator.stages.text.filters.heuristic_filter import WordCountFilter
+from ray_curator.stages.text.modules.score_filter import ScoreFilter
+from ray_curator.stages.text.io.writer.jsonl import JsonlWriter
 
-# Load dataset
-files = get_all_files_paths_under("books_dataset/", keep_extensions="jsonl")
-books = DocumentDataset.read_json(files, add_filename=True)
+pipeline = Pipeline(name="scorefilter_example")
+pipeline.add_stage(JsonlReader(file_paths="books_dataset/*.jsonl", files_per_partition=4))
+pipeline.add_stage(ScoreFilter(WordCountFilter(min_words=80), text_field="text", score_field="word_count"))
+pipeline.add_stage(JsonlWriter(output_dir="long_books/"))
 
-# Create and apply filter
-filter_step = nc.ScoreFilter(
-    WordCountFilter(min_words=80),
-    text_field="text",
-    score_field="word_count",
-)
-
-# Get filtered dataset
-long_books = filter_step(books)
-
-# Save filtered dataset
-long_books.to_json("long_books/", write_to_filename=True)
+XennaExecutor().run(stages=pipeline._stages)  # or pipeline.run(XennaExecutor())
 ```
 
 The filter object implements two key methods:
@@ -66,13 +58,10 @@ For more specific use cases, NeMo Curator provides two specialized modules:
   - Useful for analysis or multi-stage filtering pipelines
   
 ```python
-# Example: Score documents without filtering
-scoring_step = nc.Score(
-    WordCountFilter().score_document,  # Use just the scoring part
-    text_field="text",
-    score_field="word_count"
-)
-scored_dataset = scoring_step(dataset)
+from ray_curator.stages.text.modules.score_filter import Score
+
+# Add a score without filtering (as a pipeline stage)
+pipeline.add_stage(Score(WordCountFilter().score_document, text_field="text", score_field="word_count"))
 ```
 
 - `Filter`: A module that filters based on pre-computed metadata
@@ -81,23 +70,20 @@ scored_dataset = scoring_step(dataset)
   - Efficient for filtering on pre-computed metrics
   
 ```python
-# Example: Filter using pre-computed scores
-filter_step = nc.Filter(
-    lambda score: score >= 100,  # Keep documents with score >= 100
-    filter_field="word_count"
-)
-filtered_dataset = filter_step(scored_dataset)
+from ray_curator.stages.text.modules.score_filter import Filter
+
+# Filter using a pre-computed column
+pipeline.add_stage(Filter(lambda score: score >= 100, filter_field="word_count"))
 ```
 
 You can combine these modules in pipelines:
 
 ```python
-pipeline = nc.Sequential([
-    nc.Score(word_counter, score_field="word_count"),
-    nc.Score(symbol_counter, score_field="symbol_ratio"),
-    nc.Filter(lambda x: x >= 100, filter_field="word_count"),
-    nc.Filter(lambda x: x <= 0.3, filter_field="symbol_ratio")
-])
+# Compose as pipeline stages
+pipeline.add_stage(Score(word_counter, score_field="word_count"))
+pipeline.add_stage(Score(symbol_counter, score_field="symbol_ratio"))
+pipeline.add_stage(Filter(lambda x: x >= 100, filter_field="word_count"))
+pipeline.add_stage(Filter(lambda x: x <= 0.3, filter_field="symbol_ratio"))
 ```
 
 :::
@@ -177,45 +163,30 @@ Implement and combine your own custom filters
 
 ## Usage
 
-NeMo Curator provides a CLI tool for document filtering that becomes available after installing the package:
+Use the Curator pipeline to read data, apply filters/classifiers, and write results. Example:
 
-```bash
-filter_documents \
-  --input-data-dir=/path/to/input/data \
-  --filter-config-file=./config/heuristic_filter_en.yaml \
-  --output-retained-document-dir=/path/to/output/high_quality \
-  --output-removed-document-dir=/path/to/output/low_quality \
-  --output-document-score-dir=/path/to/output/scores \
-  --num-workers=4
+```python
+from ray_curator.pipeline import Pipeline
+from ray_curator.backends.xenna.executor import XennaExecutor
+from ray_curator.stages.text.io.reader.jsonl import JsonlReader
+from ray_curator.stages.text.filters.heuristic_filter import WordCountFilter, RepeatingTopNGramsFilter
+from ray_curator.stages.text.modules import ScoreFilter
+from ray_curator.stages.text.io.writer import JsonlWriter
+
+pipeline = Pipeline(name="quality_filtering")
+pipeline.add_stage(
+    JsonlReader(file_paths="/path/to/input/*.jsonl", files_per_partition=4)
+).add_stage(
+    ScoreFilter(WordCountFilter(min_words=80), text_field="text", score_field="word_count")
+).add_stage(
+    ScoreFilter(RepeatingTopNGramsFilter(n=3, max_repeating_ngram_ratio=0.18), text_field="text")
+).add_stage(
+    JsonlWriter(output_dir="/path/to/output/high_quality")
+)
+
+executor = XennaExecutor()
+pipeline.run(executor)
 ```
-
-For distributed processing with multiple workers:
-
-```bash
-filter_documents \
-  --input-data-dir=/path/to/input/data \
-  --filter-config-file=./config/heuristic_filter_en.yaml \
-  --output-retained-document-dir=/path/to/output/high_quality \
-  --num-workers=8 \
-  --device=gpu \
-  --log-dir=./logs
-```
-
-### CLI Parameters
-
-| Parameter | Description | Required |
-|-----------|-------------|----------|
-| `--input-data-dir` | Directory containing input JSONL files | Yes |
-| `--filter-config-file` | YAML configuration for the filter pipeline | Yes |
-| `--output-retained-document-dir` | Directory for documents passing filters | Yes |
-| `--output-removed-document-dir` | Directory for rejected documents | No |
-| `--output-document-score-dir` | Directory for storing score metadata | No |
-| `--log-dir` | Directory for storing logs | No |
-| `--num-workers` | Number of Dask workers for distributed processing | No |
-| `--scheduler-address` | Address of Dask scheduler for distributed processing | No |
-| `--device` | Processing device: `cpu` or `gpu` (default: `cpu`) | No |
-| `--input-file-type` | Input file format: `jsonl`, `parquet`, etc. (default: `jsonl`) | No |
-| `--output-file-type` | Output file format: `jsonl`, `parquet`, etc. (default: `jsonl`) | No |
 
 ```{toctree}
 :maxdepth: 4
@@ -236,4 +207,4 @@ When filtering large datasets, consider these performance tips:
 2. **Batch size tuning**: Adjust batch sizes based on your hardware capabilities
 3. **Use vectorization**: Implement batched methods for compute-intensive filters
 4. **Disk I/O**: Consider compression and chunking strategies for large datasets
-5. **Distributed processing**: For TB-scale datasets, use distributed filtering with Dask workers (`--num-workers`) or connect to an existing Dask cluster (`--scheduler-address`) 
+5. **Distributed processing**: For TB-scale datasets, run pipelines with a distributed executor (for example, `XennaExecutor`) and adjust stage resources and batch sizes to match your cluster
