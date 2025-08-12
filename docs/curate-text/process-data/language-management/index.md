@@ -122,21 +122,6 @@ for batch in results or []:
         # do something with df
 ```
 
-### Supported Languages
-
-NeMo Curator supports language identification for **176 languages** through FastText, including:
-
-- **Major languages**: English, Spanish, French, German, Chinese, Japanese, Arabic, Russian
-- **Regional languages**: Local and regional languages worldwide
-- **Special handling**: Non-spaced languages (Chinese, Japanese, Thai, Korean)
-
-## Best Practices
-
-1. **Download the FastText model**: Get `lid.176.bin` from [fasttext.cc](https://fasttext.cc/docs/en/language-identification.html)
-2. **Set appropriate thresholds**: Balance precision vs. recall based on your needs
-3. **Handle non-spaced languages**: Use special processing for Chinese, Japanese, Thai, Korean
-4. **Check on your domain**: Test language detection accuracy on your specific data
-
 ```{toctree}
 :maxdepth: 4
 :titlesonly:
