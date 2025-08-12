@@ -69,23 +69,6 @@ results = pipeline.run(executor)
 
 - Emits an experimental warning; the API and performance characteristics may change.
 
-### `RayActorPoolExecutor` (experimental)
-
-```python
-from ray_curator.backends.experimental.ray_actor_pool import RayActorPoolExecutor
-
-executor = RayActorPoolExecutor(
-    config={
-        # Optional capacity reservations used by the actor planning logic
-        "reserved_cpus": 0.0,
-        "reserved_gpus": 0.0,
-    }
-)
-results = pipeline.run(executor)
-```
-
-- Uses Ray’s `ActorPool` for fine-grained load balancing and back-pressure control.
-
 ## Choosing a Backend
 
 Both options can deliver strong performance; choose based on API fit and maturity:
