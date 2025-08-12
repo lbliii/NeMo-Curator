@@ -64,8 +64,6 @@ executor = RayDataExecutor()
 results = pipeline.run(executor)
 ```
 
-Notes:
-
 - Emits an experimental warning; the API and performance characteristics may change.
 
 ### `RayActorPoolExecutor` (experimental)
@@ -82,8 +80,6 @@ executor = RayActorPoolExecutor(
 )
 results = pipeline.run(executor)
 ```
-
-Notes:
 
 - Uses Ray’s `ActorPool` for fine-grained load balancing and back-pressure control.
 - Supports specialized RAFT actor stages when configured by a stage.
