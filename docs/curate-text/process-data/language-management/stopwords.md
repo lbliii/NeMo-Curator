@@ -34,25 +34,24 @@ Key characteristics of stop words:
 In Curator, stop words play several important roles:
 
 1. **Text Extraction**: The text extraction process (for Common Crawl data) uses stop word density as a key metric to identify meaningful content
-2. **Language Detection**: Stop words help in language detection and processing
-3. **Efficient Processing**: Filtering stop words reduces the amount of data to process
-4. **Boilerplate Removal**: Stop word density helps differentiate between main content and boilerplate in web pages
+2. **Efficient Processing**: Filtering stop words can reduce the amount of data to process
+3. **Boilerplate Removal**: Stop word density helps differentiate between main content and boilerplate in web pages
 
 ## Available Stop Word Lists
 
 Curator leverages the extensive stop word collection from [JusText](https://github.com/miso-belica/jusText/tree/main/justext/stoplists) for most languages. Curator also provides custom stop word lists for the following languages not covered by JusText:
 
-| Language | File Name | Number of Stop Words |
-|----------|-----------|---------------------|
-| Chinese | `zh_stopwords.py` | 794 |
-| Japanese | `ja_stopwords.py` | 134 |
-| Thai | `th_stopwords.py` | 115 |
+| Language | File Name |
+|----------|-----------|
+| Chinese | `zh_stopwords.py` |
+| Japanese | `ja_stopwords.py` |
+| Thai | `th_stopwords.py` |
 
 These stop word lists use Python frozen sets for fast membership checks and immutability.
 
 ### Chinese Stop Words
 
-Chinese stop words in `zh_stopwords.py` form the largest list with 794 entries, including words like "一个" (one), "不是" (isn't), and "他们" (they).
+Chinese stop words in `zh_stopwords.py` include common function words and punctuation, for example "一个" (one), "不是" (isn't), and "他们" (they).
 
 ```python
 # Example from zh_stopwords.py (partial)
@@ -64,7 +63,7 @@ zh_stopwords = frozenset([
 
 ### Japanese Stop Words
 
-Japanese stop words in `ja_stopwords.py` include 134 common Japanese words like "あそこ" (there), "これ" (this), and "ます" (a polite verb ending).
+Japanese stop words in `ja_stopwords.py` include common Japanese function words such as "あそこ" (there), "これ" (this), and "ます" (a polite verb ending).
 
 ```python
 # Example from ja_stopwords.py
@@ -77,7 +76,7 @@ ja_stopwords = frozenset([
 
 ### Thai Stop Words
 
-Thai stop words are available in `th_stopwords.py`. The file contains 115 common Thai words like "กล่าว" (to say), "การ" (the), and "ของ" (of).
+Thai stop words are available in `th_stopwords.py`, including common Thai words like "กล่าว" (to say), "การ" (the), and "ของ" (of).
 
 ```python
 # Example from th_stopwords.py
@@ -136,10 +135,10 @@ Languages like Thai, Chinese, Japanese, and Korean don't use spaces between word
 NON_SPACED_LANGUAGES = frozenset(["THAI", "CHINESE", "JAPANESE", "KOREAN"])
 ```
 
-For these languages, the pipeline applies special handling:
+For these languages, the extractor applies special handling:
 
-- The pipeline disables stop word density calculations
-- The pipeline adjusts boilerplate removal based on stop words
+- Stopword densities are still computed and used for paragraph classification.
+- Disable the final `is_boilerplate` filter to avoid over-removal in non-spaced scripts.
 
 ## Creating Custom Stop Word Lists
 

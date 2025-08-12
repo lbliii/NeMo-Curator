@@ -52,7 +52,7 @@ results = pipeline.run(executor)
 
 ## Language Processing Capabilities
 
-- **Language detection** using FastText and CLD2 (176+ languages)
+- **Language detection** using FastText (176 languages) and CLD2 (used in HTML extraction pipelines)
 - **Stop word management** with built-in lists and customizable thresholds
 - **Special handling** for non-spaced languages (Chinese, Japanese, Thai, Korean)
 - **Language-specific** text processing and quality filtering

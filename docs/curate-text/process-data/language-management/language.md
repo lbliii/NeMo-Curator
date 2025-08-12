@@ -8,8 +8,9 @@ content_type: "how-to"
 modality: "text-only"
 ---
 
+# Language Identification
+
 (text-process-data-languages-id)=
-# Language Identification and Unicode Fixing
 
 Large unlabeled text corpora often contain a variety of languages. NVIDIA NeMo Curator provides tools to accurately identify the language of each document, which is essential for language-specific curation tasks and building high-quality monolingual datasets.
 
@@ -17,7 +18,7 @@ Large unlabeled text corpora often contain a variety of languages. NVIDIA NeMo C
 
 NeMo Curator's language identification system works through a three-step process:
 
-1. **Text Preprocessing**: The system normalizes input text by stripping whitespace and converting newlines to spaces to prepare it for FastText analysis.
+1. **Text Preprocessing**: For FastText classification, normalize input text by stripping whitespace and converting newlines to spaces.
 
 2. **FastText Language Detection**: The pre-trained FastText language identification model (`lid.176.bin`) analyzes the preprocessed text and returns:
    - A confidence score (0.0 to 1.0) indicating certainty of the prediction
@@ -122,14 +123,6 @@ if __name__ == "__main__":
 :::
 ::::
 
-## Configuration
-
-Configure Curator language identification programmatically using the Python API as shown in the previous section.
-
-:::{note}
-YAML pipeline configuration support for Curator will be available in a future release. Use the programmatic Python API for now.
-:::
-
 ## Understanding Results
 
 The language identification process adds a score field to each document batch:
@@ -147,10 +140,6 @@ for batch in results:
     # Language scores are in the 'language' column
     print(df[['text', 'language']].head())
 ```
-
-:::{note}
-FastText language codes are typically two-letter uppercase codes that may differ slightly from standard ISO 639-1 codes. The model supports 176 languages with high accuracy.
-:::
 
 ### Processing Language Results
 
@@ -173,6 +162,13 @@ for batch in results:
 ```
 
 A higher confidence score indicates greater certainty in the language identification. The `ScoreFilter` automatically filters documents below your specified `min_langid_score` threshold.
+
+:::{note}
+Pipeline outputs may use the `language` field differently depending on the stage:
+
+- In the FastText classification path (`ScoreFilter(FastTextLangId)`), the selected `score_field` (often `language`) stores a string representation of a list: `[score, code]`.
+- In HTML extraction pipelines (for example, Common Crawl), CLD2 assigns a language name (for example, "ENGLISH") to the `language` column.
+:::
 
 ## Performance Considerations
 
