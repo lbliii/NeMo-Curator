@@ -53,7 +53,7 @@ executor = XennaExecutor(
 results = pipeline.run(executor)
 ```
 
-Pass options via `config`; they map to the executor’s pipeline configuration.
+- Pass options via `config`; they map to the executor’s pipeline configuration.
 
 ### `RayDataExecutor` (experimental)
 
@@ -107,5 +107,3 @@ results = pipeline.run(executor)
 
 print(f"Completed with {len(results) if results else 0} output tasks")
 ```
-
-To use a different backend, replace the executor with Ray Data or Ray Actor Pool as shown above.
