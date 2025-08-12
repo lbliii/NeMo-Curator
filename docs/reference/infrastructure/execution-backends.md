@@ -74,7 +74,7 @@ results = pipeline.run(executor)
 Both options can deliver strong performance; choose based on API fit and maturity:
 
 - **`XennaExecutor`**: default for most workloads due to maturity and extensive real‑world usage (including video pipelines); supports streaming and batch execution with auto‑scaling.
-- **Ray Data (experimental)**: a good fit when your pipeline uses Ray Data datasets/APIs; the interface is still experimental and may change.
+- **`RayDataExecutor`(experimental)**: a good fit when your pipeline uses Ray Data datasets/APIs; the interface is still experimental and may change.
 
 ## Minimal End-to-End example
 
