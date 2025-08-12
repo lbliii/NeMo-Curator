@@ -27,6 +27,8 @@ The Wikipedia pipeline in Curator consists of four stages:
 
 ## Before You Start
 
+Wikipedia publishes new dumps around the **first** and **twentieth** of each month. Refer to the English Wikipedia dumps index at `https://dumps.wikimedia.org/enwiki/` for available dates.
+
 Curator uses `wget` to download Wikipedia dumps. You must have `wget` installed on your system:
 
 - **On macOS**:  `brew install wget`
@@ -76,11 +78,7 @@ results = pipeline.run(executor)
 print(f"Pipeline completed with {len(results) if results else 0} output files")
 ```
 
-```{admonition} Execution Backends
-:class: tip
-
 For executor options and configuration, refer to {ref}`reference-execution-backends`.
-```
 
 ### Multi-Language Processing
 
@@ -109,13 +107,6 @@ for lang in languages:
     results = pipeline.run(XennaExecutor())
 ```
 
-::::{note}
-Use the language codes for Wikipedia language editions (typically ISO 639‑1 like `en`, `es`, `fr`, with project-specific exceptions such as `simple`). See the authoritative Meta‑Wiki list of active editions for supported codes and subdomains, and refer to the ISO 639 overview for general language codes:
-
-- Meta‑Wiki: [List of Wikipedia language editions](https://meta.wikimedia.org/wiki/List_of_Wikipedias)
-- Wikipedia: [List of ISO 639 language codes](https://en.wikipedia.org/wiki/List_of_ISO_639_language_codes)
-::::
-
 ### Parameters
 
 ```{list-table} WikipediaDownloadExtractStage Parameters
@@ -129,7 +120,7 @@ Use the language codes for Wikipedia language editions (typically ISO 639‑1 li
 * - `language`
   - str
   - "en"
-  - Language code for Wikipedia dump (e.g., "en", "es", "fr"). See Meta‑Wiki [List of Wikipedia language editions](https://meta.wikimedia.org/wiki/List_of_Wikipedias) for supported edition codes; most follow ISO 639‑1.
+  - Language code for Wikipedia dump (for example, `en`, `es`, `fr`). Most follow ISO 639‑1, with project-specific exceptions such as `simple`. Refer to Meta‑Wiki [List of Wikipedia language editions](https://meta.wikimedia.org/wiki/List_of_Wikipedias) for supported edition codes and [List of ISO 639 language codes](https://en.wikipedia.org/wiki/List_of_ISO_639_language_codes) for general codes.
 * - `download_dir`
   - str
   - "./wikipedia_downloads"
@@ -137,7 +128,7 @@ Use the language codes for Wikipedia language editions (typically ISO 639‑1 li
 * - `dump_date`
   - Optional[str]
   - None
-  - Specific dump date in "YYYYMMDD" format (e.g., "20240401"). If None, uses latest available dump
+  - Specific dump date in "YYYYMMDD" format (for example, "20240401"). Dumps are published around the first and twentieth of each month. If None, uses the latest available dump
 * - `wikidumps_index_prefix`
   - str
   - "https://dumps.wikimedia.org"
@@ -164,13 +155,9 @@ Use the language codes for Wikipedia language editions (typically ISO 639‑1 li
   - How often to log progress during article processing
 ```
 
-::::{note}
-Wikipedia creates new dumps twice per month (around the 1st and 20th). You can find available dump dates at <https://dumps.wikimedia.org/enwiki/>.
-::::
+### Known Limitations
 
-::::{note}
-Wikipedia parsing uses `mwparserfromhell`. Complex templates aren’t fully rendered, so template-heavy pages may yield incomplete text. If you need different behavior, customize the extractor.
-::::
+Parsing relies on `mwparserfromhell`. Complex templates might not be fully rendered, so template-heavy pages can yield incomplete text. Customize the extractor if you need different behavior.
 
 ## Output Format
 

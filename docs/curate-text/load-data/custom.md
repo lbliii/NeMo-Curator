@@ -254,11 +254,7 @@ if __name__ == "__main__":
     main()
 ```
 
-```{admonition} See also
-:class: tip
-
-For executor options and configuration, see {ref}`reference-execution-backends`.
-```
+For executor options and configuration, refer to {ref}`reference-execution-backends`.
 
 <!-- move the following to concepts / general docs on pipelines in separate PR -->
 <!-- ### Adding Processing Stages

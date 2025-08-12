@@ -21,7 +21,7 @@ ArXiv hosts millions of scholarly papers, typically distributed as LaTeX source 
 The ArXiv pipeline in Curator consists of four stages:
 
 1. **URL Generation**: Lists available ArXiv source tar files from the S3 bucket
-2. **Download**: Downloads `.tar` archives via s5cmd (requester-pays)
+2. **Download**: Downloads `.tar` archives using s5cmd (Requester Pays)
 3. **Iteration**: Extracts LaTeX projects and yields per-paper records
 4. **Extraction**: Cleans LaTeX and produces plain text
 
@@ -29,7 +29,7 @@ The ArXiv pipeline in Curator consists of four stages:
 
 You must have:
 
-- An AWS account with credentials configured (profile, environment, or instance role). Accessing `s3://arxiv/src/` uses S3 Requester Pays; you incur charges for listing and data transfer.
+- An AWS account with credentials configured (profile, environment, or instance role). Access to `s3://arxiv/src/` uses S3 Requester Pays; you incur charges for listing and data transfer. If you use `aws s3`, include the flag `--request-payer requester` and ensure your AWS credentials are active.
 - [`s5cmd` installed](https://github.com/peak/s5cmd)
 
 ```bash
@@ -37,11 +37,7 @@ You must have:
 pip install s5cmd
 ```
 
-```{admonition} S3 Requester Pays
-:class: tip
-
-The ArXiv bucket `s3://arxiv/src/` is Requester Pays. The examples on this page already pass the Requester Pays option via `s5cmd`, so you can run them as-is. If you use other tools (for example, `aws s3`), include the equivalent flag (AWS CLI: `--request-payer requester`) and ensure your AWS credentials are active.
-```
+The examples on this page use `s5cmd`, which supports Requester Pays automatically.
 
 ---
 
@@ -84,11 +80,7 @@ if __name__ == "__main__":
     main()
 ```
 
-```{admonition} Execution Backends
-:class: tip
-
 For executor options and configuration, refer to {ref}`reference-execution-backends`.
-```
 
 ### Parameters
 
@@ -149,8 +141,4 @@ The extractor returns per-paper text; the filename column is optionally added by
   - Optional. Name of the source tar file (enabled by `add_filename_column`)
 ```
 
-```{admonition} Intermediate Fields
-:class: note
-
-During iteration the pipeline yields `id` (ArXiv identifier), `source_id` (tar basename), and `content` (list of LaTeX file contents as strings; one element per `.tex` file). The final extractor stage emits only `text` plus the optional filename column.
-```
+During iteration the pipeline yields `id` (ArXiv identifier), `source_id` (tar base name), and `content` (a list of LaTeX file contents as strings; one element per `.tex` file). The final extractor stage emits `text` plus the optional filename column.

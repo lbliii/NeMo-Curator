@@ -87,6 +87,8 @@ if __name__ == "__main__":
     main()
 ```
 
+For how pipelines execute across backends (`XennaExecutor`, `RayDataExecutor`, `RayActorPoolExecutor`), refer to {ref}`reference-execution-backends`.
+
 ### Writing to Parquet
 
 To write Parquet instead of JSONL, use `ParquetWriter`:
@@ -111,11 +113,11 @@ pipeline.add_stage(writer)
   - Default
 * - `start_snapshot`
   - str
-  - First snapshot to include (format: "YYYY-WW" for main, "YYYY-MM" for news)
+  - First snapshot to include (format: "YYYY-WW" for main, "YYYY-MM" for news). Not every year and week has a snapshot; refer to the official list at `https://data.commoncrawl.org/`.
   - Required
 * - `end_snapshot`
   - str
-  - Last snapshot to include (same format as start_snapshot)
+  - Last snapshot to include (same format as start_snapshot). Ensure your range includes at least one valid snapshot.
   - Required
 * - `download_dir`
   - str
@@ -127,15 +129,15 @@ pipeline.add_stage(writer)
   - "main"
 * - `html_extraction`
   - HTMLExtractorAlgorithm | str | None
-  - Text extraction algorithm to use
+  - Text extraction algorithm to use. Defaults to `JusTextExtractor()` if not specified.
   - JusTextExtractor() if not specified
 * - `html_extraction_kwargs`
   - dict | None
-  - Additional arguments for the HTML extractor
+  - Additional arguments for the HTML extractor. Ignored when `html_extraction` is a concrete extractor object (for example, `JusTextExtractor()`); pass kwargs to the extractor constructor instead. When `html_extraction` is a string ("justext", "resiliparse", or "trafilatura"), kwargs are forwarded.
   - None
 * - `stop_lists`
   - dict[str, frozenset[str]] | None
-  - Language-specific stop words for text quality assessment
+  - Language-specific stop words for text quality assessment. If not provided, Curator uses jusText defaults with additional support for Thai, Chinese, and Japanese languages.
   - None
 * - `use_aws_to_download`
   - bool
@@ -157,12 +159,6 @@ pipeline.add_stage(writer)
   - bool | str
   - Whether to add source filename column to output; if str, uses it as the column name (default name: "file_name")
   - True
-```
-
-```{admonition} Snapshot Availability
-:class: note
-
-Not every year and week has a snapshot. Ensure your range includes at least one valid Common Crawl snapshot. See [the official site](https://data.commoncrawl.org/) for a list of valid snapshots.
 ```
 
 ## Output Format
@@ -199,12 +195,6 @@ The pipeline processes Common Crawl data through several stages, ultimately prod
 
 If you enable `add_filename_column`, the output includes an extra field `file_name` (or your custom column name).
 
-```{admonition} Execution Backends
-:class: tip
-
-For how pipelines execute across backends (Xenna, Ray Data, Actor Pool), refer to {ref}`reference-execution-backends`.
-```
-
 ## Customization Options
 
 ### HTML Text Extraction Algorithms
@@ -223,10 +213,6 @@ Curator supports several HTML text extraction algorithms:
   - [Resiliparse](https://github.com/chatnoir-eu/chatnoir-resiliparse)
 * - `TrafilaturaExtractor`
   - [Trafilatura](https://trafilatura.readthedocs.io/)
-```
-
-```{note}
-JusText is the default HTML extractor. If `html_extraction` is not specified, Curator uses `JusTextExtractor()` with default parameters.
 ```
 
 #### Configuring HTML Extractors
@@ -258,10 +244,6 @@ cc_stage = CommonCrawlDownloadExtractStage(
 )
 ```
 
-```{note}
-If `html_extraction` is a concrete extractor object (e.g., `JusTextExtractor()`), `html_extraction_kwargs` is ignored. Pass kwargs to the extractor’s constructor instead. If `html_extraction` is a string ("justext", "resiliparse", or "trafilatura"), `html_extraction_kwargs` is forwarded.
-```
-
 ### Language Processing
 
 You can customize language detection and extraction by providing stop words for different languages:
@@ -279,10 +261,6 @@ cc_stage = CommonCrawlDownloadExtractStage(
     download_dir="./downloads",
     stop_lists=stop_lists
 )
-```
-
-```{note}
-If no custom stop lists are provided, Curator uses jusText's default stop lists with additional support for Thai, Chinese, and Japanese languages.
 ```
 
 ## Advanced Usage
