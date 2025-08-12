@@ -9,6 +9,7 @@ modality: "text-only"
 ---
 
 (text-process-data-languages)=
+
 # Language Management
 
 Handle multilingual content and language-specific processing requirements using NeMo Curator's tools and utilities.
@@ -17,47 +18,34 @@ NeMo Curator provides robust tools for managing multilingual text datasets throu
 
 ## How it Works
 
-Language management in NeMo Curator typically follows this pattern:
+Language management in NeMo Curator typically follows this pattern using the Pipeline API:
 
 ```python
-import nemo_curator as nc
-from nemo_curator.datasets import DocumentDataset
-from nemo_curator.filters import FastTextLangId
-from nemo_curator.filters.heuristic_filter import HistogramFilter
-from nemo_curator.modules.filter import ScoreFilter
-from nemo_curator.utils.text_utils import get_word_splitter
+from ray_curator.pipeline import Pipeline
+from ray_curator.backends.xenna.executor import XennaExecutor
+from ray_curator.stages.text.io.reader import JsonlReader
+from ray_curator.stages.text.modules import ScoreFilter
+from ray_curator.stages.text.filters import FastTextLangId
 
-# Load your dataset
-dataset = DocumentDataset.read_json("input_data/*.jsonl")
+# 1) Build the pipeline
+pipeline = Pipeline(name="language_management")
 
-# Identify languages using FastText
-lang_filter = ScoreFilter(
-    FastTextLangId(
-        model_path="lid.176.bin",
-        min_langid_score=0.8
-    ),
-    text_field="text",
-    score_field="language"
+# Read JSONL files into document batches
+pipeline.add_stage(
+    JsonlReader(file_paths="input_data/*.jsonl", files_per_partition=2)
 )
 
-# Apply language identification
-dataset = lang_filter(dataset)
-
-# Apply language-specific processing
-for lang, subset in dataset.groupby("language"):
-    if lang in ["zh", "ja", "th", "ko"]:
-        # Special handling for non-spaced languages
-        processor = get_word_splitter(lang)
-        # Note: Word splitter returns a function for processing text
-        # Apply as needed for your specific use case
-    
-    # Apply language-specific stop words
-    stop_filter = ScoreFilter(
-        HistogramFilter(lang=lang),
-        text_field="text",
-        score_field="quality"
+# Identify languages and keep docs above a confidence threshold
+pipeline.add_stage(
+    ScoreFilter(
+        FastTextLangId(model_path="/path/to/lid.176.bin", min_langid_score=0.3),
+        score_field="language",
     )
-    subset = stop_filter(subset)
+)
+
+# 2) Execute
+executor = XennaExecutor()
+results = pipeline.run(executor)
 ```
 
 ---
@@ -103,39 +91,35 @@ Manage high-frequency words to enhance text extraction and content detection
 ### Quick Start Example
 
 ```python
-from nemo_curator import ScoreFilter
-from nemo_curator.datasets import DocumentDataset
-from nemo_curator.filters import FastTextLangId
+from ray_curator.pipeline import Pipeline
+from ray_curator.backends.xenna import XennaExecutor
+from ray_curator.stages.text.io.reader import JsonlReader
+from ray_curator.stages.text.modules import ScoreFilter
+from ray_curator.stages.text.filters import FastTextLangId
 
-# Load multilingual dataset
-dataset = DocumentDataset.read_json("multilingual_data/*.jsonl")
+pipeline = Pipeline(name="langid_quickstart")
 
-# Identify languages
-langid_filter = ScoreFilter(
-    FastTextLangId(
-        model_path="/path/to/lid.176.bin",  # Download from fasttext.cc
-        min_langid_score=0.3
-    ),
-    text_field="text",
-    score_field="language",
-    score_type="object"
+pipeline.add_stage(
+    JsonlReader(file_paths="multilingual_data/*.jsonl", files_per_partition=2)
 )
 
-# Apply language identification
-identified_dataset = langid_filter(dataset)
-
-# Extract language codes
-identified_dataset.df["language"] = identified_dataset.df["language"].apply(
-    lambda score: score[1]  # Extract language code from [score, lang_code]
+pipeline.add_stage(
+    ScoreFilter(
+        FastTextLangId(model_path="/path/to/lid.176.bin", min_langid_score=0.3),
+        score_field="language",
+    )
 )
 
-# Filter for specific languages
-english_docs = identified_dataset[identified_dataset.df.language == "EN"]
-spanish_docs = identified_dataset[identified_dataset.df.language == "ES"]
+executor = XennaExecutor()
+results = pipeline.run(executor)
 
-# Save by language
-english_docs.to_json("output/english/", write_to_filename=True)
-spanish_docs.to_json("output/spanish/", write_to_filename=True)
+# Optional: extract language code from the stored string "[score, LANG]"
+import ast
+for batch in results or []:
+    df = batch.to_pandas()
+    if "language" in df.columns:
+        df["lang_code"] = df["language"].apply(lambda x: ast.literal_eval(x)[1] if isinstance(x, str) else x[1])
+        # do something with df
 ```
 
 ### Supported Languages
@@ -143,7 +127,7 @@ spanish_docs.to_json("output/spanish/", write_to_filename=True)
 NeMo Curator supports language identification for **176 languages** through FastText, including:
 
 - **Major languages**: English, Spanish, French, German, Chinese, Japanese, Arabic, Russian
-- **Regional languages**: Many local and regional languages worldwide
+- **Regional languages**: Local and regional languages worldwide
 - **Special handling**: Non-spaced languages (Chinese, Japanese, Thai, Korean)
 
 ## Best Practices
@@ -151,7 +135,7 @@ NeMo Curator supports language identification for **176 languages** through Fast
 1. **Download the FastText model**: Get `lid.176.bin` from [fasttext.cc](https://fasttext.cc/docs/en/language-identification.html)
 2. **Set appropriate thresholds**: Balance precision vs. recall based on your needs
 3. **Handle non-spaced languages**: Use special processing for Chinese, Japanese, Thai, Korean
-4. **Validate on your domain**: Test language detection accuracy on your specific data
+4. **Check on your domain**: Test language detection accuracy on your specific data
 
 ```{toctree}
 :maxdepth: 4
@@ -160,4 +144,4 @@ NeMo Curator supports language identification for **176 languages** through Fast
 
 Language Identification <language>
 Stop Words <stopwords>
-``` 
+```
