@@ -10,9 +10,11 @@ modality: "universal"
 
 (reference-execution-backends)=
 
+<!-- TODO: further elaborate on what Xenna is and what Ray Data is, and detailed explanations for each parameter -->
+
 # Pipeline Execution Backends
 
-Executors run NeMo Curator `Pipeline` workflows across your compute resources. This reference explains the available backends and how to configure them. It applies to all modalities (text, image, video).
+Executors run NeMo Curator `Pipeline` workflows across your compute resources. This reference explains the available backends and how to configure them. It applies to all modalities (text, image, video, and audio).
 
 ## How it Works
 
@@ -22,10 +24,10 @@ Build your pipeline by adding stages, then run it with an executor:
 from ray_curator.pipeline import Pipeline
 
 pipeline = Pipeline(name="example_pipeline", description="Curator pipeline")
-# pipeline.add_stage(...)
+pipeline.add_stage(...)
 
 # Choose an executor below and run
-# results = pipeline.run(executor)
+results = pipeline.run(executor)
 ```
 
 ## Available Backends
@@ -54,6 +56,7 @@ results = pipeline.run(executor)
 ```
 
 - Pass options via `config`; they map to the executor’s pipeline configuration.
+- For more details, refer to the official [NVIDIA Cosmos-Xenna project](https://github.com/nvidia-cosmos/cosmos-xenna/tree/main).
 
 ### `RayDataExecutor` (experimental)
 
@@ -82,13 +85,13 @@ results = pipeline.run(executor)
 ```
 
 - Uses Ray’s `ActorPool` for fine-grained load balancing and back-pressure control.
-- Supports specialized RAFT actor stages when configured by a stage.
 
 ## Choosing a Backend
 
-- **`XennaExecutor`**: default choice for most workloads; supports streaming and batch execution modes with auto-scaling.
-- **Ray Data (experimental)**: useful for Ray Data–centric transformations; expect API evolution.
-- **Ray Actor Pool (experimental)**: try for bespoke actor-level control and advanced scheduling patterns.
+Both options can deliver strong performance; choose based on API fit and maturity:
+
+- **`XennaExecutor`**: default for most workloads due to maturity and extensive real‑world usage (including video pipelines); supports streaming and batch execution with auto‑scaling.
+- **Ray Data (experimental)**: a good fit when your pipeline uses Ray Data datasets/APIs; the interface is still experimental and may change.
 
 ## Minimal End-to-End example
 

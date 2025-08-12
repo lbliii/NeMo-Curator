@@ -34,7 +34,7 @@ Each step uses an abstract base class with corresponding processing stages that 
 - **Tasks**: Data containers that flow through the pipeline (`DocumentBatch`, `FileGroupTask`)
 - **Stages**: Processing units that transform tasks (`ProcessingStage` subclasses)
 - **Pipelines**: Compositions of stages executed sequentially
-- **Executors**: Runtime backends that execute pipelines (Ray Data, Cosmos-Xenna)
+- **Executors**: Runtime backends that execute pipelines
 
 ### Data Flow
 
