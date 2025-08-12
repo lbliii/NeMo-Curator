@@ -32,6 +32,11 @@ You must have:
 - An AWS account with credentials configured (profile, environment, or instance role). Accessing `s3://arxiv/src/` uses S3 Requester Pays; you incur charges for listing and data transfer.
 - [`s5cmd` installed](https://github.com/peak/s5cmd)
 
+```bash
+# Install s5cmd for requester-pays S3 downloads
+pip install s5cmd
+```
+
 ```{admonition} S3 Requester Pays
 :class: tip
 
@@ -47,7 +52,7 @@ Create and run an ArXiv processing pipeline and write outputs to JSONL:
 ```python
 from ray_curator.pipeline import Pipeline
 from ray_curator.backends.xenna.executor import XennaExecutor
-from ray_curator.stages.download.text import ArxivDownloadExtractStage
+from ray_curator.stages.text.download import ArxivDownloadExtractStage
 from ray_curator.stages.io.writer import JsonlWriter
 
 def main():
@@ -77,6 +82,12 @@ def main():
 
 if __name__ == "__main__":
     main()
+```
+
+```{admonition} Execution Backends
+:class: tip
+
+For executor options and configuration, refer to {ref}`reference-execution-backends`.
 ```
 
 ### Parameters
@@ -141,5 +152,5 @@ The extractor returns per-paper text; the filename column is optionally added by
 ```{admonition} Intermediate Fields
 :class: note
 
-During iteration the pipeline yields `id` (ArXiv identifier), `source_id` (tar basename), and `content` (list of LaTeX files). The final extractor stage emits only `text` plus the optional filename column.
+During iteration the pipeline yields `id` (ArXiv identifier), `source_id` (tar basename), and `content` (list of LaTeX file contents as strings; one element per `.tex` file). The final extractor stage emits only `text` plus the optional filename column.
 ```

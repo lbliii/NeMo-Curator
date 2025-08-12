@@ -39,7 +39,7 @@ Choose your download method and ensure you have the prerequisites:
 
 ```bash
 # Install s5cmd for faster S3 downloads
-go install github.com/peak/s5cmd/v2@latest
+pip install s5cmd
 ```
 
 ---
@@ -51,7 +51,7 @@ Here's how to create and run a Common Crawl processing pipeline:
 ```python
 from ray_curator.pipeline import Pipeline
 from ray_curator.backends.xenna.executor import XennaExecutor
-from ray_curator.stages.download.text import CommonCrawlDownloadExtractStage
+from ray_curator.stages.text.download import CommonCrawlDownloadExtractStage
 from ray_curator.stages.io.writer import JsonlWriter
 
 def main():
@@ -199,35 +199,41 @@ The pipeline processes Common Crawl data through several stages, ultimately prod
 
 If you enable `add_filename_column`, the output includes an extra field `file_name` (or your custom column name).
 
+```{admonition} Execution Backends
+:class: tip
+
+For how pipelines execute across backends (Xenna, Ray Data, Actor Pool), refer to {ref}`reference-execution-backends`.
+```
+
 ## Customization Options
 
 ### HTML Text Extraction Algorithms
 
-Curator supports several HTML text extraction algorithms, each with different strengths:
+Curator supports several HTML text extraction algorithms:
 
 ```{list-table} Available HTML Extractors
 :header-rows: 1
-:widths: 25 25 50
+:widths: 30 70
 
 * - Extractor
   - Library
-  - Best For
 * - `JusTextExtractor`
   - [jusText](https://github.com/miso-belica/jusText)
-  - General web content, good boilerplate removal
 * - `ResiliparseExtractor`
   - [Resiliparse](https://github.com/chatnoir-eu/chatnoir-resiliparse)
-  - High-performance extraction, research applications
 * - `TrafilaturaExtractor`
   - [Trafilatura](https://trafilatura.readthedocs.io/)
-  - News articles, blog posts, high-quality text
+```
+
+```{note}
+JusText is the default HTML extractor. If `html_extraction` is not specified, Curator uses `JusTextExtractor()` with default parameters.
 ```
 
 #### Configuring HTML Extractors
 
 ```python
-from ray_curator.stages.download.text.html_extractors import ResiliparseExtractor
-from ray_curator.stages.download.text.html_extractors import TrafilaturaExtractor
+from ray_curator.stages.text.download.html_extractors import ResiliparseExtractor
+from ray_curator.stages.text.download.html_extractors import TrafilaturaExtractor
 
 # Use Resiliparse for extraction
 cc_stage = CommonCrawlDownloadExtractStage(

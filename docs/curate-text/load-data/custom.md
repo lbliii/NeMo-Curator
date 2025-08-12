@@ -65,7 +65,7 @@ your_data_source/
 #### URL Generator (`url_generation.py`)
 
 ```python
-from ray_curator.stages.download.text.base.url_generation import URLGenerator
+from ray_curator.stages.text.download.base.url_generation import URLGenerator
 
 class CustomURLGenerator(URLGenerator):
     def __init__(self, config_param: str):
@@ -84,7 +84,7 @@ class CustomURLGenerator(URLGenerator):
 
 ```python
 import requests
-from ray_curator.stages.download.text.base.download import DocumentDownloader
+from ray_curator.stages.text.download.base.download import DocumentDownloader
 
 class CustomDownloader(DocumentDownloader):
     def __init__(self, download_dir: str, verbose: bool = False):
@@ -115,7 +115,7 @@ class CustomDownloader(DocumentDownloader):
 import json
 from collections.abc import Iterator
 from typing import Any
-from ray_curator.stages.download.text.base.iterator import DocumentIterator
+from ray_curator.stages.text.download.base.iterator import DocumentIterator
 
 class CustomIterator(DocumentIterator):
     def __init__(self, record_format: str = "jsonl"):
@@ -139,7 +139,7 @@ class CustomIterator(DocumentIterator):
 
 ```python
 from typing import Any
-from ray_curator.stages.download.text.base.extract import DocumentExtractor
+from ray_curator.stages.text.download.base.extract import DocumentExtractor
 
 class CustomExtractor(DocumentExtractor):
     def extract(self, record: dict[str, str]) -> dict[str, Any] | None:
@@ -180,7 +180,7 @@ class CustomExtractor(DocumentExtractor):
 ### 3. Create Composite Stage (`stage.py`)
 
 ```python
-from ray_curator.stages.download.text.base.stage import DocumentDownloadExtractStage
+from ray_curator.stages.text.download.base.stage import DocumentDownloadExtractStage
 from .url_generation import CustomURLGenerator
 from .download import CustomDownloader
 from .iterator import CustomIterator
@@ -246,7 +246,7 @@ def main():
     if results:
         for task in results:
             print(f"Processed {task.num_items} documents")
-            # Access data as pandas DataFrame
+            # Access data as Pandas DataFrame
             df = task.to_pandas()
             print(df.head())
 
@@ -254,7 +254,14 @@ if __name__ == "__main__":
     main()
 ```
 
-### Adding Processing Stages
+```{admonition} See also
+:class: tip
+
+For executor options and configuration, see {ref}`reference-execution-backends`.
+```
+
+<!-- move the following to concepts / general docs on pipelines in separate PR -->
+<!-- ### Adding Processing Stages
 
 ```python
 from ray_curator.stages.modules import ScoreFilter
@@ -280,36 +287,8 @@ def create_full_pipeline():
     pipeline.add_stage(JsonlWriter(output_dir="/output/processed"))
 
     return pipeline
-```
+``` -->
 
-### Configuration-Based Setup
-
-```python
-from ray_curator.config import BaseConfig
-
-class CustomDataConfig(BaseConfig):
-    config_param: str = "development"
-    download_dir: str = "/tmp/downloads"
-    record_format: str = "jsonl"
-    url_limit: int | None = None
-    record_limit: int | None = None
-
-def create_pipeline_from_config(config_path: str):
-    config = CustomDataConfig.from_yaml(config_path)
-    
-    stage = CustomDataStage(
-        config_param=config.config_param,
-        download_dir=config.download_dir,
-        record_format=config.record_format,
-        url_limit=config.url_limit,
-        record_limit=config.record_limit
-    )
-    
-    pipeline = Pipeline("configured_pipeline")
-    pipeline.add_stage(stage)
-    
-    return pipeline
-```
 
 ---
 
@@ -357,7 +336,7 @@ def create_pipeline_from_config(config_path: str):
 
 ## Output Format
 
-Processed data flows through the pipeline as `DocumentBatch` tasks containing pandas DataFrames or PyArrow Tables:
+Processed data flows through the pipeline as `DocumentBatch` tasks containing Pandas DataFrames or PyArrow Tables:
 
 ### Example Output Schema
 
@@ -368,85 +347,4 @@ Processed data flows through the pipeline as `DocumentBatch` tasks containing pa
     "source": "example.com",
     "file_name": "dataset1.jsonl"  # If add_filename_column=True (default column name)
 }
-```
-
----
-
-## Best Practices
-
-### 1. Error Handling
-
-```python
-def _download_to_path(self, url: str, path: str) -> tuple[bool, str | None]:
-    try:
-        # Download logic
-        return True, None
-    except requests.RequestException as e:
-        self.logger.error(f"Network error downloading {url}: {e}")
-        return False, str(e)
-    except Exception as e:
-        self.logger.error(f"Unexpected error: {e}")
-        return False, str(e)
-```
-
-### 2. Resource Management
-
-```python
-from ray_curator.stages.resources import Resources
-
-class CustomDataStage(DocumentDownloadExtractStage):
-    # Override resources for download-heavy stages
-    _resources = Resources(cpus=2.0)  # More CPU for downloads
-```
-
-### 3. Progress Tracking
-
-```python
-def iterate(self, file_path: str) -> Iterator[dict[str, Any]]:
-    with open(file_path, 'r') as f:
-        for i, line in enumerate(f):
-            if i % 1000 == 0:
-                self.logger.info(f"Processed {i} records from {file_path}")
-            yield json.loads(line)
-```
-
-### 4. Validation
-
-```python
-def extract(self, record: dict[str, str]) -> dict[str, Any] | None:
-    # Validate required fields
-    if not all(field in record for field in ["content", "id"]):
-        self.logger.warning(f"Skipping record missing required fields")
-        return None
-    
-    # Validate content quality
-    if len(record["content"]) < 10:
-        return None
-    
-    return self._process_record(record)
-```
-
-### 5. Memory Efficiency
-
-- Process files in streaming fashion
-- Use generators for large datasets
-- Apply proper cleanup in download handlers
-- Consider batch sizes for extraction steps
-
-### 6. Testing
-
-```python
-def test_custom_extractor():
-    extractor = CustomExtractor()
-    
-    test_record = {
-        "content": "Sample text content",
-        "id": "test-123",
-        "metadata": {"source": "test"}
-    }
-    
-    result = extractor.extract(test_record)
-    assert result is not None
-    assert "text" in result
-    assert result["id"] == "test-123"
 ```

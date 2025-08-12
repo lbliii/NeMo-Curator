@@ -1,7 +1,7 @@
 ---
 description: "Load text data from Common Crawl, Wikipedia, and custom datasets using Curator."
 categories: ["workflows"]
-tags: ["data-loading", "common-crawl", "wikipedia", "custom-data", "distributed", "ray"]
+tags: ["data-loading", "axriv", "common-crawl", "wikipedia", "custom-data", "distributed", "ray"]
 personas: ["data-scientist-focused", "mle-focused"]
 difficulty: "intermediate"
 content_type: "workflow"
@@ -12,7 +12,7 @@ modality: "text-only"
 
 # Text Data Loading
 
-Load text data from Common Crawl, Wikipedia, and custom sources using Curator.
+Load text data from ArXiv, Common Crawl, Wikipedia, and custom sources using Curator.
 
 Curator provides a task-centric pipeline for downloading and processing large-scale public text datasets. It runs on Ray and converts raw formats like Common Crawl's `.warc.gz` into JSONL.
 
@@ -40,7 +40,7 @@ Data sources provide composite stages that combine these steps into complete dow
 ```python
 from ray_curator.pipeline import Pipeline
 from ray_curator.backends.xenna.executor import XennaExecutor
-from ray_curator.stages.download.text import CommonCrawlDownloadExtractStage
+from ray_curator.stages.text.download import CommonCrawlDownloadExtractStage
 from ray_curator.stages.io.writer import JsonlWriter
 
 # Create a pipeline for downloading Common Crawl data
@@ -65,40 +65,6 @@ pipeline.add_stage(writer)
 
 # Build and execute pipeline
 pipeline.build()
-executor = XennaExecutor()
-results = pipeline.run(executor)
-```
-
-:::
-
-:::{tab-item} Reading Custom Data
-
-```python
-from ray_curator.pipeline import Pipeline
-from ray_curator.backends.xenna.executor import XennaExecutor
-from ray_curator.stages.io.reader import JsonlReader
-from ray_curator.stages.modules import ScoreFilter
-from ray_curator.stages.filters import WordCountFilter
-
-# Create pipeline for processing existing JSONL files
-pipeline = Pipeline(name="custom_data_processing")
-
-# Read JSONL files
-reader = JsonlReader(
-    file_paths="/path/to/data/*.jsonl",
-    files_per_partition=4,
-    columns=["text", "url"]  # Only read specific columns
-)
-pipeline.add_stage(reader)
-
-# Add filtering stage
-word_filter = ScoreFilter(
-    filter_obj=WordCountFilter(min_words=50, max_words=1000),
-    text_field="text"
-)
-pipeline.add_stage(word_filter)
-
-# Execute pipeline
 executor = XennaExecutor()
 results = pipeline.run(executor)
 ```
@@ -146,6 +112,14 @@ Read and process your own text datasets in standard formats
 {bdg-secondary}`file-partitioning`
 :::
 
+:::{grid-item-card} {octicon}`file;1.5em;sd-mr-1` Read Existing Data (JSONL)
+:link: text-load-data-read-existing
+:link-type: ref
+Read existing JSONL datasets using Curator's reader stage
++++
+{bdg-secondary}`jsonl`
+:::
+
 ::::
 
 ```{toctree}
@@ -157,4 +131,5 @@ arxiv
 common-crawl
 wikipedia
 Custom Data <custom.md>
+Read Existing Data (JSONL) <read-existing>
 ```

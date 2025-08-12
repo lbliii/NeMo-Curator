@@ -42,7 +42,7 @@ Here's how to download and extract Wikipedia data using Curator:
 ```python
 from ray_curator.pipeline import Pipeline
 from ray_curator.backends.xenna.executor import XennaExecutor
-from ray_curator.stages.download.text import WikipediaDownloadExtractStage
+from ray_curator.stages.text.download import WikipediaDownloadExtractStage
 from ray_curator.stages.io.writer import JsonlWriter
 
 # Create the Wikipedia processing stage
@@ -76,6 +76,12 @@ results = pipeline.run(executor)
 print(f"Pipeline completed with {len(results) if results else 0} output files")
 ```
 
+```{admonition} Execution Backends
+:class: tip
+
+For executor options and configuration, refer to {ref}`reference-execution-backends`.
+```
+
 ### Multi-Language Processing
 
 You can process several languages by creating separate pipelines:
@@ -103,6 +109,13 @@ for lang in languages:
     results = pipeline.run(XennaExecutor())
 ```
 
+::::{note}
+Use the language codes for Wikipedia language editions (typically ISO 639‑1 like `en`, `es`, `fr`, with project-specific exceptions such as `simple`). See the authoritative Meta‑Wiki list of active editions for supported codes and subdomains, and refer to the ISO 639 overview for general language codes:
+
+- Meta‑Wiki: [List of Wikipedia language editions](https://meta.wikimedia.org/wiki/List_of_Wikipedias)
+- Wikipedia: [List of ISO 639 language codes](https://en.wikipedia.org/wiki/List_of_ISO_639_language_codes)
+::::
+
 ### Parameters
 
 ```{list-table} WikipediaDownloadExtractStage Parameters
@@ -116,7 +129,7 @@ for lang in languages:
 * - `language`
   - str
   - "en"
-  - Language code for Wikipedia dump (e.g., "en", "es", "fr")
+  - Language code for Wikipedia dump (e.g., "en", "es", "fr"). See Meta‑Wiki [List of Wikipedia language editions](https://meta.wikimedia.org/wiki/List_of_Wikipedias) for supported edition codes; most follow ISO 639‑1.
 * - `download_dir`
   - str
   - "./wikipedia_downloads"
