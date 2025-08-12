@@ -89,7 +89,11 @@ pipeline.add_stage(Filter(lambda x: x <= 0.3, filter_field="symbol_ratio"))
 
 :::
 
-:::{tab-item} Batching
+:::{tab-item} DocumentBatch
+
+`DocumentBatch` is the core task type used for text processing stages in Curator. It wraps a Pandas DataFrame or PyArrow Table and flows between stages in your pipeline. Filtering stages (for example, `Score`, `Filter`, `ScoreFilter`, and classifier stages) read and write columns on the underlying data frame within a `DocumentBatch`.
+
+For higher throughput, you can batch several `DocumentBatch` tasks by setting a stage `batch_size` and implementing `process_batch(self, tasks: list[DocumentBatch])`. This lets your stage operate on several batches at once while keeping each batch’s data frame semantics intact.
 
 ```python
 from dataclasses import dataclass
