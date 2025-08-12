@@ -9,6 +9,7 @@ modality: "text-only"
 ---
 
 (text-process-data-filter)=
+
 # Quality Assessment & Filtering
 
 Score and remove low-quality content using heuristics and ML classifiers to prepare your data for model training using NVIDIA NeMo Curator tools and utilities.
@@ -44,7 +45,7 @@ XennaExecutor().run(stages=pipeline._stages)  # or pipeline.run(XennaExecutor())
 The filter object implements two key methods:
 
 - `score_document`: Computes a quality score for a document
-- `keep_document`: Determines if a document should be kept based on its score
+- `keep_document`: Determines whether to keep a document based on its score
 
 :::
 
@@ -52,7 +53,7 @@ The filter object implements two key methods:
 
 For more specific use cases, NeMo Curator provides two specialized modules:
 
-- `Score`: A module that only adds metadata scores to records without filtering
+- `Score`: A module that adds metadata scores to records without filtering
   - Takes a scoring function that evaluates text and returns a score
   - Adds the score to a specified metadata field
   - Useful for analysis or multi-stage filtering pipelines
@@ -66,7 +67,7 @@ pipeline.add_stage(Score(WordCountFilter().score_document, text_field="text", sc
 
 - `Filter`: A module that filters based on pre-computed metadata
   - Takes a filter function that evaluates metadata and returns True/False
-  - Only uses existing metadata fields (doesn't compute new scores)
+  - Uses existing metadata fields (doesn't compute new scores)
   - Efficient for filtering on pre-computed metrics
   
 ```python
@@ -88,25 +89,48 @@ pipeline.add_stage(Filter(lambda x: x <= 0.3, filter_field="symbol_ratio"))
 
 :::
 
-:::{tab-item} Batched Filtering
-
-For improved performance, NeMo Curator supports batch processing using the `@batched` decorator:
+:::{tab-item} Batching
 
 ```python
-from nemo_curator.utils.decorators import batched
-import pandas as pd
+from dataclasses import dataclass
+from ray_curator.stages.base import ProcessingStage
+from ray_curator.tasks.document import DocumentBatch
 
-class BatchedFilter(DocumentFilter):
-    @batched
-    def keep_document(self, scores: pd.Series):
-        # Process multiple documents in one operation
-        return scores > 10
+@dataclass
+class ThresholdFilter(ProcessingStage[DocumentBatch, DocumentBatch]):
+    score_field: str
+    threshold: float
+    _name: str = "threshold_filter"
+    _batch_size: int = 8  # executor groups tasks in batches of 8
+
+    def inputs(self):
+        return ["data"], [self.score_field]
+
+    def outputs(self):
+        return ["data"], []
+
+    def process_batch(self, tasks: list[DocumentBatch]) -> list[DocumentBatch]:
+        outputs: list[DocumentBatch] = []
+        for batch in tasks:
+            df = batch.to_pandas()
+            df = df[df[self.score_field] > self.threshold]
+            outputs.append(
+                DocumentBatch(
+                    task_id=batch.task_id,
+                    dataset_name=batch.dataset_name,
+                    data=df,
+                    _metadata=batch._metadata,
+                    _stage_perf=batch._stage_perf,
+                )
+            )
+        return outputs
+
+# Configure batch size via with_() if preferred
+stage = ThresholdFilter(score_field="word_count", threshold=100).with_(batch_size=8)
 ```
 
-The batched processing can significantly improve performance on large datasets by:
-- Reducing function call overhead
-- Enabling vectorized operations
-- Optimizing memory usage
+- Existing modules like `Score`, `Filter`, and classifier stages operate within a `DocumentBatch`; for peak throughput, prefer vectorized operations inside your stage or add `process_batch` as shown.
+- Model-based stages already batch internally using settings such as `model_inference_batch_size`.
 
 :::
 
@@ -152,7 +176,7 @@ GPU-accelerated classification with pre-trained models
 :::{grid-item-card} {octicon}`terminal;1.5em;sd-mr-1` Custom Filters
 :link: custom
 :link-type: doc
-Implement and combine your own custom filters
+Create and combine your own custom filters
 +++
 {bdg-secondary}`custom`
 {bdg-secondary}`flexible`
@@ -198,13 +222,3 @@ Classifier Filters <classifier>
 Distributed Classification <distributed-classifier>
 Custom Filters <custom>
 ```
-
-## Best Practices
-
-When filtering large datasets, consider these performance tips:
-
-1. **Order matters**: Place computationally inexpensive filters early in your pipeline
-2. **Batch size tuning**: Adjust batch sizes based on your hardware capabilities
-3. **Use vectorization**: Implement batched methods for compute-intensive filters
-4. **Disk I/O**: Consider compression and chunking strategies for large datasets
-5. **Distributed processing**: For TB-scale datasets, run pipelines with a distributed executor (for example, `XennaExecutor`) and adjust stage resources and batch sizes to match your cluster
