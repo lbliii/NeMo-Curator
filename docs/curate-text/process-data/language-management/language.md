@@ -141,15 +141,39 @@ for batch in results:
     print(df[['text', 'language']].head())
 ```
 
+:::{tip}
+For quick exploratory inspection, converting a `DocumentBatch` to a pandas DataFrame is fine. For performance and scalability, write transformations as `ProcessingStage`s (or with the `@processing_stage` decorator) and run them inside a `Pipeline` with an executor. Curator’s parallelism and resource scheduling apply when code runs as pipeline stages; ad‑hoc pandas code executes on the driver and will not scale.
+:::
+
 ### Processing Language Results
 
-Process results inside the pipeline using the function decorator. This parses the `language` field and can enforce a confidence threshold.
+::::{tab-set}
+
+:::{tab-item} As Exploration (Pandas)
+
+```python
+import ast
+
+# Example: parse language results on the driver for quick inspection
+for batch in results:
+    df = batch.to_pandas()
+    if "language" in df.columns:
+        parsed = df["language"].apply(lambda v: ast.literal_eval(v) if isinstance(v, str) else v)
+        df["lang_score"] = parsed.apply(lambda p: float(p[0]))
+        df["lang_code"] = parsed.apply(lambda p: str(p[1]))
+        # Optional: apply a higher confidence threshold for ad hoc analysis
+        df = df[df["lang_score"] >= 0.7]
+    print(df[["text", "lang_code", "lang_score"]].head())
+```
+
+:::
+
+:::{tab-item} As Pipeline Stage
 
 ```python
 import ast
 from ray_curator.stages.function_decorators import processing_stage
 from ray_curator.tasks import DocumentBatch
-
 
 def create_extract_language_fields_stage(min_confidence: float | None = None):
     @processing_stage(name="extract_language_fields")
@@ -172,10 +196,13 @@ def create_extract_language_fields_stage(min_confidence: float | None = None):
 
     return extract_language_fields
 
-
 # Add this stage to your pipeline after ScoreFilter
 pipeline.add_stage(create_extract_language_fields_stage(min_confidence=0.7))
 ```
+
+:::
+
+::::
 
 A higher confidence score indicates greater certainty in the language identification. The `ScoreFilter` automatically filters documents below your specified `min_langid_score` threshold. The `extract_language_fields` stage shows how to further parse results and apply a higher threshold if needed.
 
@@ -185,13 +212,3 @@ Pipeline outputs may use the `language` field differently depending on the stage
 - In the FastText classification path (`ScoreFilter(FastTextLangId)`), the selected `score_field` (often `language`) stores a string representation of a list: `[score, code]`.
 - In HTML extraction pipelines (for example, Common Crawl), CLD2 assigns a language name (for example, "ENGLISH") to the `language` column.
 :::
-
-## Performance Considerations
-
-- Language identification with Curator is computationally intensive but scales with Ray's distributed processing
-- Curator handles distributed execution across cluster nodes using the XennaExecutor backend
-- The FastText model file (`lid.176.bin` or compressed `lid.176.ftz`) must be accessible to all worker nodes
-- Processing speed depends on document length, cluster size, available computational resources, and the `files_per_partition` setting
-- Memory usage scales with cluster configuration and task batch sizes
-- Curator provides efficient resource allocation and auto scaling for large-scale processing
-- **Task-based processing**: The pipeline groups documents into tasks based on the `JsonlReader` configuration, enabling parallel processing across the cluster
