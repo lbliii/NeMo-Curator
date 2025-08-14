@@ -142,7 +142,7 @@ for batch in results:
 ```
 
 :::{tip}
-For quick exploratory inspection, converting a `DocumentBatch` to a pandas DataFrame is fine. For performance and scalability, write transformations as `ProcessingStage`s (or with the `@processing_stage` decorator) and run them inside a `Pipeline` with an executor. Curator’s parallelism and resource scheduling apply when code runs as pipeline stages; ad‑hoc pandas code executes on the driver and will not scale.
+For quick exploratory inspection, converting a `DocumentBatch` to a Pandas DataFrame is fine. For performance and scalability, write transformations as `ProcessingStage`s (or with the `@processing_stage` decorator) and run them inside a `Pipeline` with an executor. Curator’s parallelism and resource scheduling apply when code runs as pipeline stages; ad‑hoc Pandas code executes on the driver and will not scale.
 :::
 
 ### Processing Language Results
