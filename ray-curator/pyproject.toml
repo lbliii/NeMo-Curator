@@ -85,6 +85,22 @@ all = [
     "ray_curator[video]",
 ]
 
+[dependency-groups]
+docs = [
+    "sphinx",
+    "myst-parser",
+    "sphinx-autodoc2",
+    "sphinx-copybutton",
+    "nvidia-sphinx-theme",
+    "sphinx-autobuild",
+    "sphinx-design",
+    "pinecone",
+    "openai",
+    "python-dotenv",
+    "sphinxcontrib-mermaid",
+    "swagger-plugin-for-sphinx",
+]
+
 [tool.pixi.workspace]
 channels = ["conda-forge"]
 platforms = ["linux-64", "linux-aarch64"]
