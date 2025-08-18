@@ -6,8 +6,6 @@ nvidia-sphinx-theme
 sphinx-autobuild
 sphinx-design
 docutils
-pinecone
-openai
 python-dotenv
 sphinxcontrib-mermaid
 swagger-plugin-for-sphinx
