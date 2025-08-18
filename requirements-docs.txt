@@ -5,6 +5,7 @@ sphinx-copybutton
 nvidia-sphinx-theme
 sphinx-autobuild
 sphinx-design
+docutils<0.22
 pinecone
 openai
 python-dotenv
