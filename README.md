@@ -103,7 +103,7 @@ NeMo Curator leverages NVIDIA RAPIDS™ libraries like cuDF, cuML, and cuGraph a
   <img src="./docs/_images/text-benchmarks.png" alt="drawing" width="700"/>
 </p>
 
-NeMo Curator exhibits near‑linear scaling for fuzzy deduplication. On an 8 TB RedPajama‑v2 subset (~1.78 trillion tokens), processing time drops from 2.05 hours on one H100 80 GB node to 0.50 hours on four nodes. Refer to the scaling chart below to learn more
+NeMo Curator exhibits near‑linear scaling for fuzzy deduplication. On an 8 TB RedPajama‑v2 subset (~1.78 trillion tokens), processing time drops from 2.05 hours on one H100 80 GB node to 0.50 hours on four nodes. Refer to the scaling chart below to learn more:
 
 <p align="center">
   <img src="./docs/_images/scaling.png" alt="drawing" width="700"/>
