@@ -12,7 +12,7 @@ modality: "video-only"
 (video-tutorials-pipeline-cust-add-code)=
 # Adding Custom Code
 
-Learn how to customize the NeMo Curator Container by adding custom code to either a new or existing pipeline stage.
+Learn how to extend Ray Curator by adding custom code to a new or existing stage.
 
 The NeMo Video Curator container includes a robust set of default pipelines with commonly used stages, however, they may not always meet your pipeline requirements. In this tutorial, we'll demonstrate how to extend the default pipeline.
 
@@ -21,9 +21,8 @@ The NeMo Video Curator container includes a robust set of default pipelines with
 Before you begin adding custom code, make sure that you have:
 
 * Reviewed the [pipeline concepts and diagrams](about-concepts-video).  
-* Downloaded the NeMo Video Curator container.  
-* Reviewed the [default environments](reference-infrastructure-container-environments-video) available.  
-* Installed the `nemo_curator/video` code base into your developer environment.  
+* A working Ray Curator development environment.  
+* Optionally prepared a container image that includes your dependencies.  
 * Optionally [created a custom environment](video-tutorials-pipeline-cust-env) to support your new custom code.
 
 ---
@@ -40,43 +39,44 @@ Before you begin adding custom code, make sure that you have:
    # your code here
    ```
 
-4. Import the class at x location to include it in your pipeline stages.
+4. Import the class in your stage or pipeline code to use it.
 
    ```py
-   from nemo_curator.my_code.my_file import MyClass
+   from my_code.my_file import MyClass
 
    ...
    ```
 
 5. Save the files.
 
-### Build the Container
+### Use your code in a pipeline
 
-#### Extend
+Create or edit a stage to use your code, then assemble a pipeline and run it in Python:
 
-Use the following command to extend the default NeMo Video Curator image using your new code:
+```py
+from ray_curator.pipeline.pipeline import Pipeline
+from ray_curator.stages.video.io.video_reader import VideoReaderStage
+from ray_curator.stages.video.io.clip_writer import ClipWriterStage
 
-   ```bash
-   video_curator image extend \
-       --base-image nemo_video_curator:1.0.0 \
-       --extra-code-paths custom_code/new_stage/
-   ```
+from my_code.my_file import MyClass
 
-#### Overwrite
+class MyStage(ProcessingStage[VideoTask, VideoTask]):
+    def process(self, task: VideoTask) -> VideoTask | list[VideoTask]:
+        helper = MyClass()
+        # use helper with task.data (Video/Clips)
+        return task
 
-Use the following command to overwrite the default code in the container with the customized version in your local developer environment:
+pipeline = (
+    Pipeline(name="my-pipeline")
+    .add_stage(VideoReaderStage())
+    .add_stage(MyStage())
+    .add_stage(ClipWriterStage())
+)
 
-   ```bash
-   video_curator image extend \
-       --base-image nemo_video_curator:1.0.0 \
-       --extra-code-paths nemo_curator/video/
-   ```
-
-The customized container image is output as `nemo_video_curator:1.0.0-ext`. Be sure to give it a unique name so that you don't overwrite when creating additional custom environments. You can retag the image to something more descriptive by running
-
-```bash
-docker tag nemo_video_curator:1.0.0-ext my_env_video_curator:1.1.0
+pipeline.run()
 ```
+
+To containerize, use a Dockerfile to copy your code and install dependencies, then build and run with your preferred tooling.
 
 ## Next Steps
 

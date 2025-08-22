@@ -21,7 +21,7 @@ Tutorials are organized by complexity and typically build on one another.
 ---
 
 ::::{grid} 1 1 1 1
-::gutter: 1 1 1 2
+:gutter: 1 1 1 2
 
 :::{grid-item-card} {octicon}`mortar-board;1.5em;sd-mr-1` Beginner Tutorial
 :link: video-tutorials-beginner

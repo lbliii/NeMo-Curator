@@ -14,19 +14,28 @@ only: not ga
 
 NeMo Curator introduces core abstractions to organize and scale video curation workflows:
 
-- **Tasks**: The unit of data that flows through a pipeline (for video, `VideoTask` holding a `Video` and its `Clip` objects).
-- **Stages**: Individual processing units that perform a single step (for example, reading, splitting, transcoding, filtering, embedding, captioning, writing).
 - **Pipelines**: Ordered sequences of stages forming an end-to-end workflow.
-- **Executors**: Components that run pipelines on a backend (Ray) with autoscaling.
+- **Stages**: Individual processing units that perform a single step (for example, reading, splitting, format conversion, filtering, embedding, captioning, writing).
+- **Tasks**: The unit of data that flows through a pipeline (for video, `VideoTask` holding a `Video` and its `Clip` objects).
+- **Executors**: Components that run pipelines on a backend (Ray) with automatic scaling.
 
 ![Stages and Pipelines](./_images/stages-pipelines-diagram.png)
+
+## Pipelines
+
+A pipeline orchestrates stages into an end-to-end workflow. Key characteristics:
+
+- **Stage Sequence**: Stages must follow a logical order where each stage's output feeds into the next
+- **Input Configuration**: Specifies the data source location
+- **Stage Configuration**: Stages accept their own parameters, including model paths and algorithm settings
+- **Execution Mode**: Supports streaming and batch processing through the executor
 
 ## Stages
 
 A stage represents a single step in your data curation workflow. For example, stages can:
 
 - Download videos
-- Transcode media
+- Convert video formats
 - Split videos into clips
 - Generate embeddings
 - Calculate scores
@@ -36,11 +45,13 @@ A stage represents a single step in your data curation workflow. For example, st
 Each processing stage:
 
 1. Inherits from `ProcessingStage`
-2. Declares a stable `name` and `resources: Resources` (CPUs, GPU memory or GPUs, optional NVDEC/NVENC)
+2. Declares a stable `name` and `resources: Resources` (CPU cores, GPU memory, optional NVDEC/NVENC, or more than one GPU)
 3. Defines `inputs()`/`outputs()` to document required attributes and produced attributes on tasks
 4. Implements `setup(worker_metadata)` for model initialization and `process(task)` to transform tasks
 
-This design allows map-style, retry-safe execution and dynamic scaling per stage.
+This design enables map-style execution with executor-managed fault tolerance and dynamic scaling per stage. Stages can optionally provide `process_batch()` to support vectorized batch processing.
+
+Composite stages provide a user-facing convenience API and decompose into one or more execution stages at build time.
 
 ```python
 class MyStage(ProcessingStage[X, Y]):
@@ -59,25 +70,16 @@ class MyStage(ProcessingStage[X, Y]):
 
 Refer to the stage base and resources definitions in Curator for full details.
 
-## Pipelines
-
-A pipeline orchestrates multiple stages into an end-to-end workflow. Key characteristics:
-
-- **Stage Sequence**: Stages must follow a logical order where each stage's output feeds into the next
-- **Input Configuration**: Specifies the data source location
-- **Model Configuration**: Defines the path to model weights, which are cached on each node
-- **Execution Mode**: Supports streaming and batch processing via the executor
-
-### Tasks (Video)
+## Tasks
 
 Video pipelines operate on task types defined in Curator:
 
-- `VideoTask`: wraps a single input `Video`
-- `Video`: holds decoded metadata, frames, and lists of `Clip`
-- `Clip`: holds buffers, extracted frames, embeddings, and caption windows
+- `VideoTask`: Wraps a single input `Video`
+- `Video`: Holds decoded metadata, frames, and lists of `Clip`
+- `Clip`: Holds buffers, extracted frames, embeddings, and caption windows
 
-These tasks are transformed stage-by-stage (for example, `VideoReader` populates `Video`, splitting stages create `Clip` objects, embedding and captioning stages annotate clips, and writer stages persist outputs).
+Stages transform tasks stage by stage (for example, `VideoReader` populates `Video`, splitting stages create `Clip` objects, embedding and captioning stages annotate clips, and writer stages persist outputs).
 
-### Executors
+## Executors
 
-Executors run pipelines on a backend. Curator uses `XennaExecutor` to translate `ProcessingStage` definitions into Xenna stage specs and run them on Ray with autoscaling (streaming or batch).
+Executors run pipelines on a backend. Curator uses `XennaExecutor` to translate `ProcessingStage` definitions into Cosmos-Xenna stage specifications and run them on Ray with automatic scaling. Execution modes include streaming (default) and batch.

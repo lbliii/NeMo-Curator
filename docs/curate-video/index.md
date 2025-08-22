@@ -46,7 +46,7 @@ Master the fundamentals of NeMo Curator and set up your video processing environ
 :::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Concepts
 :link: about-concepts-video
 :link-type: ref
-Learn about Ray-based architecture, stages, pipelines, and data flow for video curation
+Learn about the architecture, stages, pipelines, and data flow for video curation
 +++
 {bdg-secondary}`stages`
 {bdg-secondary}`pipelines`
@@ -56,8 +56,7 @@ Learn about Ray-based architecture, stages, pipelines, and data flow for video c
 :::{grid-item-card} {octicon}`rocket;1.5em;sd-mr-1` Get Started
 :link: gs-video
 :link-type: ref
-Set up your environment and run your first video curation pipeline with NeMo Curator. Learn how to install the toolkit, prepare your video data, configure storage, and use the provided tools to curate large-scale video datasets efficiently.
-+++
+Install NeMo Curator, configure storage, prepare data, and run your first video pipeline.
 :::
 
 ::::

@@ -102,6 +102,63 @@ pipe.run(XennaExecutor())
 - Pairwise outputs per-cluster similarity files under `${OUTPUT_DIR}/pairwise/` with columns including `id`, `max_id`, and `cosine_sim_score`.
 - Use these to decide keep/remove policies or downstream sampling.
 
-```{note}
-Sharding/export for training is not covered here.
+## 4. Export for Training
+
+After deduplication, export curated clips and metadata for training. Common video exports:
+
+- Parquet index + media files (mp4/webp) under `${OUT_DIR}`
+- Sharded tar archives (WebDataset-style) containing per-clip payloads and JSON/Parquet metadata
+
+Video-specific pointers:
+
+- Use `ClipWriterStage` path helpers to locate outputs: `ray_curator/stages/video/io/clip_writer.py`.
+  - Processed videos: `get_output_path_processed_videos(OUT_DIR)`
+  - Clip chunks and previews: `get_output_path_processed_clip_chunks(OUT_DIR)`, `get_output_path_previews(OUT_DIR)`
+  - Embeddings parquet: `${OUT_DIR}/iv2_embd_parquet` (or `${OUT_DIR}/ce1_embd_parquet`)
+
+### Example
+
+The following is an example that packages clips and minimal JSON metadata into sharded tar files:
+
+```python
+import json, math, os, tarfile
+from glob import glob
+
+OUT_DIR = os.environ["OUT_DIR"]
+clips_dir = os.path.join(OUT_DIR, "clips")  # adjust if filtering path used
+meta_parquet = os.path.join(OUT_DIR, "iv2_embd_parquet")
+
+def iter_clips(path):
+    for p in glob(os.path.join(path, "**", "*.mp4"), recursive=True):
+        clip_id = os.path.splitext(os.path.basename(p))[0]
+        yield clip_id, p
+
+def write_shards(items, out_dir, samples_per_shard=10000, max_shards=5):
+    os.makedirs(out_dir, exist_ok=True)
+    shard, buf = 0, []
+    for i, (clip_id, mp4_path) in enumerate(items, 1):
+        buf.append((clip_id, mp4_path))
+        if i % samples_per_shard == 0:
+            _write_tar(shard, buf, out_dir, max_shards)
+            shard, buf = shard + 1, []
+    if buf:
+        _write_tar(shard, buf, out_dir, max_shards)
+
+def _write_tar(shard, records, out_dir, max_shards):
+    tar_name = f"{shard:0{max_shards}d}.tar"
+    tar_path = os.path.join(out_dir, tar_name)
+    with tarfile.open(tar_path, "w") as tf:
+        for clip_id, mp4_path in records:
+            tf.add(mp4_path, arcname=f"{clip_id}.mp4")
+            info = tarfile.TarInfo(name=f"{clip_id}.json")
+            payload = json.dumps({"id": clip_id}).encode("utf-8")
+            info.size = len(payload)
+            tf.addfile(info, fileobj=io.BytesIO(payload))
+
+write_shards(iter_clips(clips_dir), os.path.join(OUT_DIR, "wds"))
 ```
+
+Tips:
+
+- Choose format to match your training dataloader; keep a compact index parquet for sampling.
+- Reshard to your target `samples_per_shard` to match I/O and parallelism for training.

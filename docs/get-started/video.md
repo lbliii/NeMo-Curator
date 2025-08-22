@@ -11,11 +11,11 @@ modality: "video-only"
 (gs-video)=
 # Get Started with Video Curation
 
-This guide shows how to install the ray-based curator and run your first video curation pipeline using the Python API.
+This guide shows how to install Curator and run your first video curation pipeline using the Python API.
 
 ## Prerequisites
 
-Confirm the following before you begin:
+To use NeMo Curator’s video curation modules, ensure you meet the following requirements:
 
 - Python 3.10 or higher
 - NVIDIA GPU
@@ -25,21 +25,31 @@ Confirm the following before you begin:
 - FFmpeg on your system path
 - Git (required for some model dependencies)
 
+---
+
 ## Install
 
-Create and activate a virtual environment, then install the package with video extras:
+Create and activate a virtual environment, then choose an install option:
 
+::::{tab-set}
+
+:::{tab-item} GPU (CUDA)
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install --upgrade pip
+pip install "ray-curator[video,video_cuda]"
+```
+:::
+
+:::{tab-item} CPU Only
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install --upgrade pip
 pip install "ray-curator[video]"
 ```
+:::
 
-For GPU-accelerated decode/encode and captioning models, add CUDA extras:
-
-```bash
-pip install "ray-curator[video,video_cuda]"
-```
+::::
 
 ## Prepare model weights
 

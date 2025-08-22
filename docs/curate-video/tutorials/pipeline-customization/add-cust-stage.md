@@ -12,9 +12,9 @@ modality: "video-only"
 (video-tutorials-pipeline-cust-add-stage)=
 # Adding Custom Stages
 
-Learn how to customize the NeMo Curator Container by adding new pipeline stages.
+Learn how to customize Ray Curator by adding new pipeline stages.
 
-The NeMo Video Curator container includes a series of pipelines with default stages, however, they may not always meet your pipeline requirements. In this tutorial, we'll demonstrate how to add a new pipeline stage that uses a new environment, code, and model.
+Ray Curator includes a series of pipelines with default stages; however, they might not always meet your pipeline requirements. This tutorial demonstrates how to add a new pipeline stage and integrate it into a pipeline.
 
 ## Before You Start
 
@@ -32,27 +32,37 @@ Before you begin adding a new pipeline stage, make sure that you have:
 ### 1. Define the Stage Class
 
 ```py
-class CRadioEmbeddingStage(ray_utils.Stage):
-    def __init__(self) -> None:
-        model_resolution = "256"
-        self._model = CRadio(resolution=model_resolution)
-        self.interp = cv2.INTER_LINEAR
+from typing import List
+
+from ray_curator.stages.base import ProcessingStage
+from ray_curator.stages.resources import Resources
+from ray_curator.tasks.video import VideoTask
+
+
+class MyCustomStage(ProcessingStage[VideoTask, VideoTask]):
+    """Example stage that reads and writes to the VideoTask."""
+
+    _name = "my_custom_stage"
+    _resources = Resources(cpus=2.0, gpu_memory_gb=8.0)
+
+    def setup(self, worker_metadata=None) -> None:
+        # Initialize models or allocate resources here
+        pass
+
+    def process(self, task: VideoTask) -> VideoTask | list[VideoTask]:
+        # Implement your processing and return the modified task (or list of tasks)
+        return task
 ```
 
 ### 2. Specify Resource Requirements
 
 ```py
-@property 
-def conda_env_name(self) -> str: 
-return "video_splitting"
+# You can override resources at construction time using with_()
+from ray_curator.stages.resources import Resources
 
-@property 
-def num_gpus_per_worker(self) -> Optional[float]: 
-return 1.0
-
-@property 
-def model(self) -> model_utils.ModelInterface: 
-return self._model 
+stage = MyCustomStage().with_(
+    resources=Resources(cpus=4.0, gpu_memory_gb=16.0, nvdecs=1, nvencs=1)
+)
 ```
 
 ### 3. Implement Core Methods
@@ -62,15 +72,17 @@ Required methods for every stage:
 #### Setup Method
 
 ```py
-def setup(self) -> None: 
-self._model.setup()
+def setup(self, worker_metadata=None) -> None:
+    # Load models, warm up caches, etc.
+    pass
 ```
 
 #### Process Data Method
 
 ```py
-def process_data(self, task: SplitPipeTask) -> List[SplitPipeTask]: 
-# Process implementation return [task]
+def process(self, task: VideoTask) -> VideoTask | list[VideoTask]:
+    # Process implementation
+    return task
 ```
 
 ### 4. Update Data Model
@@ -78,10 +90,10 @@ def process_data(self, task: SplitPipeTask) -> List[SplitPipeTask]:
 Modify the pipeline's data model to include your stage's outputs:
 
 ```py
-@attrs.define 
-class Clip: 
-# Existing fields... 
-# your_new_field: Optional[npt.NDArray[np.float32]] = None 
+# In Ray Curator, video data lives in VideoTask.data (a Video) which contains Clips.
+# You can attach new information to existing structures (for example, store derived
+# arrays in clip.egomotion or add keys to dictionaries), or maintain your own
+# data alongside and write it in a custom writer stage.
 ```
 
 ### 5. Modify Pipeline Output Handling
@@ -92,45 +104,45 @@ Update the ClipWriterStage to handle your stage's output:
 
    ```py
    def _write_custom_output(self, clip: Clip) -> None:
-   # writing implementation
+       # writing implementation
    ```
 
 2. Add to the main process:
 
    ```py
-   def process_data(self, task: SplitPipeTask) -> Optional[List[SplitPipeTask]]:
-         # existing processing
-   self._write_custom_output(clip)
-    # continue processing
+   def process(self, task: VideoTask) -> VideoTask | list[VideoTask]:
+       # existing processing
+       self._write_custom_output(clip)
+       # continue processing
+       return task
    ```
 
 ## Integration Steps
 
-### 1. Update Container Code
+### 1. Build and Run a Pipeline in Python
 
-```sh
-video_curator image extend \
-    --base-image nemo_video_curator:1.0.0 \
-    --extra-code-paths nemo_curator/video/
+```py
+from ray_curator.pipeline.pipeline import Pipeline
+from ray_curator.stages.video.io.video_reader import VideoReaderStage
+from ray_curator.stages.video.io.clip_writer import ClipWriterStage
+
+pipeline = (
+    Pipeline(name="custom-video-pipeline")
+    .add_stage(VideoReaderStage())
+    .add_stage(MyCustomStage())
+    .add_stage(ClipWriterStage())
+)
+
+# Optionally provide an executor; defaults to XennaExecutor
+pipeline.run()
 ```
 
-### 2. Download Required Model Weights
+### 2. Refer to Examples
 
-```sh
-video_curator launch \
-    --image-name nemo_video_curator \
-    --image-tag 1.0.0 \
-    --curator-path . \
-    --python3 -m nemo_curator.video.models.model_cli download
-```
+For end-to-end usage, review and adapt the example:
 
-### 3. Run Updated Pipeline
+- `ray-curator/ray_curator/examples/video/video_split_clip_example.py`
 
-```sh
-video_curator launch \
-   --image-name nemo_video_curator \
-   --image-tag 1.0.0 \
-   --python3 -m nemo_curator.video.pipelines.video.run_pipeline split \
-   --input-video-path /config/input_videos/ \
-   --output-clip-path /config/clips/ 
-```
+### 3. (Optional) Containerize Your Changes
+
+If you need a container image, extend your base image using a Dockerfile and include your code and dependencies. Then build and run with your preferred container tooling.
