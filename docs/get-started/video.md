@@ -6,7 +6,6 @@ personas: ["data-scientist-focused", "mle-focused"]
 difficulty: "beginner"
 content_type: "tutorial"
 modality: "video-only"
-only: not ga
 ---
 
 (gs-video)=
