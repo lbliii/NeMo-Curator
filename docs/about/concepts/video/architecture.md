@@ -23,12 +23,14 @@ NeMo Curator leverages two essential Ray Core capabilities:
 
 ![Ray Architecture](./_images/stages-pipelines-diagram.png)
 
-## Autoscaling
+## Execution and Autoscaling
 
-During streaming execution, NeMo Curator's autoscaler:
+Pipelines are executed through an executor. Curator uses `XennaExecutor`, which translates `ProcessingStage` definitions into Xenna stage specifications and runs them on Ray in either streaming or batch mode. During streaming execution, NeMo Curator's autoscaler:
 
 - Monitors each stage's throughput
 - Dynamically adjusts worker allocation
 - Optimizes overall pipeline performance by balancing resources across stages
 
 This dynamic scaling ensures that bottlenecks are minimized and hardware is used efficiently, especially for large-scale video curation tasks. 
+
+Key executor configuration concepts include logging intervals, execution mode (streaming vs batch), CPU allocation percentage, and autoscale interval. See the Curator executor for details.

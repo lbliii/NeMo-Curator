@@ -1,7 +1,7 @@
 ---
-description: "Comprehensive guide to video curation with NeMo Curator including splitting, deduplication, and sharding pipelines for large-scale video processing"
+description: "Comprehensive guide to Ray-based video curation with NeMo Curator including splitting and deduplication pipelines for large-scale processing"
 categories: ["video-curation"]
-tags: ["video-processing", "gpu-accelerated", "pipeline", "distributed", "ray", "splitting", "deduplication", "sharding"]
+tags: ["video-processing", "gpu-accelerated", "pipeline", "distributed", "ray", "splitting", "deduplication", "autoscaling"]
 personas: ["mle-focused", "data-scientist-focused"]
 difficulty: "intermediate"
 content_type: "concept"
@@ -38,7 +38,7 @@ Furthermore, the pipelines are optimized so that each stage has the appropriate 
 
 ## Introduction
 
-Master the fundamentals of NeMo Curator and set up your text processing environment.
+Master the fundamentals of NeMo Curator and set up your video processing environment.
 
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2
@@ -46,11 +46,11 @@ Master the fundamentals of NeMo Curator and set up your text processing environm
 :::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Concepts
 :link: about-concepts-video
 :link-type: ref
-Learn about DocumentDataset and other core data structures for efficient text curation
+Learn about Ray-based architecture, stages, pipelines, and data flow for video curation
 +++
-{bdg-secondary}`data-structures`
-{bdg-secondary}`distributed`
-{bdg-secondary}`architecture`
+{bdg-secondary}`stages`
+{bdg-secondary}`pipelines`
+{bdg-secondary}`ray`
 :::
 
 :::{grid-item-card} {octicon}`rocket;1.5em;sd-mr-1` Get Started
@@ -75,8 +75,8 @@ Set up your environment and run your first video curation pipeline with NeMo Cur
 Split long videos into clips using NeMo Curator and annotate them using various models.
 +++
 {bdg-secondary}`video-splitting`
-{bdg-secondary}`video-sharding`
-{bdg-secondary}`custom-pipelines`
+{bdg-secondary}`captioning`
+{bdg-secondary}`embeddings`
 :::
 
 :::{grid-item-card} {octicon}`video;1.5em;sd-mr-1` Deduplication Pipelines
@@ -84,19 +84,8 @@ Split long videos into clips using NeMo Curator and annotate them using various 
 :link-type: ref
 Remove duplicate clips using NeMo Curator's deduplication pipeline.
 +++
-{bdg-secondary}`video-splitting`
-{bdg-secondary}`video-sharding`
-{bdg-secondary}`custom-pipelines`
-:::
-
-:::{grid-item-card} {octicon}`video;1.5em;sd-mr-1` Sharding Pipelines
-:link: video-pipelines-sharding
-:link-type: ref
-Package your clips into datasets ready for training with NeMo Curator's sharding pipeline.
-+++
-{bdg-secondary}`video-splitting`
-{bdg-secondary}`video-sharding`
-{bdg-secondary}`custom-pipelines`
+{bdg-secondary}`video-deduplication`
+{bdg-secondary}`semantic-dedup`
 :::
 
 ::::
@@ -114,8 +103,8 @@ Package your clips into datasets ready for training with NeMo Curator's sharding
 Learn how to customize NeMo Curator's pipelines for your specific needs.
 +++
 {bdg-secondary}`video-splitting`
-{bdg-secondary}`video-sharding`
-{bdg-secondary}`custom-pipelines`
+{bdg-secondary}`embeddings`
+{bdg-secondary}`captioning`
 :::
 
 :::{grid-item-card} {octicon}`mortar-board;1.5em;sd-mr-1` Pipeline Customization Tutorials
@@ -123,9 +112,9 @@ Learn how to customize NeMo Curator's pipelines for your specific needs.
 :link-type: ref
 Learn how to customize NeMo Curator's pipelines for your specific needs.
 +++
-{bdg-secondary}`video-splitting`
-{bdg-secondary}`video-sharding`
 {bdg-secondary}`custom-pipelines`
+{bdg-secondary}`stages`
+{bdg-secondary}`ray`
 :::
 
 ::::

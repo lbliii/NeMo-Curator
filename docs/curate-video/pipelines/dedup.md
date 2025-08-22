@@ -1,7 +1,7 @@
 ---
-description: "Guide to semantic deduplication pipeline for removing duplicate video clips using clustering and similarity comparison"
+description: "Guide to semantic deduplication using KMeans clustering and pairwise similarity over clip embeddings"
 categories: ["video-curation"]
-tags: ["deduplication", "clustering", "semantic-dedup", "pipeline", "video-processing", "similarity"]
+tags: ["deduplication", "clustering", "semantic-dedup", "pipeline", "video-processing", "similarity", "ray"]
 personas: ["mle-focused", "data-scientist-focused"]
 difficulty: "intermediate"
 content_type: "tutorial"
@@ -13,11 +13,11 @@ modality: "video-only"
 
 # Deduplication Pipeline
 
-The deduplication pipeline implements **Semantic Deduplication** to remove duplicate clips from the dataset. It performs the following stages:
+The semantic deduplication pipeline removes near-duplicate clips based on embeddings generated in the splitting pipeline. It performs the following stages:
 
-1. **Clustering**: Clusters the clips into groups based on their similarity.
-2. **Pairwise Comparison**: Compares each clip in a cluster to every other clip in the cluster.
-3. **Removal**: Removes clips within clusters that are similar to each other.
+1. **KMeans clustering (RAFT)**: Assigns clip embeddings to centroids and writes partitioned outputs by cluster.
+2. **Pairwise similarity (per cluster)**: Computes pairwise cosine similarity within each cluster in batches and writes removal candidates with scores.
+3. **Ranking/keep policy**: Ranks by distance to centroid (keep easy vs keep hard) or random; selects which items to keep.
 
 ---
 
@@ -34,46 +34,50 @@ The deduplication pipeline implements **Semantic Deduplication** to remove dupli
 
 ---
 
-## Run the NeMo Curator Video Deduplication Pipeline
+## Run the Semantic Deduplication Pipeline (Python)
 
-The following setup allows you to process video clips either from a local directory or from cloud storage, creating a dataset ready for training your video AI model.
+Inputs: Parquet embeddings produced by the splitting pipeline, for example `$OUT_DIR/iv2_embd_parquet/` with columns `id` and `embedding`.
 
-### With Clips Stored Locally
+```python
+from ray_curator.pipeline import Pipeline
+from ray_curator.backends.xenna import XennaExecutor
+from ray_curator.stages.deduplication.semantic.kmeans import KMeansStage
+from ray_curator.stages.deduplication.semantic.pairwise import PairwiseStage
 
-If the data (output of splitting pipeline) is located at `~/nemo_curator_local_workspace/output_dataset`, run the following command:
+INPUT_PARQUET = f"{OUT_DIR}/iv2_embd_parquet"  # or s3://...
+OUTPUT_DIR = f"{OUT_DIR}/semantic_dedup"
 
-```bash
-video_curator launch \
-    --image-name nemo_video_curator --image-tag 1.0.0 \
-    --env text_curator \
-    --no-mount-s3-creds -- python3 -m nemo_curator.video.pipelines.video.run_pipeline dedup \
-    --input-embeddings-path /config/output_dataset/iv2_embd \
-    --output-path /config/output_dataset/semantic_dedup \
-    --n-clusters 1000 \
-    --eps-thresholds 0.01 0.001 \
-    --eps-to-extract 0.01 \
-    --which-to-keep hard \
-    --files-per-partition 1000
-```
+pipe = Pipeline(name="video_semantic_dedup", description="KMeans + pairwise dedup")
 
-This command uses `video_curator launch` to run the deduplication pipeline (`python3 -m nemo_curator.video.pipelines.video.run_pipeline dedup`) inside the Docker container.
+pipe.add_stage(
+    KMeansStage(
+        n_clusters=1000,
+        id_field="id",
+        embedding_field="embedding",
+        input_path=INPUT_PARQUET,
+        output_path=f"{OUTPUT_DIR}/kmeans",
+        input_filetype="parquet",
+        embedding_dim=512,  # set if known to optimize grouping
+        read_kwargs={"storage_options": None},
+        write_kwargs={"storage_options": None},
+    )
+)
 
-### With Clips Stored in Cloud Storage
+pipe.add_stage(
+    PairwiseStage(
+        id_field="id",
+        embedding_field="embedding",
+        input_path=f"{OUTPUT_DIR}/kmeans",
+        output_path=f"{OUTPUT_DIR}/pairwise",
+        which_to_keep="hard",   # or "easy" or "random"
+        sim_metric="cosine",    # or "l2"
+        pairwise_batch_size=1024,
+        read_kwargs={"storage_options": None},
+        write_kwargs={"storage_options": None},
+    )
+)
 
-If your data is stored on cloud storage, replace the path with an S3 path and remove the `--no-mount-s3-creds` flag.
-
-```bash
-video_curator launch \
-    --image-name nemo_video_curator --image-tag 1.0.0 \
-    --env text_curator \
-    -- python3 -m nemo_curator.video.pipelines.video.run_pipeline dedup \
-    --input-embeddings-path s3://video-storage/iv2_embd/ \
-    --output-path s3://video-storage/semantic_dedup/ \
-    --n-clusters 1000 \
-    --eps-thresholds 0.01 0.001 \
-    --eps-to-extract 0.01 \
-    --which-to-keep hard \
-    --files-per-partition 1000
+pipe.run(XennaExecutor())
 ```
 
 ## Key Parameters
@@ -84,18 +88,14 @@ video_curator launch \
 
 * - Parameter
   - Description
-* - `--input-embeddings-path`
-  - Specifies the path to the embeddings file.
-* - `--output-path`
-  - Specifies the path to the output file.
-* - `--n-clusters`
-  - Specifies the number of clusters to create.
-* - `--eps-thresholds`
-  - Specifies the epsilon thresholds to use for the clustering. This is a list of two values.
-* - `--eps-to-extract`
-  - Specifies the epsilon value to use for the extraction.
-* - `--which-to-keep`
-  - Specifies which clips to keep. Options are `hard`, `soft`, or `random`.
-* - `--files-per-partition`
-  - Specifies the number of files per partition. Each file is 1 KB, and we want each partition to be ~512 MB to ~2 GB so that's ~250k to ~1M files per partition.
+* - `n_clusters`
+  - Number of clusters to create.
+* - `which_to_keep`
+  - Keep policy: `hard` (outliers) or `easy` (closest to centroid), or `random`.
+* - `sim_metric`
+  - Distance metric: `cosine` or `l2` (affects ranking strategy).
+* - `pairwise_batch_size`
+  - Batch size for pairwise similarity.
+* - `read_kwargs` / `write_kwargs`
+  - Pass `storage_options` for S3-compatible storage as needed.
 ```

@@ -1,7 +1,7 @@
 ---
-description: "Overview of NeMo Curator's video processing pipeline workflow including splitting, deduplication, and sharding stages"
+description: "Overview of NeMo Curator's Ray-based video pipeline workflow including splitting and semantic deduplication"
 categories: ["video-curation"]
-tags: ["pipeline", "video-processing", "splitting", "deduplication", "sharding", "workflow"]
+tags: ["pipeline", "video-processing", "splitting", "deduplication", "workflow", "ray"]
 personas: ["mle-focused", "data-scientist-focused"]
 difficulty: "intermediate"
 content_type: "concept"
@@ -18,7 +18,7 @@ These pipelines are typically run in the following order:
 
 1. **Splitting Pipeline**: Breaks down long videos into shorter, manageable clips while preserving scene continuity and content relevance.
 2. **Deduplication Pipeline**: Removes duplicate or near-duplicate clips using semantic similarity to ensure dataset diversity and quality.
-3. **Sharding Pipeline**: Organizes the processed clips into efficient data shards for optimal training performance and distributed processing.
+3. (Optional) Export or downstream training preparation handled outside this guide.
 
 ## Pipeline Library
 
@@ -33,28 +33,18 @@ Explore the available default pipelines.
 Split long videos into clips using NeMo Curator and annotate them using various models.
 +++
 {bdg-secondary}`video-splitting`
-{bdg-secondary}`video-sharding`
-{bdg-secondary}`custom-pipelines`
+{bdg-secondary}`embeddings`
+{bdg-secondary}`captioning`
 :::
 
 :::{grid-item-card} {octicon}`video;1.5em;sd-mr-1` Deduplication Pipelines
 :link: video-pipelines-dedup
 :link-type: ref
-Remove duplicate clips using NeMo Curator's deduplication pipeline.
+Remove duplicate clips using NeMo Curator's semantic deduplication pipeline.
 +++
-{bdg-secondary}`video-splitting`
-{bdg-secondary}`video-sharding`
-{bdg-secondary}`custom-pipelines`
-:::
-
-:::{grid-item-card} {octicon}`video;1.5em;sd-mr-1` Sharding Pipelines
-:link: video-pipelines-sharding
-:link-type: ref
-Package your clips into datasets ready for training with NeMo Curator's sharding pipeline.
-+++
-{bdg-secondary}`video-splitting`
-{bdg-secondary}`video-sharding`
-{bdg-secondary}`custom-pipelines`
+{bdg-secondary}`semantic-dedup`
+{bdg-secondary}`clustering`
+{bdg-secondary}`pairwise`
 :::
 
 ::::
@@ -65,5 +55,4 @@ Package your clips into datasets ready for training with NeMo Curator's sharding
 
 splitting
 dedup
-sharding
 ```

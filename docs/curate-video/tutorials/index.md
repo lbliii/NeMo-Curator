@@ -12,7 +12,7 @@ modality: "video-only"
 (video-tutorials)=
 # Video Curation Tutorials
 
-Use the tutorials in this section to gain a deeper understanding of how NeMo Curator enables video curation tasks.
+Use the tutorials in this section to learn video curation with NeMo Curator.
 
 ```{tip}
 Tutorials are organized by complexity and typically build on one another.
@@ -21,33 +21,34 @@ Tutorials are organized by complexity and typically build on one another.
 ---
 
 ::::{grid} 1 1 1 1
-:gutter: 1 1 1 2
+::gutter: 1 1 1 2
 
 :::{grid-item-card} {octicon}`mortar-board;1.5em;sd-mr-1` Beginner Tutorial
 :link: video-tutorials-beginner
 :link-type: ref
-Learn how to build and run your first video pipeline using NeMo Curator's video curator component. This tutorial covers basic pipeline construction, model downloading, and pipeline execution.
+Run your first splitting pipeline with the Python example, including model prep and common flags.
 +++
 {bdg-secondary}`video-splitting`
-{bdg-secondary}`video-sharding`
-{bdg-secondary}`custom-pipelines`
+{bdg-secondary}`embeddings`
+{bdg-secondary}`captioning`
 :::
 
-:::{grid-item-card} {octicon}`mortar-board;1.5em;sd-mr-1` Split, Deduplicate, and Shard Videos
-:link: video-tutorials-split-dedup-shard-workflow
+:::{grid-item-card} {octicon}`mortar-board;1.5em;sd-mr-1` Split and Deduplicate Videos
+:link: video-tutorials-split-dedup
 :link-type: ref
-Learn how to remove duplicate clips by running the semantic deduplication pipeline.
+Split videos and then remove near-duplicates using KMeans + Pairwise semantic dedup.
 +++
+{bdg-secondary}`splitting`
 {bdg-secondary}`semantic-deduplication`
 :::
 
 :::{grid-item-card} {octicon}`mortar-board;1.5em;sd-mr-1` Pipeline Customization Series
 :link: video-tutorials-pipeline-cust-series
 :link-type: ref
-Learn how to customize video pipelines in this multi-part tutorial series.
+Customize pipelines by composing `ProcessingStage` classes and tuning resources.
 +++
-{bdg-secondary}`video-splitting`
-{bdg-secondary}`video-sharding`
+{bdg-secondary}`stages`
+{bdg-secondary}`resources`
 {bdg-secondary}`custom-pipelines`
 :::
 
@@ -58,6 +59,6 @@ Learn how to customize video pipelines in this multi-part tutorial series.
 :maxdepth: 4
 
 Beginner Tutorial <beginner>
-Split, Dedup, and Shard Videos <split-dedup-shard-workflow>
+Split and Deduplicate Videos <split-dedup>
 Pipeline Customization <pipeline-customization/index>
 ```

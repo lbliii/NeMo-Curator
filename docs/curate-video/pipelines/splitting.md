@@ -1,7 +1,7 @@
 ---
-description: "Detailed guide to the video splitting pipeline for breaking down long videos into clips with automated captioning and embedding generation"
+description: "Detailed guide to the video splitting pipeline for breaking down long videos into clips with optional captioning and embeddings"
 categories: ["video-curation"]
-tags: ["video-splitting", "gpu-accelerated", "pipeline", "captioning", "embedding", "docker", "nvdec", "nvenc"]
+tags: ["video-splitting", "gpu-accelerated", "pipeline", "captioning", "embedding", "ray", "nvdec", "nvenc"]
 personas: ["mle-focused", "data-scientist-focused"]
 difficulty: "intermediate"
 content_type: "tutorial"
@@ -17,14 +17,15 @@ modality: "video-only"
 :alt: Video Pipeline Diagram
 ```
 
-The splitting pipeline is the first of two video curation pipelines in NeMo Curator. It performs the following stages:
+The splitting pipeline reads videos, splits them into clips, and optionally transcodes, filters, embeds, generates captions, and writes results. It performs the following stages:
 
-1. **Video Download**: Downloads the videos from cloud storage or reads them from disk into memory.
-2. **Decoding and Splitting**: Decodes the video frames from the raw mp4 bytes and runs a TransNetV2-based splitting algorithm to split the video into clips based on rapid changes in color from frame to frame.
-3. **Transcoding**: Encodes each of the clips into individual mp4 files under the same encoding (H264).
-4. **Filtering**: Filters out clips based on motion and aesthetics.
-5. **Video Embedding**: Creates an embedding for each clip. While not directly used by the curation pipeline, it can be used in other ways like constructing a visual semantic search. This is not to be confused with the video tokenizer. These embeddings are created with the InternVideo2 model.
-6. **Captioning**: Generates a text caption of the clip using a vision-language model.
+1. **Video Read**: Reads input videos from local or cloud storage.
+2. **Decoding and Splitting**: Extracts frames and splits clips by fixed stride or TransNetV2.
+3. **Transcoding**: Encodes each clip (for example, H.264).
+4. **Filtering**: Filters clips based on motion and/or aesthetics.
+5. **Embeddings (optional)**: Generates clip embeddings (InternVideo2 or Cosmos-Embed1).
+6. **Captioning and Previews (optional)**: Generates captions and preview images.
+7. **Write Outputs**: Writes media, embeddings, and metadata.
 
 These clips and captions can then be manually inspected before producing a final output dataset.
 
@@ -45,52 +46,39 @@ Before you can use the splitting pipeline, make sure that you have:
 
 ---
 
-## Run the NeMo Curator Video Splitting Pipeline
+## Run the Splitting Pipeline (Python)
 
-The following setup allows you to split videos either from a local directory or from cloud storage, creating short clips with video embeddings and synthetic captions.
-
-### With Videos Stored Locally
-
-If the data is located at `~/nemo_curator_local_workspace/input_videos`, run the following command:
+Run the example script to split videos and write outputs. Set `DATA_DIR`, `MODEL_DIR`, and `OUT_DIR` first.
 
 ```bash
-mkdir -p ~/nemo_curator_local_workspace/output_clips
-
-video_curator launch \
-    --image-name nemo_video_curator --image-tag 1.0.0 \
-    --no-mount-s3-creds \
-    -- python3 -m nemo_curator.video.pipelines.video.run_pipeline split \
-    --input-video-path /config/input_videos \
-    --output-clip-path /config/output_clips \
-    --verbose
+python -m ray_curator.examples.video.video_split_clip_example \
+  --video-dir "$DATA_DIR" \
+  --model-dir "$MODEL_DIR" \
+  --output-clip-path "$OUT_DIR" \
+  --splitting-algorithm fixed_stride \
+  --fixed-stride-split-duration 10.0 \
+  --embedding-algorithm internvideo2 \
+  --transcode-encoder libopenh264 \
+  --verbose
 ```
 
-This command uses `video_curator launch` to run the splitting pipeline (`python3 -m nemo_curator.video.pipelines.video.run_pipeline split`) inside the Docker container.
+To read from S3, configure `~/.aws/credentials` and use `s3://` for `--video-dir` and `--output-clip-path`.
 
-### With Videos Stored in Cloud Storage
-
-If your data is stored on cloud storage, replace the path with an S3 path and remove the `--no-mount-s3-creds` flag.
-
-```bash
-video_curator launch \
-    --image-name nemo_video_curator --image-tag 1.0.0 \
-    -- python3 -m nemo_curator.video.pipelines.video.run_pipeline split \
-    --input-video-path s3://video-storage/raw_videos/ \
-    --output-clip-path s3://video-storage/clips/ \
-    --verbose
-```
-
-The output clip path will have the following structure:
+The output directory contains:
 
 ```
-~/nemo_curator_local_workspace/output_clips/
-    clips/
-    iv2_emb/
-    metas/
-    previews/
-    processed_videos/
+$OUT_DIR/
+  clips/
+  filtered_clips/
+  metas/
     v0/
-    summary.json
+  iv2_embd/
+  iv2_embd_parquet/
+  ce1_embd/
+  ce1_embd_parquet/
+  previews/
+  processed_videos/
+  processed_clip_chunks/
 ```
 
 ```{list-table} Directory Descriptions
@@ -100,40 +88,48 @@ The output clip path will have the following structure:
 * - Directory
   - Description
 * - `clips/`
-  - `.mp4` files for the transcoded clips.
-* - `iv2_emb/`
-  - `.pickle` files for the InternVideo2 video embeddings.
-* - `metas/`
-  - `.json` files containing metadata for each clip.
+  - Transcoded clip media (`.mp4`).
+* - `filtered_clips/`
+  - Media for clips filtered out by motion/aesthetic rules.
+* - `metas/v0/`
+  - Clip metadata (`.json`) including dimensions, motion scores, captions, and windows.
+* - `iv2_embd/`, `ce1_embd/`
+  - Per-clip embeddings serialized as `.pickle`.
+* - `iv2_embd_parquet/`, `ce1_embd_parquet/`
+  - Embeddings written as Parquet files (batches/chunks) with columns `id` and `embedding`.
 * - `previews/`
-  - `.webp` files for web previews for each of the windows in each video used to generate the captions.
-* - `processed_videos/`
-  - `.json` files for metadata about each original video that was processed.
-* - `v0/`
-  - `all_window_captions.json` contains an aggregation of all the captions generated across all the clips.
-* - `summary.json`
-  - A summary of the splitting pipeline results.
+  - Preview images (`.webp`) for caption windows when enabled.
+* - `processed_videos/`, `processed_clip_chunks/`
+  - Video-level metadata and per-chunk clip statistics.
 ```
 
 ---
 
-## Key Parameters
+## Common Options
 
 Here are a few key parameters shown in this example:
 
-```{list-table} Parameters
+```{list-table} Selected Flags
 :header-rows: 1
 
-* - Parameter
+* - Flag
   - Description
-* - `--image-name nemo_video_curator` and `--image-tag 1.0.0`
-  - Specifies the Docker image and tag to use.
-* - `--no-mount-s3-creds`
-  - This flag prevents the S3 credentials from being mounted in the container. It's useful when you don't have S3 credentials and your data is stored locally.
-* - `--input-video-path`
-  - Specifies the path inside the container or on cloud storage that holds all the .mp4 files to be clipped. If you need to access local data, the directory `~/nemo_curator_local_workspace/` is mounted to `/config/`.
-* - `--output-clip-path`
-  - Indicates where the output clips and metadata will be stored. It functions similarly to `--input-video-path` in terms of mounts.
+* - `--splitting-algorithm`
+  - Choose `fixed_stride` or `transnetv2`.
+* - `--fixed-stride-split-duration`
+  - Duration (seconds) per clip for fixed stride splitting.
+* - `--transnetv2-frame-decoder-mode`
+  - `pynvc`, `ffmpeg_gpu`, or `ffmpeg_cpu`.
+* - `--transcode-encoder`
+  - `libopenh264` or `h264_nvenc`.
+* - `--transcode-use-hwaccel`
+  - Enable hardware-accelerated decode during transcoding.
+* - `--embedding-algorithm`
+  - `internvideo2` or Cosmos-Embed1 variants (`cosmos-embed1-224p`, `-336p`, `-448p`).
+* - `--generate-captions`, `--generate-previews`
+  - Enable captioning and preview generation.
+* - `--aesthetic-threshold`
+  - Filter low-aesthetic clips when set.
 ```
 
 With `--input-video-path` above, by default it will find all files under that path. In case there are too many files under the same path, you can also provide a specific list of videos in a json file in list format like below:
@@ -148,20 +144,10 @@ With `--input-video-path` above, by default it will find all files under that pa
 
 Then this json can be passed in with `--input-video-list-json-path`; same as paths above, this can be either a path inside the container or on cloud storage.
 
-You can find a list of all parameters in the launcher by running:
+For full options, run:
 
 ```bash
-video_curator launch --help
-```
-
-In addition, you can find a list of all parameters used in the splitting pipeline by running:
-
-```bash
-video_curator launch \
-    --image-name nemo_video_curator --image-tag 1.0.0 \
-    --curator-path ./ \
-    -- python3 -m nemo_curator.video.pipelines.video.run_pipeline split \
-    --help
+python -m ray_curator.examples.video.video_split_clip_example --help
 ```
 
 ---
@@ -169,7 +155,7 @@ video_curator launch \
 ## Performance Considerations
 
 ### Accelerate Pipeline Processing
-You can accelerate the splitting pipeline using NVIDIA's [NVDEC video decoder](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.1/nvdec-video-decoder-api-prog-guide/index.html) and [NVENC video encoder](https://docs.nvidia.com/video-technologies/video-codec-sdk/11.1/nvenc-video-encoder-api-prog-guide/index.html) by setting the following parameters.
+Accelerate the pipeline with NVIDIA's NVDEC/NVENC by selecting the appropriate decoder and encoder options.
 
 ```{note}
 Not all GPUs support NVENC (`h264_nvenc`). Verify your GPU supports NVENC before configuring the following parameters.
@@ -181,22 +167,22 @@ Not all GPUs support NVENC (`h264_nvenc`). Verify your GPU supports NVENC before
 * - Parameter
   - Description
   - Default Value
-* - `VideoFrameExtractionStage`'s `decoder_mode`
-  - Specifies the decoder used for splitting clips. Can be set to `ffmpeg_cpu`, `ffmpeg_gpu`, or `pynvc`. Choose between ffmpeg on CPU or GPU or PyNvVideoCodec for video decoding.
-  - `ffmpeg_cpu`
+* - `--transnetv2-frame-decoder-mode`
+  - Choose between `ffmpeg_cpu`, `ffmpeg_gpu`, or `pynvc` for frame decoding in TransNetV2 splitting.
+  - `pynvc`
 * - `ClipTranscodingStage`'s `encoder`
   - Specifies the encoder used for transcoding clips. Can be set to either `libopenh264` or `h264_nvenc`. If you choose to use `h264_nvenc`, ensure that your GPU supports the hardware encoder.
   - `libopenh264`
-* - `ClipTranscodingStage`'s `use_hwaccel`
-  - Specifies whether to use a hardware accelerator for decoding phase of transcoding. If used when `--encoder` is set to `h264_nvenc`, the hardware accelerator will be `NVENC`. If unset, the hardware accelerator is automatically chosen by `ffmpeg`.
+* - `--transcode-use-hwaccel`
+  - Enable hardware acceleration during transcoding. With `--transcode-encoder h264_nvenc`, the pipeline uses NVENC.
   - N/A
 ```
 
 ### Reduce Memory Requirements
 
-If you need to run the splitting pipeline on less than 38 GB of VRAM, you can reduce the memory requirements by:
+To reduce VRAM usage below 38 GB:
 
-1. Lowering the number of clips captioned at once by setting `QwenCaptionStage`'s `batch_size` argument to a lower value. By default, this parameter is set to `16`.
-2. Applying fp8 weights for the Qwen model using `QwenCaptionStage`'s `fp8_enable` argument.
+1. Set `--captioning-batch-size 1`.
+2. Enable `--captioning-use-fp8-weights`.
 
-We've observed ~21GB of GPU memory usage when `QwenCaptionStage`'s `batch_size=1` and `fp8_enable=True` are set.
+We have observed around 21 GB when both are set.
