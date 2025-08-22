@@ -202,7 +202,9 @@ Save and Export <curate-images/save-export.md>
 
 curate-video/index.md
 Tutorials <curate-video/tutorials/index.md>
-Pipelines <curate-video/pipelines/index.md>
+Load Data <curate-video/load-data/index.md>
+Process Data <curate-video/process-data/index.md>
+Save & Export <curate-video/save-export.md>
 ::::
 
 ::::{toctree}

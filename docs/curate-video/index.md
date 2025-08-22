@@ -9,9 +9,10 @@ modality: "video-only"
 ---
 
 (video-overview)=
+
 # About Video Curation
 
-Video curation is the process of taking long-form video content and dividing it into short, semantically consistent clips that can be filtered for your use case.
+Video curation is the process of taking long-form video content and dividing it into short, semantically consistent clips that you can filter for your use case.
 Depending on the use case, this can involve processing 100+ PB of videos.
 To efficiently process this quantity of videos, NeMo Curator provides highly optimized curation pipelines.
 
@@ -30,7 +31,7 @@ To efficiently process this quantity of videos, NeMo Curator provides highly opt
 This diagram outlines NeMo Curator's video curation architecture.
 Pipelines read videos from local or S3-compatible storage and write curated outputs to local storage.
 
-Execution runs on Ray through the Xenna executor with streaming mode, per-stage resource configuration (CPUs, optional GPUs, NVDEC/NVENC), and autoscaling to rebalance workers across stages.
+Execution runs on Ray using our executor with streaming mode, per-stage resource settings (CPU, optional GPU, NVDEC/NVENC), and automatic scaling to balance workers across stages.
 
 ---
 
@@ -61,28 +62,40 @@ Install NeMo Curator, configure storage, prepare data, and run your first video 
 
 ---
 
-## Pipelines
+## Curation Tasks
 
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2
 
-:::{grid-item-card} {octicon}`video;1.5em;sd-mr-1` Splitting Pipelines
-:link: video-pipelines-splitting
+:::{grid-item-card} {octicon}`download;1.5em;sd-mr-1` Load Data
+:link: video-load-data
 :link-type: ref
-Split long videos into clips using NeMo Curator and annotate them using various models.
+Read videos from local or S3-compatible storage, or supply an explicit file list.
 +++
-{bdg-secondary}`video-splitting`
-{bdg-secondary}`captioning`
-{bdg-secondary}`embeddings`
+{bdg-secondary}`local`
+{bdg-secondary}`s3`
+{bdg-secondary}`file-list`
 :::
 
-:::{grid-item-card} {octicon}`video;1.5em;sd-mr-1` Deduplication Pipelines
-:link: video-pipelines-dedup
+:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Process Data
+:link: video-process-data
 :link-type: ref
-Remove duplicate clips using NeMo Curator's deduplication pipeline.
+Split into clips, encode, generate embeddings or captions, and remove duplicates.
 +++
-{bdg-secondary}`video-deduplication`
-{bdg-secondary}`semantic-dedup`
+{bdg-secondary}`splitting`
+{bdg-secondary}`embeddings`
+{bdg-secondary}`captioning`
+{bdg-secondary}`dedup`
+:::
+
+:::{grid-item-card} {octicon}`device-camera;1.5em;sd-mr-1` Save & Export
+:link: video-save-export
+:link-type: ref
+Understand output directories, parquet embeddings, and packaging for training.
++++
+{bdg-secondary}`parquet`
+{bdg-secondary}`webdataset`
+{bdg-secondary}`metadata`
 :::
 
 ::::
