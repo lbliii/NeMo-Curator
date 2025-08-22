@@ -44,7 +44,58 @@ python -m ray_curator.examples.video.video_split_clip_example \
   --verbose
 ```
 
-Embeddings are written under `$OUT_DIR/iv2_embd_parquet/` (or `ce1_embd_parquet/` if using Cosmos-Embed1).
+The pipeline writes embeddings under `$OUT_DIR/iv2_embd_parquet/` (or `ce1_embd_parquet/` if you use Cosmos-Embed1).
+
+### Embedding Format Example
+
+The pipeline writes embeddings to Parquet with two columns:
+
+- **id**: String UUID for the clip
+- **embedding**: List of float values with length equal to the model’s embedding dimension (for InternVideo2, 512)
+
+::::{tab-set}
+
+:::{tab-item} Directory layout
+
+```text
+$OUT_DIR/
+  iv2_embd_parquet/
+    1a2b3c4d-....parquet
+    5e6f7g8h-....parquet
+```
+
+:::
+
+:::{tab-item} Schema
+
+```text
+id: string
+embedding: list<float32>  # length = 512 for InternVideo2
+```
+
+:::
+
+:::{tab-item} Sample row
+
+```json
+{"id": "a3f2b0c1-7d64-4a1e-9f2b-8b0f6d1e2c33", "embedding": [0.0123, -0.0456, 0.0031, 0.1279, ...]}
+```
+
+:::
+
+:::{tab-item} Read example
+
+```python
+import pyarrow.parquet as pq
+
+table = pq.read_table(f"{OUT_DIR}/iv2_embd_parquet")
+df = table.to_pandas()
+print(df.head())  # columns: id, embedding (list[float])
+```
+
+:::
+
+::::
 
 ---
 
@@ -116,7 +167,7 @@ Video-specific pointers:
   - Clip chunks and previews: `get_output_path_processed_clip_chunks(OUT_DIR)`, `get_output_path_previews(OUT_DIR)`
   - Embeddings parquet: `${OUT_DIR}/iv2_embd_parquet` (or `${OUT_DIR}/ce1_embd_parquet`)
 
-### Example
+### Example Export
 
 The following is an example that packages clips and minimal JSON metadata into sharded tar files:
 

@@ -27,12 +27,10 @@ To efficiently process this quantity of videos, NeMo Curator provides highly opt
 :alt: High-level outline of NeMo Curator's video curation architecture
 ```
 
-This diagram provides a high-level outline of NeMo Curator's video curation architecture.
-NeMo Curator offers a collection of pipelines that read/write video data and metadata from/to S3-compatible storage (or locally if the data is small enough).
+This diagram outlines NeMo Curator's video curation architecture.
+Pipelines read videos from local or S3-compatible storage and write curated outputs to local storage.
 
-These pipelines use Ray for multi-node, multi-GPU scaling, allowing us to stream the data through the pipeline efficiently. All computational stages are GPU-accelerated using state-of-the-art NVIDIA libraries to ensure maximum throughput.
-
-Furthermore, the pipelines are optimized so that each stage has the appropriate number of workers to prevent bottlenecks. For example, in the splitting pipeline, the captioning stage is computationally intensive and has a lower throughput than other stages. To compensate, NeMo Curator's autoscaling system automatically creates more workers for the captioning stage, increasing its throughput and reducing bottlenecks.
+Execution runs on Ray through the Xenna executor with streaming mode, per-stage resource configuration (CPUs, optional GPUs, NVDEC/NVENC), and autoscaling to rebalance workers across stages.
 
 ---
 

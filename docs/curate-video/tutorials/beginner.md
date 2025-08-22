@@ -9,9 +9,15 @@ modality: "video-only"
 
 ---
 
+(video-tutorials-beginner)=
 # Create a Video Pipeline
 
 Learn the basics of creating a video pipeline in Curator by following a split-and-clip pipeline example.
+
+```{contents} Tutorial Steps:
+:local:
+:depth: 2
+```
 
 ## Before You Start
 
