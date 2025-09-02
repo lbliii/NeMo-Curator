@@ -8,6 +8,7 @@ content_type: "howto"
 modality: "video-only"
 ---
 
+(video-save-export)=
 # Save and  Export
 
 NeMo Curator writes clips, metadata, and embeddings to an output directory. Use these paths to integrate with training workflows.
