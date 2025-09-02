@@ -93,11 +93,11 @@ Remove near-duplicates using semantic clustering and similarity with generated e
 :titlesonly:
 :hidden:
 
-Clipping <clipping>
-Frame Extraction <frame-extraction>
-Filtering <filtering>
-Embeddings <embeddings>
-Encoding <transcoding>
-Captions & Preview <captions-preview>
-Duplicate Removal <dedup>
+Clip Videos <clipping>
+Encode Clips <transcoding>
+Filter Clips and Frames <filtering>
+Extract Frames <frame-extraction>
+Create Embeddings <embeddings>
+Remove Duplicate Embeddings <dedup>
+Create Captions & Preview <captions-preview>
 ```

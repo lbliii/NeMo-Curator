@@ -13,31 +13,58 @@ modality: "video-only"
 
 # Clip Encoding
 
-Encoding converts extracted clip buffers into compressed media files suitable for storage and training workflows. Use this guide to choose an encoder, enable hardware acceleration, and tune settings for quality and throughput.
+Convert extracted clip buffers into compressed media files suitable for storage and training workflows using encoders.
 
-## When to Encode
+NeMo Curator provides both CPU and GPU-based encoders.
+
+## Before You Start
+
+If you only need embeddings or analysis and do not require saved media files, you can skip encoding. When writing clips, NeMo Curator produces `.mp4` by default.
+
+---
+
+## Use Cases
 
 - Convert raw clip buffers into a standard format (such as H.264 in MP4) for portability.
 - Normalize heterogeneous inputs (encoding formats, bit rates, containers) into a consistent output.
 - Reduce storage footprint with controlled quality settings.
 
-```{note}
-If you only need embeddings or analysis and do not require saved media files, you can skip encoding. When writing clips, NeMo Curator produces `.mp4` by default.
+## Encoder Options
+
+```{list-table} Encoders
+:header-rows: 1
+
+* - Encoder
+  - Hardware
+  - Description
+* - `libx264`
+  - CPU
+  - Widely available, high quality, CPU-based.
+* - `libopenh264`
+  - CPU
+  - Good quality and throughput balance. Often faster than `libx264` at similar presets.
+* - `h264_nvenc`
+  - NVIDIA GPU (NVENC)
+  - Uses NVENC for high-throughput H.264 encoding on NVIDIA GPU hardware.
 ```
-
-## Encoders and Hardware Acceleration
-
-- CPU encoders:
-  - `libx264`: Widely available, high quality, CPU-based.
-  - `libopenh264`: CPU-based, good quality/throughput balance; often faster than `libx264` at similar presets.
-- GPU encoders (NVIDIA):
-  - `h264_nvenc`: Uses NVENC for high-throughput H.264 encoding on NVIDIA GPU hardware.
 
 ```{tip}
 On systems with supported NVIDIA GPU hardware and an `ffmpeg` build with NVENC, `h264_nvenc` can significantly increase throughput. Refer to the verification steps below to confirm NVENC availability.
 ```
 
-## Configure in NeMo Curator
+### Verify `ffmpeg`/NVENC Support
+
+To use `h264_nvenc`, confirm that your `ffmpeg` build includes NVENC support and install the GPU drivers:
+
+```bash
+ffmpeg -hide_banner -encoders | grep nvenc
+ffmpeg -hide_banner -hwaccels | grep -i nv
+nvidia-smi
+```
+
+Expected output includes entries like `V..... h264_nvenc` and `cuda` in the hardware accelerators list. If not present, install an `ffmpeg` build with NVENC and ensure NVIDIA drivers and CUDA are available.
+
+## Configure
 
 Use `ClipTranscodingStage` to control encoder choice, batching, and acceleration:
 
@@ -56,7 +83,7 @@ transcode = ClipTranscodingStage(
 )
 ```
 
-## Parameters
+### Parameters
 
 ```{list-table} Common Parameters
 :header-rows: 1
@@ -79,21 +106,11 @@ transcode = ClipTranscodingStage(
 Refer to the quickstart options in [Get Started with Video Curation](gs-video) for command-line flags `--transcode-encoder` and `--transcode-use-hwaccel`.
 ```
 
-## Verify `ffmpeg`/NVENC Support
-
-To use `h264_nvenc`, confirm that your `ffmpeg` build includes NVENC support and install the GPU drivers:
-
-```bash
-ffmpeg -hide_banner -encoders | grep nvenc
-ffmpeg -hide_banner -hwaccels | grep -i nv
-nvidia-smi
-```
-
-Expected output includes entries like `V..... h264_nvenc` and `cuda` in the hardware accelerators list. If not present, install an `ffmpeg` build with NVENC and ensure NVIDIA drivers and CUDA are available.
-
 ## Examples
 
-### Pipeline Stage
+::::{tab-set}
+
+:::{tab-item} Pipeline Stage
 
 ```python
 from nemo_curator.pipeline import Pipeline
@@ -106,28 +123,19 @@ pipe.add_stage(ClipTranscodingStage(encoder="libopenh264", encode_batch_size=16,
 pipe.run(XennaExecutor())
 ```
 
-### Script Flags
+:::
+
+:::{tab-item} Script Flags
 
 ```bash
 python -m ray_curator.examples.video.video_split_clip_example \
-  --video-dir "$DATA_DIR" \
-  --model-dir "$MODEL_DIR" \
-  --output-clip-path "$OUT_DIR" \
-  --splitting-algorithm fixed_stride \
-  --fixed-stride-split-duration 10.0 \
-  --embedding-algorithm internvideo2 \
+  ...
   --transcode-encoder h264_nvenc \
   --transcode-use-hwaccel \
-  --verbose
 ```
 
-## Quality and Performance Tips
-
-- Prefer `h264_nvenc` for peak throughput on supported GPU hardware; otherwise use `libopenh264`.
-- Increase `encode_batch_size` to saturate the encoder; test values like 16–64.
-- For CPU encoders, tune `encoder_threads` relative to available cores.
-- Keep resolution and frame rate consistent across clips if training expects uniform inputs.
-- Track throughput and GPU use; adjust batch sizes and worker resources.
+:::
+::::
 
 ## Troubleshooting
 

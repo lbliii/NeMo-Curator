@@ -8,64 +8,88 @@ content_type: "howto"
 modality: "video-only"
 ---
 
-<!-- markdownlint-disable MD041 -->
-
 (video-process-embeddings)=
 
-# Embeddings {#video-process-embeddings}
+# Embeddings
 
-Create frame sequences and compute clip-level embeddings for search, QA, and duplicate removal.
+Generate clip-level embeddings for search, question answering, filtering, and duplicate removal.
 
-## How It Works
+## Use Cases
 
-Embedding in NeMo Curator is a two-stage process per model:
+- Prepare semantic vectors for search, clustering, and near-duplicate detection.
+- Score optional text prompts against clip content.
+- Enable downstream filtering or retrieval tasks that need clip-level vectors.
 
-1. Frame creation stage prepares model-specific frame tensors from earlier extracted frames.
-2. Embedding stage runs the model, produces a clip-level vector, and frees intermediate frames to reduce memory.
+## Before You Start
 
-### Data Flow and Keys
+- Create clips upstream. Refer to [Clipping](video-process-clipping).
+- Provide frames for embeddings or sample at the required rate. Refer to [Frame Extraction](video-process-frame-extraction).
+- Access to model weights on each node (the stages download weights if missing).
 
-- Input frames: `clip.extracted_frames[sequence-<target_fps>]` (from the frame extraction stages). Refer to [Frame Extraction](video-process-frame-extraction).
-- Model-specific frames:
-  - Cosmos-Embed1: `clip.cosmos_embed1_frames`
-  - InternVideo2: `clip.intern_video_2_frames`
-- Embeddings:
-  - Cosmos-Embed1: `clip.cosmos_embed1_embedding`
-  - InternVideo2: `clip.intern_video_2_embedding`
-- Optional text verification result (when you pass `texts_to_verify`):
-  - `clip.cosmos_embed1_text_match` or `clip.intern_video_2_text_match` → tuple of the best-matching text and probability
+## Quick Start
 
-If the source `target_fps` does not yield enough frames for a model’s required frame count, the frame creation stage automatically re-extracts frames at higher rates (doubling up to 20 FPS) using the clip buffer.
-
-```{note}
-Embeddings can be written out by downstream writers. For example, `ClipWriterStage` compacts clip embeddings to buffers for Parquet output, then clears large in-memory fields.
-```
-
-## Cosmos-Embed1
+The typical flow is: create clips → extract frames → prepare model-ready frames → generate embeddings.
 
 ```python
-from nemo_curator.stages.video.embedding.cosmos_embed1 import (
-    CosmosEmbed1FrameCreationStage,
-    CosmosEmbed1EmbeddingStage,
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna import XennaExecutor
+from nemo_curator.stages.video.clipping.clip_frame_extraction import ClipFrameExtractionStage
+from nemo_curator.utils.decoder_utils import FrameExtractionPolicy, FramePurpose
+from nemo_curator.stages.video.embedding.internvideo2 import (
+    InternVideo2FrameCreationStage,
+    InternVideo2EmbeddingStage,
 )
 
-frames = CosmosEmbed1FrameCreationStage(
-    model_dir="/models",
-    variant="224p",  # or 336p, 448p
-    target_fps=2.0,
-    verbose=True,
+pipe = Pipeline(name="video_embeddings")
+pipe.add_stage(
+    ClipFrameExtractionStage(
+        extraction_policies=(FrameExtractionPolicy.sequence,),
+        extract_purposes=(FramePurpose.EMBEDDINGS,),
+        target_res=(-1, -1),
+        verbose=True,
+    )
 )
-embed = CosmosEmbed1EmbeddingStage(
-    model_dir="/models",
-    variant="224p",
-    gpu_memory_gb=20.0,
-    verbose=True,
-)
+pipe.add_stage(InternVideo2FrameCreationStage(model_dir="/models", target_fps=2.0, verbose=True))
+pipe.add_stage(InternVideo2EmbeddingStage(model_dir="/models", gpu_memory_gb=10.0, verbose=True))
+pipe.run(XennaExecutor())
 ```
 
-### Cosmos-Embed1 Parameters
+## Embedding Options
 
-#### Frame Creation (`CosmosEmbed1FrameCreationStage`)
+### Cosmos-Embed1
+
+1. Add `CosmosEmbed1FrameCreationStage` to transform extracted frames into model-ready tensors.
+
+   ```python
+   from nemo_curator.stages.video.embedding.cosmos_embed1 import (
+       CosmosEmbed1FrameCreationStage,
+       CosmosEmbed1EmbeddingStage,
+   )
+
+   frames = CosmosEmbed1FrameCreationStage(
+       model_dir="/models",
+       variant="224p",  # or 336p, 448p
+       target_fps=2.0,
+       verbose=True,
+   )
+   ```
+
+2. Add `CosmosEmbed1EmbeddingStage` to generate `clip.cosmos_embed1_embedding` and optional `clip.cosmos_embed1_text_match`.
+
+   ```python
+   embed = CosmosEmbed1EmbeddingStage(
+       model_dir="/models",
+       variant="224p",
+       gpu_memory_gb=20.0,
+       verbose=True,
+   )
+   ```
+
+#### Parameters
+
+::::{tab-set}
+
+:::{tab-item} CosmosEmbed1FrameCreationStage
 
 ```{list-table} Cosmos-Embed1 frame creation parameters
 :header-rows: 1
@@ -97,7 +121,9 @@ embed = CosmosEmbed1EmbeddingStage(
   - Log per-clip decisions and re-extraction messages.
 ```
 
-#### Embedding (`CosmosEmbed1EmbeddingStage`)
+:::
+
+:::{tab-item} CosmosEmbed1EmbeddingStage
 
 ```{list-table} Cosmos-Embed1 embedding parameters
 :header-rows: 1
@@ -129,40 +155,49 @@ embed = CosmosEmbed1EmbeddingStage(
   - Log setup and per-clip outcomes.
 ```
 
-### Cosmos-Embed1 Procedure
+:::
 
-1. Add `CosmosEmbed1FrameCreationStage` to transform extracted frames into model-ready tensors.
-2. Add `CosmosEmbed1EmbeddingStage` to generate `clip.cosmos_embed1_embedding` and optional `clip.cosmos_embed1_text_match`.
+::::
 
-### Cosmos-Embed1 Outputs
+#### Outputs
 
 - `clip.cosmos_embed1_frames` → temporary tensors used by the embedding stage
 - `clip.cosmos_embed1_embedding` → final clip-level vector (NumPy array)
 - Optional: `clip.cosmos_embed1_text_match`
 
-## InternVideo2
+### InternVideo2
 
-```python
-from nemo_curator.stages.video.embedding.internvideo2 import (
-    InternVideo2FrameCreationStage,
-    InternVideo2EmbeddingStage,
-)
+1. Add `InternVideo2FrameCreationStage` to transform extracted frames into model-ready tensors.
 
-frames = InternVideo2FrameCreationStage(
-    model_dir="/models",
-    target_fps=2.0,
-    verbose=True,
-)
-embed = InternVideo2EmbeddingStage(
-    model_dir="/models",
-    gpu_memory_gb=20.0,
-    verbose=True,
-)
-```
+   ```python
+   from nemo_curator.stages.video.embedding.internvideo2 import (
+       InternVideo2FrameCreationStage,
+       InternVideo2EmbeddingStage,
+   )
 
-### InternVideo2 Parameters
+   frames = InternVideo2FrameCreationStage(
+       model_dir="/models",
+       target_fps=2.0,
+       verbose=True,
+   )
 
-#### Frame Creation (`InternVideo2FrameCreationStage`)
+   ```
+
+2. Add `InternVideo2EmbeddingStage` to generate `clip.intern_video_2_embedding` and optional `clip.intern_video_2_text_match`.
+
+   ```python
+   embed = InternVideo2EmbeddingStage(
+       model_dir="/models",
+       gpu_memory_gb=20.0,
+       verbose=True,
+   )
+   ```
+
+#### Parameters
+
+::::{tab-set}
+
+:::{tab-item} InternVideo2FrameCreationStage
 
 ```{list-table} InternVideo2 frame creation parameters
 :header-rows: 1
@@ -186,7 +221,9 @@ embed = InternVideo2EmbeddingStage(
   - Log re-extraction and per-clip messages.
 ```
 
-#### Embedding (`InternVideo2EmbeddingStage`)
+:::
+
+:::{tab-item} InternVideo2EmbeddingStage
 
 ```{list-table} InternVideo2 embedding parameters
 :header-rows: 1
@@ -218,15 +255,25 @@ embed = InternVideo2EmbeddingStage(
   - Log setup and per-clip outcomes.
 ```
 
-### InternVideo2 Procedure
+:::
 
-1. Add `InternVideo2FrameCreationStage` to transform extracted frames into model-ready tensors.
-2. Add `InternVideo2EmbeddingStage` to generate `clip.intern_video_2_embedding` and optional `clip.intern_video_2_text_match`.
+::::
 
-### InternVideo2 Outputs
+#### Outputs
 
 - `clip.intern_video_2_frames` → temporary tensors used by the embedding stage
 - `clip.intern_video_2_embedding` → final clip-level vector (NumPy array)
 - Optional: `clip.intern_video_2_text_match`
+
+## Troubleshooting
+
+- Not enough frames for embeddings: Increase `target_fps` during frame extraction or adjust clip length so that the model receives the required number of frames.
+- Out of memory during embedding: Lower `gpu_memory_gb`, reduce batch size if exposed, or use a smaller resolution variant.
+- Weights not found on node: Confirm `model_dir` and network access. The stages download weights if missing.
+
+## Next Steps
+
+- Use embeddings for duplicate removal. Refer to [Duplicate Removal](video-process-dedup).
+- Generate captions and previews for review workflows. Refer to [Captions & Preview](video-process-captions-preview).
 
 <!-- end -->
