@@ -14,9 +14,9 @@ modality: "video-only"
 Use the generic semantic duplicate-removal stages with clip embeddings written to parquet.
 
 ```python
-from ray_curator.stages.deduplication.semantic.kmeans import KMeansStage
-from ray_curator.stages.deduplication.semantic.pairwise import PairwiseSimilarityStage
-from ray_curator.stages.deduplication.semantic.ranking import RankingStage
+from nemo_curator.stages.deduplication.semantic.kmeans import KMeansStage
+from nemo_curator.stages.deduplication.semantic.pairwise import PairwiseSimilarityStage
+from nemo_curator.stages.deduplication.semantic.ranking import RankingStage
 
 # Example: cluster embeddings then perform pairwise within clusters
 kmeans = KMeansStage(num_clusters=1000)

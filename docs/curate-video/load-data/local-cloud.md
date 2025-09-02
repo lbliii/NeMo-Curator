@@ -31,9 +31,9 @@ Use `VideoReader` to load videos from local paths or remote URLs.
 ## Python example
 
 ```python
-from ray_curator.pipeline import Pipeline
-from ray_curator.backends.xenna import XennaExecutor
-from ray_curator.stages.video.io.video_reader import VideoReader
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna import XennaExecutor
+from nemo_curator.stages.video.io.video_reader import VideoReader
 
 pipe = Pipeline(name="video_read", description="Read videos and extract metadata")
 pipe.add_stage(VideoReader(input_video_path="s3://my-bucket/videos/", video_limit=100, verbose=True))

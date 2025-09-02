@@ -16,7 +16,7 @@ Create frame sequences and compute clip-level embeddings for search, QA, and dup
 ## Cosmos-Embed1
 
 ```python
-from ray_curator.stages.video.embedding.cosmos_embed1 import (
+from nemo_curator.stages.video.embedding.cosmos_embed1 import (
     CosmosEmbed1FrameCreationStage,
     CosmosEmbed1EmbeddingStage,
 )
@@ -38,7 +38,7 @@ embed = CosmosEmbed1EmbeddingStage(
 ## InternVideo2
 
 ```python
-from ray_curator.stages.video.embedding.internvideo2 import (
+from nemo_curator.stages.video.embedding.internvideo2 import (
     InternVideo2FrameCreationStage,
     InternVideo2EmbeddingStage,
 )

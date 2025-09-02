@@ -15,9 +15,9 @@ modality: "video-only"
 ## Basic folder read
 
 ```python
-from ray_curator.pipeline import Pipeline
-from ray_curator.backends.xenna import XennaExecutor
-from ray_curator.stages.video.io.video_reader import VideoReader
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna import XennaExecutor
+from nemo_curator.stages.video.io.video_reader import VideoReader
 
 VIDEO_DIR = "/path/to/videos"  # or s3://bucket/path
 
@@ -29,10 +29,10 @@ pipe.run(XennaExecutor())
 ## Explicit list on remote storage
 
 ```python
-from ray_curator.pipeline import Pipeline
-from ray_curator.backends.xenna import XennaExecutor
-from ray_curator.stages.client_partitioning import ClientPartitioningStage
-from ray_curator.stages.video.io.video_reader import VideoReaderStage
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna import XennaExecutor
+from nemo_curator.stages.client_partitioning import ClientPartitioningStage
+from nemo_curator.stages.video.io.video_reader import VideoReaderStage
 
 ROOT = "s3://my-bucket/datasets/"  # root prefix
 JSON_LIST = "s3://my-bucket/lists/videos.json"  # absolute paths under ROOT

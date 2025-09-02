@@ -29,10 +29,10 @@ If any entry is outside the root, the stage raises an error.
 ## Python example
 
 ```python
-from ray_curator.pipeline import Pipeline
-from ray_curator.backends.xenna import XennaExecutor
-from ray_curator.stages.client_partitioning import ClientPartitioningStage
-from ray_curator.stages.video.io.video_reader import VideoReaderStage
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna import XennaExecutor
+from nemo_curator.stages.client_partitioning import ClientPartitioningStage
+from nemo_curator.stages.video.io.video_reader import VideoReaderStage
 
 ROOT = "s3://my-bucket/datasets/"
 JSON_LIST = "s3://my-bucket/lists/videos.json"

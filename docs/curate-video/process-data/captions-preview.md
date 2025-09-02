@@ -16,8 +16,8 @@ Prepare inputs, generate captions, optionally enhance them, and produce preview 
 ## Preparation and previews
 
 ```python
-from ray_curator.stages.video.caption.caption_preparation import CaptionPreparationStage
-from ray_curator.stages.video.preview.preview import PreviewStage
+from nemo_curator.stages.video.caption.caption_preparation import CaptionPreparationStage
+from nemo_curator.stages.video.preview.preview import PreviewStage
 
 prep = CaptionPreparationStage(
     model_variant="qwen",
@@ -41,8 +41,8 @@ preview = PreviewStage(
 ## Caption generation and enhancement
 
 ```python
-from ray_curator.stages.video.caption.caption_generation import CaptionGenerationStage
-from ray_curator.stages.video.caption.caption_enhancement import CaptionEnhancementStage
+from nemo_curator.stages.video.caption.caption_generation import CaptionGenerationStage
+from nemo_curator.stages.video.caption.caption_enhancement import CaptionEnhancementStage
 
 gen = CaptionGenerationStage(
     model_dir="/models",

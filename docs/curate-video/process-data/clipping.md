@@ -16,7 +16,7 @@ Split long videos into shorter clips for downstream processing.
 ## Fixed stride
 
 ```python
-from ray_curator.stages.video.clipping.clip_extraction_stages import FixedStrideExtractorStage
+from nemo_curator.stages.video.clipping.clip_extraction_stages import FixedStrideExtractorStage
 
 stage = FixedStrideExtractorStage(
     clip_len_s=10.0,
@@ -29,8 +29,8 @@ stage = FixedStrideExtractorStage(
 ## TransNetV2 scene-change detection
 
 ```python
-from ray_curator.stages.video.clipping.video_frame_extraction import VideoFrameExtractionStage
-from ray_curator.stages.video.clipping.transnetv2_extraction import TransNetV2ClipExtractionStage
+from nemo_curator.stages.video.clipping.video_frame_extraction import VideoFrameExtractionStage
+from nemo_curator.stages.video.clipping.transnetv2_extraction import TransNetV2ClipExtractionStage
 
 frame_extractor = VideoFrameExtractionStage(
     decoder_mode="pynvc",  # or "ffmpeg_gpu", "ffmpeg_cpu"

@@ -34,9 +34,9 @@ Before you begin adding a new pipeline stage, make sure that you have:
 ```py
 from typing import List
 
-from ray_curator.stages.base import ProcessingStage
-from ray_curator.stages.resources import Resources
-from ray_curator.tasks.video import VideoTask
+from nemo_curator.stages.base import ProcessingStage
+from nemo_curator.stages.resources import Resources
+from nemo_curator.tasks.video import VideoTask
 
 
 class MyCustomStage(ProcessingStage[VideoTask, VideoTask]):
@@ -58,7 +58,7 @@ class MyCustomStage(ProcessingStage[VideoTask, VideoTask]):
 
 ```py
 # You can override resources at construction time using with_()
-from ray_curator.stages.resources import Resources
+from nemo_curator.stages.resources import Resources
 
 stage = MyCustomStage().with_(
     resources=Resources(cpus=4.0, gpu_memory_gb=16.0, nvdecs=1, nvencs=1)
@@ -122,9 +122,9 @@ Update the ClipWriterStage to handle your stage's output:
 ### 1. Build and Run a Pipeline in Python
 
 ```py
-from ray_curator.pipeline.pipeline import Pipeline
-from ray_curator.stages.video.io.video_reader import VideoReaderStage
-from ray_curator.stages.video.io.clip_writer import ClipWriterStage
+from nemo_curator.pipeline.pipeline import Pipeline
+from nemo_curator.stages.video.io.video_reader import VideoReaderStage
+from nemo_curator.stages.video.io.clip_writer import ClipWriterStage
 
 pipeline = (
     Pipeline(name="custom-video-pipeline")

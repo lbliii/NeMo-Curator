@@ -59,23 +59,23 @@ For more information, refer to the [Video Concepts](about-concepts-video) sectio
 Import required classes and define paths used throughout the example.
 
 ```python
-from ray_curator.pipeline import Pipeline
-from ray_curator.backends.xenna import XennaExecutor
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna import XennaExecutor
 
-from ray_curator.stages.video.io.video_reader import VideoReader
-from ray_curator.stages.video.clipping.clip_extraction_stages import (
+from nemo_curator.stages.video.io.video_reader import VideoReader
+from nemo_curator.stages.video.clipping.clip_extraction_stages import (
     FixedStrideExtractorStage,
     ClipTranscodingStage,
 )
-from ray_curator.stages.video.clipping.clip_frame_extraction import (
+from nemo_curator.stages.video.clipping.clip_frame_extraction import (
     ClipFrameExtractionStage,
 )
-from ray_curator.utils.decoder_utils import FrameExtractionPolicy, FramePurpose
-from ray_curator.stages.video.embedding.internvideo2 import (
+from nemo_curator.utils.decoder_utils import FrameExtractionPolicy, FramePurpose
+from nemo_curator.stages.video.embedding.internvideo2 import (
     InternVideo2FrameCreationStage,
     InternVideo2EmbeddingStage,
 )
-from ray_curator.stages.video.io.clip_writer import ClipWriterStage
+from nemo_curator.stages.video.io.clip_writer import ClipWriterStage
 
 VIDEO_DIR = "/path/to/videos"
 MODEL_DIR = "/path/to/models"
@@ -128,8 +128,8 @@ pipeline.add_stage(
 :::{tab-item} TransNetV2 (scene change)
 
 ```python
-from ray_curator.stages.video.clipping.video_frame_extraction import VideoFrameExtractionStage
-from ray_curator.stages.video.clipping.transnetv2_extraction import TransNetV2ClipExtractionStage
+from nemo_curator.stages.video.clipping.video_frame_extraction import VideoFrameExtractionStage
+from nemo_curator.stages.video.clipping.transnetv2_extraction import TransNetV2ClipExtractionStage
 
 pipeline.add_stage(VideoFrameExtractionStage(decoder_mode="pynvc", verbose=True))
 pipeline.add_stage(

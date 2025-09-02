@@ -31,7 +31,7 @@ Before you begin adding a custom model, make sure that you have:
 
 ### Review Model Interface
 
-In Ray Curator, models are defined by classes inheriting from `ray_curator.models.base.ModelInterface`. The interface looks like this:
+In Ray Curator, models are defined by classes inheriting from `nemo_curator.models.base.ModelInterface`. The interface looks like this:
 
 ```py
 class ModelInterface(abc.ABC):
@@ -58,7 +58,7 @@ import numpy as np
 import numpy.typing as npt
 import torch
 
-from ray_curator.models.base import ModelInterface
+from nemo_curator.models.base import ModelInterface
 
 WEIGHTS_MODEL_ID = "example/my-model"
 

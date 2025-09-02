@@ -17,8 +17,8 @@ Apply motion-based filtering and aesthetic filtering to prune low-quality clips.
 ## Motion filtering
 
 ```python
-from ray_curator.stages.video.filtering.motion_filter import MotionFilterStage
-from ray_curator.stages.video.filtering.motion_vector_backend import MotionVectorDecodeStage
+from nemo_curator.stages.video.filtering.motion_filter import MotionFilterStage
+from nemo_curator.stages.video.filtering.motion_vector_backend import MotionVectorDecodeStage
 
 decode = MotionVectorDecodeStage(
     target_fps=2.0,
@@ -38,7 +38,7 @@ motion = MotionFilterStage(
 ## Aesthetic filtering
 
 ```python
-from ray_curator.stages.video.filtering.clip_aesthetic_filter import ClipAestheticFilterStage
+from nemo_curator.stages.video.filtering.clip_aesthetic_filter import ClipAestheticFilterStage
 
 aesthetic = ClipAestheticFilterStage(
     model_dir="/models",

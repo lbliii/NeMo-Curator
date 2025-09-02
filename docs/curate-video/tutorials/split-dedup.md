@@ -30,7 +30,7 @@ Learn how to run the splitting pipeline to generate clips and embeddings, then r
 Run the splitting example. Set `DATA_DIR`, `OUT_DIR`, and `MODEL_DIR` first.
 
 ```bash
-python -m ray_curator.examples.video.video_split_clip_example \
+python -m nemo_curator.examples.video.video_split_clip_example \
   --video-dir "$DATA_DIR" \
   --model-dir "$MODEL_DIR" \
   --output-clip-path "$OUT_DIR" \
@@ -101,10 +101,10 @@ print(df.head())  # columns: id, embedding (list[float])
 Use KMeans clustering followed by Pairwise similarity on the parquet embeddings.
 
 ```python
-from ray_curator.pipeline import Pipeline
-from ray_curator.backends.xenna import XennaExecutor
-from ray_curator.stages.deduplication.semantic.kmeans import KMeansStage
-from ray_curator.stages.deduplication.semantic.pairwise import PairwiseStage
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna import XennaExecutor
+from nemo_curator.stages.deduplication.semantic.kmeans import KMeansStage
+from nemo_curator.stages.deduplication.semantic.pairwise import PairwiseStage
 
 INPUT_PARQUET = f"{OUT_DIR}/iv2_embd_parquet"  # or s3://...
 OUTPUT_DIR = f"{OUT_DIR}/semantic_dedup"

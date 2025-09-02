@@ -54,9 +54,9 @@ Before you begin adding custom code, make sure that you have:
 Create or edit a stage to use your code, then assemble a pipeline and run it in Python:
 
 ```py
-from ray_curator.pipeline.pipeline import Pipeline
-from ray_curator.stages.video.io.video_reader import VideoReaderStage
-from ray_curator.stages.video.io.clip_writer import ClipWriterStage
+from nemo_curator.pipeline.pipeline import Pipeline
+from nemo_curator.stages.video.io.video_reader import VideoReaderStage
+from nemo_curator.stages.video.io.clip_writer import ClipWriterStage
 
 from my_code.my_file import MyClass
 
