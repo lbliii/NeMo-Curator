@@ -38,7 +38,7 @@ Create and activate a virtual environment, then choose an install option:
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install --upgrade pip
-pip install "ray-curator[video,video_cuda]"
+pip install "nemo-curator[video,video_cuda]"
 ```
 
 :::
@@ -48,7 +48,7 @@ pip install "ray-curator[video,video_cuda]"
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install --upgrade pip
-pip install "ray-curator[video]"
+pip install "nemo-curator[video]"
 ```
 
 :::
