@@ -44,7 +44,7 @@ transnet = TransNetV2ClipExtractionStage(
     max_length_mode="stride",  # or "truncate"
     crop_s=0.5,
     gpu_memory_gb=10.0,
-    limit_clips=0,
+    limit_clips=-1,
     verbose=True,
 )
 ```

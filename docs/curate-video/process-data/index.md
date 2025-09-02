@@ -23,6 +23,15 @@ Create a `Pipeline` and add stages for clip extraction, optional re-encoding and
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2
 
+:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Encoding
+:link: video-process-transcoding
+:link-type: ref
+Encode clips to H.264 using CPU or GPU encoders and tune performance.
++++
+{bdg-secondary}`h264_nvenc`
+{bdg-secondary}`libopenh264`
+:::
+
 :::{grid-item-card} {octicon}`versions;1.5em;sd-mr-1` Clipping
 :link: video-process-clipping
 :link-type: ref
@@ -30,6 +39,15 @@ Split long videos into shorter clips using fixed stride or scene-change detectio
 +++
 {bdg-secondary}`fixed-stride`
 {bdg-secondary}`transnetv2`
+:::
+
+:::{grid-item-card} {octicon}`device-camera;1.5em;sd-mr-1` Frame Extraction
+:link: video-process-frame-extraction
+:link-type: ref
+Extract frames from clips or full videos for embeddings, filtering, and analysis.
++++
+{bdg-secondary}`frames`
+{bdg-secondary}`fps`
 :::
 
 :::{grid-item-card} {octicon}`filter;1.5em;sd-mr-1` Filtering
@@ -76,8 +94,10 @@ Remove near-duplicates using semantic clustering and similarity with generated e
 :hidden:
 
 Clipping <clipping>
+Frame Extraction <frame-extraction>
 Filtering <filtering>
 Embeddings <embeddings>
+Encoding <transcoding>
 Captions & Preview <captions-preview>
 Duplicate Removal <dedup>
 ```

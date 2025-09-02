@@ -24,11 +24,12 @@ To efficiently process this quantity of videos, NeMo Curator provides highly opt
 
 ## Architecture
 
+The following diagram outlines NeMo Curator's video curation architecture.
+
 ```{image} ../about/concepts/video/_images/video-pipeline-diagram.png
 :alt: High-level outline of NeMo Curator's video curation architecture
 ```
 
-This diagram outlines NeMo Curator's video curation architecture.
 Pipelines read videos from local or S3-compatible storage and write curated outputs to local storage.
 
 Execution runs on Ray using our executor with streaming mode, per-stage resource settings (CPU, optional GPU, NVDEC/NVENC), and automatic scaling to balance workers across stages.

@@ -140,7 +140,7 @@ The example script supports the following options:
 * - `--generate-captions`, `--generate-previews`
   - Enable captioning and preview generation
 * - `--transcode-use-hwaccel`, `--transcode-encoder`
-  - Use NVENC when available (for example, `h264_nvenc`)
+  - Use NVENC when available (for example, `h264_nvenc`). Refer to [Clip Encoding](video-process-transcoding) to verify NVENC support and choose encoders.
 ```
 
 :::{tip}
@@ -149,4 +149,4 @@ To use the default Cosmos-Embed1 instead, omit `--embedding-algorithm` or set `-
 
 ## Next Steps
 
-Explore the [Video Curation documentation](video-overview).
+Explore the [Video Curation documentation](video-overview). For encoding guidance, refer to [Clip Encoding](video-process-transcoding).

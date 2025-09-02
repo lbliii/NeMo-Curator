@@ -32,14 +32,14 @@ NeMo Curator loads videos with a composite stage that discovers files and extrac
 
 Use `VideoReader` to load videos from local paths or remote URLs.
 
-### Local paths
+### Local Paths
 
 - Examples: `/data/videos/`, `/mnt/datasets/av/`
 - Uses `FilePartitioningStage` to recursively discover files.
 - Filters by extensions: `.mp4`, `.mov`, `.avi`, `.mkv`, `.webm`.
 - Set `video_limit` to cap discovery during testing (`None` means unlimited).
 
-### Remote paths
+### Remote Paths
 
 - Examples: `s3://bucket/path/`, `gcs://bucket/path/`, `https://host/path/`, and other fsspec-supported protocols such as `s3a://` and `abfs://`.
 - Uses `ClientPartitioningStage` backed by `fsspec` to list files.
@@ -50,7 +50,7 @@ Use `VideoReader` to load videos from local paths or remote URLs.
 Use an object storage prefix (for example, `s3://my-bucket/videos/`) to stream from cloud storage. Configure credentials in your environment or client configuration.
 ```
 
-### Python example
+### Example
 
 ```python
 from nemo_curator.pipeline import Pipeline
@@ -68,7 +68,7 @@ pipe.run(XennaExecutor())
 
 For remote datasets, `ClientPartitioningStage` can use an explicit file list JSON. Each entry must be an absolute path under the specified root.
 
-### JSON format
+### JSON Format
 
 ```json
 [
@@ -80,7 +80,7 @@ For remote datasets, `ClientPartitioningStage` can use an explicit file list JSO
 
 If any entry is outside the root, the stage raises an error.
 
-### Python example
+### Example
 
 ```python
 from nemo_curator.pipeline import Pipeline

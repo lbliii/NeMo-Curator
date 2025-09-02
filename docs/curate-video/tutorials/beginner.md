@@ -153,7 +153,7 @@ pipeline.add_stage(
 
 ### Encode Clips
 
-Convert clip buffers to H.264 using the selected encoder and settings.
+Convert clip buffers to H.264 using the selected encoder and settings. Refer to [Clip Encoding](video-process-transcoding) for encoder choices and NVENC setup.
 
 ```python
 pipeline.add_stage(
