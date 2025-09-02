@@ -22,7 +22,7 @@ To use NeMo Curator’s video curation modules, ensure you meet the following re
   - Volta™ or higher (compute capability 7.0+)
   - CUDA 12 or above
   - With defaults, the full splitting plus captioning example can use up to 38 GB of VRAM. Reduce VRAM to about 21 GB by lowering batch sizes and using FP8 where available.
-- FFmpeg on your system path
+- `FFmpeg` on your system path
 - Git (required for some model dependencies)
 
 ---
@@ -34,28 +34,56 @@ Create and activate a virtual environment, then choose an install option:
 ::::{tab-set}
 
 :::{tab-item} GPU (CUDA)
+
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install --upgrade pip
 pip install "ray-curator[video,video_cuda]"
 ```
+
 :::
 
-:::{tab-item} CPU Only
+:::{tab-item} CPU
+
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install --upgrade pip
 pip install "ray-curator[video]"
 ```
+
 :::
 
 ::::
 
-## Prepare model weights
+## Choose Embedding Model
 
-InternVideo2 and BERT weights are required for IV2 embeddings. Prepare this directory layout:
+Embeddings convert each video clip into a numeric vector that captures visual and semantic content. Curator uses these vectors to:
 
-```
+- Remove near-duplicate clips during duplicate removal
+- Enable similarity search and clustering
+- Support downstream analysis such as caption verification
+
+You can choose between two embedding models:
+
+- **Cosmos-Embed1 (default)**: Automatically downloaded to `MODEL_DIR` on first run; good general-purpose performance and lower VRAM usage.
+- **InternVideo2 (IV2)**: Open model that requires the IV2 checkpoint and BERT model files to be available locally; higher VRAM usage.
+
+For this quickstart, we're going to set up support for **IV2**.
+
+### Prepare IV2 Model Weights
+
+The following steps are required when setting `--embedding-algorithim` to `internvideo2` or when pre-staging models for offline use.
+
+1. Create a model directory.
+   :::{tip}
+   You can reuse the same `<MODEL_DIR>` across runs.
+   :::
+2. Download the IV2 Checkpoint from the [OpenGVLab page](https://github.com/OpenGVLab) and accept the terms.
+3. Download the BERT model files for [`google-bert/bert-large-uncased`](https://huggingface.co/google-bert/bert-large-uncased).
+
+The directory should resemble the following:
+
+```text
 <MODEL_DIR>/
   OpenGVLab/InternVideo2-Stage2_1B-224p-f4/InternVideo2-stage2_1b-224p-f4.pt
   google-bert/bert-large-uncased/
@@ -64,28 +92,23 @@ InternVideo2 and BERT weights are required for IV2 embeddings. Prepare this dire
     ... (standard tokenizer files)
 ```
 
-Notes:
-- Download the IV2 checkpoint from the OpenGVLab page and accept the terms.
-- Download the BERT tokenizer files for `google-bert/bert-large-uncased`.
-- You can reuse the same `<MODEL_DIR>` across runs.
-
-## Set up data directories
+## Set Up Data Directories
 
 Store input videos locally or on S3-compatible storage.
 
-For local testing, define paths like:
+- **Local**: Define paths like:
 
-```
-DATA_DIR=/path/to/videos
-OUT_DIR=/path/to/output_clips
-MODEL_DIR=/path/to/models
-```
+  ```bash
+  DATA_DIR=/path/to/videos
+  OUT_DIR=/path/to/output_clips
+  MODEL_DIR=/path/to/models
+  ```
 
-For S3, configure credentials in `~/.aws/credentials` and use `s3://` paths for `--video-dir` and `--output-clip-path`.
+- **S3**: Configure credentials in `~/.aws/credentials` and use `s3://` paths for `--video-dir` and `--output-clip-path`.
 
-## Run the splitting pipeline example
+## Run the Splitting Pipeline Example
 
-Use the example script to read videos, split into clips, and write outputs. This runs a Ray pipeline with `XennaExecutor` under the hood.
+Use the following example script to read videos, split into clips, and write outputs. This runs a Ray pipeline with `XennaExecutor` under the hood.
 
 ```bash
 python -m ray_curator.examples.video.video_split_clip_example \
@@ -99,14 +122,31 @@ python -m ray_curator.examples.video.video_split_clip_example \
   --verbose
 ```
 
-Common options:
+### Options
 
-- `--splitting-algorithm`: `fixed_stride` or `transnetv2`
-- `--transnetv2-frame-decoder-mode`: `pynvc`, `ffmpeg_gpu`, or `ffmpeg_cpu`
-- `--embedding-algorithm`: `cosmos-embed1-224p`, `cosmos-embed1-336p`, `cosmos-embed1-448p`, or `internvideo2`
-- `--generate-captions` and `--generate-previews` to enable captioning and preview generation
-- `--transcode-use-hwaccel` and `--transcode-encoder h264_nvenc` to use NVENC when available
+The example script supports the following options:
+
+```{list-table} Common Options
+:header-rows: 1
+
+* - Option
+  - Values or Description
+* - `--splitting-algorithm`
+  - `fixed_stride` | `transnetv2`
+* - `--transnetv2-frame-decoder-mode`
+  - `pynvc` | `ffmpeg_gpu` | `ffmpeg_cpu`
+* - `--embedding-algorithm`
+  - `cosmos-embed1-224p` | `cosmos-embed1-336p` | `cosmos-embed1-448p` | `internvideo2`
+* - `--generate-captions`, `--generate-previews`
+  - Enable captioning and preview generation
+* - `--transcode-use-hwaccel`, `--transcode-encoder`
+  - Use NVENC when available (for example, `h264_nvenc`)
+```
+
+:::{tip}
+To use the default Cosmos-Embed1 instead, omit `--embedding-algorithm` or set `--embedding-algorithm cosmos-embed1-224p`.
+:::
 
 ## Next Steps
 
-Explore the [Video Curation documentation](video-overview). See the splitting pipeline for more parameters and the semantic deduplication guide to remove near-duplicate clips.
+Explore the [Video Curation documentation](video-overview).
