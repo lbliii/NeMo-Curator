@@ -135,7 +135,7 @@ pipe.add_stage(
 )
 pipe.add_stage(InternVideo2FrameCreationStage(model_dir="/models", target_fps=2.0, verbose=True))
 pipe.add_stage(InternVideo2EmbeddingStage(model_dir="/models", gpu_memory_gb=20.0, verbose=True))
-pipe.run(XennaExecutor())
+pipe.run()
 ```
 
 ## Troubleshooting
