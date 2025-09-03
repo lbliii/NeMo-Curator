@@ -251,6 +251,5 @@ python -m nemo_curator.examples.video.video_split_clip_example \
 Run the configured pipeline using the executor.
 
 ```python
-executor = XennaExecutor()
-pipeline.run(executor)
+pipeline.run()
 ```
