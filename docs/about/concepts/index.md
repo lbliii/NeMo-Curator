@@ -48,5 +48,5 @@ Discover video data curation concepts, such as distributed processing, pipeline 
 
 Image Concepts <image/index.md>
 Text Concepts <text/index.md>
-Video Cocnepts <video/index.md>
+Video Concepts <video/index.md>
 ```
