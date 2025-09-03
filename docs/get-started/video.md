@@ -111,7 +111,7 @@ Store input videos locally or on S3-compatible storage.
 Use the following example script to read videos, split into clips, and write outputs. This runs a Ray pipeline with `XennaExecutor` under the hood.
 
 ```bash
-python -m ray_curator.examples.video.video_split_clip_example \
+python -m nemo_curator.examples.video.video_split_clip_example \
   --video-dir "$DATA_DIR" \
   --model-dir "$MODEL_DIR" \
   --output-clip-path "$OUT_DIR" \
