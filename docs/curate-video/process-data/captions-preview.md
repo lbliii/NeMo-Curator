@@ -14,6 +14,79 @@ modality: "video-only"
 
 Prepare inputs, generate captions, optionally enhance them, and produce preview images.
 
+---
+
+## Quickstart
+
+Use the pipeline stages or the example script flags to prepare captions and preview images.
+
+::::{tab-set}
+
+:::{tab-item} Pipeline Stage
+
+```python
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna import XennaExecutor
+from nemo_curator.stages.video.caption.caption_preparation import CaptionPreparationStage
+from nemo_curator.stages.video.caption.caption_generation import CaptionGenerationStage
+from nemo_curator.stages.video.caption.caption_enhancement import CaptionEnhancementStage
+from nemo_curator.stages.video.preview.preview import PreviewStage
+
+pipe = Pipeline(name="captions_preview")
+pipe.add_stage(
+    CaptionPreparationStage(
+        model_variant="qwen",
+        prompt_variant="default",
+        prompt_text=None,
+        sampling_fps=2.0,
+        window_size=256,
+        remainder_threshold=128,
+        preprocess_dtype="float16",
+        model_does_preprocess=False,
+        generate_previews=True,
+        verbose=True,
+    )
+)
+pipe.add_stage(PreviewStage(target_fps=1, target_height=240, verbose=True))
+pipe.add_stage(
+    CaptionGenerationStage(
+        model_dir="/models",
+        model_variant="qwen",
+        caption_batch_size=8,
+        fp8=False,
+        max_output_tokens=512,
+        model_does_preprocess=False,
+        generate_stage2_caption=False,
+        stage2_prompt_text=None,
+        disable_mmcache=True,
+    )
+)
+pipe.run()
+```
+
+:::
+
+:::{tab-item} Script Flags
+
+```bash
+python -m nemo_curator.examples.video.video_split_clip_example \
+  ... \
+  --generate-captions \
+  --captioning-algorithm qwen \
+  --captioning-window-size 256 \
+  --captioning-remainder-threshold 128 \
+  --captioning-sampling-fps 2.0 \
+  --captioning-preprocess-dtype float16 \
+  --captioning-batch-size 8 \
+  --captioning-max-output-tokens 512 \
+  --generate-previews \
+  --preview-target-fps 1 \
+  --preview-target-height 240
+```
+
+:::
+::::
+
 ## Preparation and previews
 
 1. Prepare caption inputs from each clip window. This step splits clips into fixed windows, formats model‑ready inputs for Qwen‑VL, and optionally stores per‑window `mp4` bytes for previews.
@@ -316,21 +389,6 @@ preview = PreviewStage(
     num_cpus_per_worker=4.0,
     verbose=False,
 )
-```
-
-### CLI Options (example pipeline)
-
-When using the example pipeline, enable previews and set targets:
-
-```bash
-python examples/video/video_split_clip_example.py \
-  --video-dir /data/videos \
-  --model-dir /models \
-  --output-clip-path /outputs \
-  --generate-captions \
-  --generate-previews \
-  --preview-target-fps 1 \
-  --preview-target-height 240
 ```
 
 ### Outputs

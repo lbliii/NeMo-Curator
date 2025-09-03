@@ -9,9 +9,12 @@ modality: "video-only"
 ---
 
 (gs-video)=
+
 # Get Started with Video Curation
 
-This guide shows how to install Curator and run your first video curation pipeline using the Python API.
+This guide shows how to install Curator and run your first video curation pipeline.
+
+The [example pipeline](#run-the-splitting-pipeline-example) processes a list of videos, splitting each into 10‑second clips using a fixed stride. It then generates clip‑level embeddings for downstream tasks such as duplicate removal and similarity search.
 
 ## Prerequisites
 
@@ -22,7 +25,7 @@ To use NeMo Curator’s video curation modules, ensure you meet the following re
   - Volta™ or higher (compute capability 7.0+)
   - CUDA 12 or above
   - With defaults, the full splitting plus captioning example can use up to 38 GB of VRAM. Reduce VRAM to about 21 GB by lowering batch sizes and using FP8 where available.
-- `FFmpeg` on your system path
+- `FFmpeg` 7+ on your system path. For H.264, ensure an encoder is available: `h264_nvenc` (GPU) or `libopenh264`/`libx264` (CPU).
 - Git (required for some model dependencies)
 
 ---
@@ -55,6 +58,55 @@ pip install "nemo-curator[video]"
 
 ::::
 
+## Install `FFmpeg` and Encoders
+
+Curator’s video pipelines rely on `FFmpeg` for decoding and encoding. If you plan to encode clips (for example, using `--transcode-encoder libopenh264` or `h264_nvenc`), install `FFmpeg` with the corresponding encoders.
+
+:::::{tab-set}
+
+::::{tab-item} Debian/Ubuntu (Script)
+
+Use the maintained script in the repository to build and install `FFmpeg` with `libopenh264` and NVIDIA NVENC support. The script enables `--enable-libopenh264`, `--enable-cuda-nvcc`, and `--enable-libnpp`.
+
+- Script source: [docker/common/install_ffmpeg.sh](https://github.com/NVIDIA-NeMo/Curator/blob/main/docker/common/install_ffmpeg.sh)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/NVIDIA-NeMo/Curator/main/docker/common/install_ffmpeg.sh -o install_ffmpeg.sh
+chmod +x install_ffmpeg.sh
+sudo bash install_ffmpeg.sh
+```
+
+::::
+
+::::{tab-item} macOS (Homebrew)
+
+Install `FFmpeg` using Homebrew, then verify available encoders.
+
+```bash
+brew install ffmpeg openh264
+```
+
+Note: Homebrew `ffmpeg` does not support NVENC on macOS. If `libopenh264` is not available in your build, use `libx264` as the H.264 encoder instead of `libopenh264`.
+
+::::
+
+::::{tab-item} Verify Installation
+
+Confirm that `FFmpeg` is on your `PATH` and that at least one H.264 encoder is available:
+
+```bash
+ffmpeg -hide_banner -version | head -n 5
+ffmpeg -encoders | grep -E "h264_nvenc|libopenh264|libx264" | cat
+```
+
+If encoders are missing, reinstall `FFmpeg` with the required options or use the Debian/Ubuntu script above.
+
+::::
+
+:::::
+
+Refer to [Clip Encoding](video-process-transcoding) to choose encoders and verify NVENC support on your system.
+
 ## Choose Embedding Model
 
 Embeddings convert each video clip into a numeric vector that captures visual and semantic content. Curator uses these vectors to:
@@ -72,7 +124,7 @@ For this quickstart, we're going to set up support for **IV2**.
 
 ### Prepare IV2 Model Weights
 
-The following steps are required when setting `--embedding-algorithm` to `internvideo2` or when pre-staging models for offline use.
+Complete the following steps when you set `--embedding-algorithm` to `internvideo2` or when you pre-stage models for offline use.
 
 1. Create a model directory.
    :::{tip}

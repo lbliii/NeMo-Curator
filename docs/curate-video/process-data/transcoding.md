@@ -13,9 +13,13 @@ modality: "video-only"
 
 # Clip Encoding
 
-Convert extracted clip buffers into compressed media files suitable for storage and training workflows using encoders.
+Convert extracted clip buffers into compressed media files suitable for storage and training workflows using encoders. NeMo Curator provides both CPU and GPU-based encoders.
 
-NeMo Curator provides both CPU and GPU-based encoders.
+## Use Cases
+
+- Convert raw clip buffers into a standard format (such as H.264 in MP4) for portability.
+- Normalize heterogeneous inputs (encoding formats, bit rates, containers) into a consistent output.
+- Reduce storage footprint with controlled quality settings.
 
 ## Before You Start
 
@@ -23,11 +27,38 @@ If you only need embeddings or analysis and do not require saved media files, yo
 
 ---
 
-## Use Cases
+## Quickstart
 
-- Convert raw clip buffers into a standard format (such as H.264 in MP4) for portability.
-- Normalize heterogeneous inputs (encoding formats, bit rates, containers) into a consistent output.
-- Reduce storage footprint with controlled quality settings.
+Use the pipeline stage or the example script flags to encode clips with CPU or GPU encoders.
+
+::::{tab-set}
+
+:::{tab-item} Pipeline Stage
+
+```python
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna import XennaExecutor
+from nemo_curator.stages.video.clipping.clip_extraction_stages import FixedStrideExtractorStage, ClipTranscodingStage
+
+pipe = Pipeline(name="transcode_example")
+pipe.add_stage(FixedStrideExtractorStage(clip_len_s=10.0, clip_stride_s=10.0))
+pipe.add_stage(ClipTranscodingStage(encoder="libopenh264", encode_batch_size=16, encoder_threads=1, verbose=True))
+pipe.run()
+```
+
+:::
+
+:::{tab-item} Script Flags
+
+```bash
+python -m ray_curator.examples.video.video_split_clip_example \
+  ...
+  --transcode-encoder h264_nvenc \
+  --transcode-use-hwaccel \
+```
+
+:::
+::::
 
 ## Encoder Options
 
@@ -105,37 +136,6 @@ transcode = ClipTranscodingStage(
 ```{seealso}
 Refer to the quickstart options in [Get Started with Video Curation](gs-video) for command-line flags `--transcode-encoder` and `--transcode-use-hwaccel`.
 ```
-
-## Examples
-
-::::{tab-set}
-
-:::{tab-item} Pipeline Stage
-
-```python
-from nemo_curator.pipeline import Pipeline
-from nemo_curator.backends.xenna import XennaExecutor
-from nemo_curator.stages.video.clipping.clip_extraction_stages import FixedStrideExtractorStage, ClipTranscodingStage
-
-pipe = Pipeline(name="transcode_example")
-pipe.add_stage(FixedStrideExtractorStage(clip_len_s=10.0, clip_stride_s=10.0))
-pipe.add_stage(ClipTranscodingStage(encoder="libopenh264", encode_batch_size=16, encoder_threads=1, verbose=True))
-pipe.run()
-```
-
-:::
-
-:::{tab-item} Script Flags
-
-```bash
-python -m ray_curator.examples.video.video_split_clip_example \
-  ...
-  --transcode-encoder h264_nvenc \
-  --transcode-use-hwaccel \
-```
-
-:::
-::::
 
 ## Troubleshooting
 

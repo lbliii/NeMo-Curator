@@ -18,10 +18,93 @@ Apply motion-based filtering to clips and aesthetic filtering to frames to prune
 
 Filtering runs in two passes that balance speed and quality:
 
-1. **Motion pass** (fast): The pipeline decodes lightweight motion vectors and computes motion scores to drop static or near‑static clips early. This step adds `decoded_motion_data` per clip, then writes `motion_score_global_mean` and `motion_score_per_patch_min_256`. Clips below thresholds move to `video.filtered_clips`, and `video.clip_stats.num_filtered_by_motion` increments.
+1. **Motion pass** (fast): The pipeline decodes lightweight motion vectors and computes motion scores to drop static or near‑static clips at the first filtering stage. This step adds `decoded_motion_data` per clip, then writes `motion_score_global_mean` and `motion_score_per_patch_min_256`. Clips below thresholds move to `video.filtered_clips`, and `video.clip_stats.num_filtered_by_motion` increments.
 2. **Aesthetic pass** (model based): Upstream, the pipeline extracts frames using the `sequence` policy at a chosen `target_fps`. The aesthetic stage reads `extracted_frames[sequence-<target_fps>]`, produces an `aesthetic_score`, and removes clips below the threshold. These clips move to `video.filtered_clips`, and `video.clip_stats.num_filtered_by_aesthetic` increments.
 
+## Before You Start
+
+Motion decoding and aesthetic scoring operate on clip buffers. You must run [clipping](video-process-clipping) and [encoding](video-process-transcoding) first so each clip has a valid `buffer` (bytes). 
+
 ---
+
+## Quickstart
+
+Use the pipeline stages or the example script flags to enable motion and aesthetic filtering.
+
+::::{tab-set}
+
+:::{tab-item} Pipeline Stage
+
+```python
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna import XennaExecutor
+from nemo_curator.stages.video.filtering.motion_filter import (
+    MotionVectorDecodeStage,
+    MotionFilterStage,
+)
+from nemo_curator.stages.video.filtering.clip_aesthetic_filter import (
+    ClipAestheticFilterStage,
+)
+
+pipe = Pipeline(name="filtering_examples")
+
+# Motion filtering
+pipe.add_stage(
+    MotionVectorDecodeStage(target_fps=2.0, target_duration_ratio=0.5, num_cpus_per_worker=4.0)
+)
+pipe.add_stage(
+    MotionFilterStage(
+        score_only=False,
+        global_mean_threshold=0.00098,
+        per_patch_min_256_threshold=0.000001,
+        motion_filter_batch_size=64,
+        num_gpus_per_worker=0.5,
+        verbose=True,
+    )
+)
+
+# Aesthetic filtering (assumes frames extracted upstream)
+pipe.add_stage(
+    ClipAestheticFilterStage(
+        model_dir="/models",
+        score_threshold=3.5,
+        reduction="min",
+        target_fps=1.0,
+        num_gpus_per_worker=0.25,
+        verbose=True,
+    )
+)
+
+pipe.run()
+```
+
+:::
+
+:::{tab-item} Script Flags
+
+```bash
+# Motion filtering
+python -m nemo_curator.examples.video.video_split_clip_example \
+  ... \
+  --motion-filter enable \
+  --motion-decode-target-fps 2.0 \
+  --motion-decode-target-duration-ratio 0.5 \
+  --motion-decode-cpus-per-worker 4.0 \
+  --motion-global-mean-threshold 0.00098 \
+  --motion-per-patch-min-256-threshold 0.000001 \
+  --motion-score-batch-size 64 \
+  --motion-score-gpus-per-worker 0.5
+
+# Aesthetic filtering
+python -m nemo_curator.examples.video.video_split_clip_example \
+  ... \
+  --aesthetic-threshold 3.5 \
+  --aesthetic-reduction min \
+  --aesthetic-gpus-per-worker 0.25
+```
+
+:::
+::::
 
 ## Filtering Options
 
@@ -135,6 +218,7 @@ Motion filtering is a two‑step process: first decode motion vectors, then filt
 
 ::::
 
+(video-process-filtering-aesthetic)=
 ### Aesthetic Filtering
 
 Aesthetic filtering works best when you prepare frames first, then score clips using a CLIP‑based aesthetic model.

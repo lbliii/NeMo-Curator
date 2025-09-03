@@ -14,15 +14,73 @@ modality: "video-only"
 
 Extract frames from clips or full videos at target rates and resolutions. Use frames for embeddings (such as InternVideo2 and Cosmos‑Embed1), aesthetic filtering, previews, and custom analysis.
 
-## When to Extract Frames
+## Use Cases
 
 - Prepare inputs for embedding models that expect frame sequences.
 - Run aesthetic filtering that operates on sampled frames.
 - Generate lightweight previews or QA snapshots.
+- Provide frames for scene-change detection before clipping (TransNetV2).
 
-```{note}
-If you only need saved media files, frame extraction is optional. However, embeddings and aesthetic filtering require frames.
+## Before You Start
+
+[Embeddings](video-process-embeddings) and [aesthetic filtering](video-process-filtering-aesthetic) require frames. If you need saved media files, frame extraction is optional.
+
+---
+
+## Quickstart
+
+Use the pipeline stages or the example script flags to extract frames for embeddings, filtering, and analysis.
+
+::::{tab-set}
+
+:::{tab-item} Pipeline Stage
+
+```python
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna import XennaExecutor
+from nemo_curator.stages.video.clipping.clip_extraction_stages import FixedStrideExtractorStage
+from nemo_curator.stages.video.clipping.clip_frame_extraction import ClipFrameExtractionStage
+from nemo_curator.utils.decoder_utils import FrameExtractionPolicy, FramePurpose
+from nemo_curator.stages.video.embedding.internvideo2 import (
+    InternVideo2FrameCreationStage,
+    InternVideo2EmbeddingStage,
+)
+
+pipe = Pipeline(name="clip_frames_embeddings")
+pipe.add_stage(FixedStrideExtractorStage(clip_len_s=10.0, clip_stride_s=10.0))
+pipe.add_stage(
+    ClipFrameExtractionStage(
+        extraction_policies=(FrameExtractionPolicy.sequence,),
+        extract_purposes=(FramePurpose.EMBEDDINGS,),
+        target_res=(-1, -1),
+        verbose=True,
+    )
+)
+pipe.add_stage(InternVideo2FrameCreationStage(model_dir="/models", target_fps=2.0, verbose=True))
+pipe.add_stage(InternVideo2EmbeddingStage(model_dir="/models", gpu_memory_gb=20.0, verbose=True))
+pipe.run()
 ```
+
+:::
+
+:::{tab-item} Script Flags
+
+```bash
+# Clip frames implicitly when generating embeddings or aesthetics
+python -m nemo_curator.examples.video.video_split_clip_example \
+  ... \
+  --generate-embeddings \
+  --clip-extraction-target-res -1
+
+# Full-video frames for TransNetV2 scene change
+python -m nemo_curator.examples.video.video_split_clip_example \
+  ... \
+  --splitting-algorithm transnetv2 \
+  --transnetv2-frame-decoder-mode pynvc
+```
+
+:::
+::::
 
 ## Options in NeMo Curator
 
@@ -107,36 +165,6 @@ ClipFrameExtractionStage(
 - **Embeddings**: InternVideo2 and Cosmos‑Embed1 expect frames at specific rates. Refer to [Embeddings](video-process-embeddings).
 - **Aesthetic Filtering**: Requires frames extracted earlier. Refer to [Filtering](video-process-filtering).
 - **Clipping with TransNetV2**: Uses full‑video frame extraction before scene‑change detection. Refer to [Clipping](video-process-clipping).
-
-## Examples
-
-### Pipeline Snippet (Clips → Frames → Embeddings)
-
-```python
-from nemo_curator.pipeline import Pipeline
-from nemo_curator.backends.xenna import XennaExecutor
-from nemo_curator.stages.video.clipping.clip_extraction_stages import FixedStrideExtractorStage
-from nemo_curator.stages.video.clipping.clip_frame_extraction import ClipFrameExtractionStage
-from nemo_curator.utils.decoder_utils import FrameExtractionPolicy, FramePurpose
-from nemo_curator.stages.video.embedding.internvideo2 import (
-    InternVideo2FrameCreationStage,
-    InternVideo2EmbeddingStage,
-)
-
-pipe = Pipeline(name="clip_frames_embeddings")
-pipe.add_stage(FixedStrideExtractorStage(clip_len_s=10.0, clip_stride_s=10.0))
-pipe.add_stage(
-    ClipFrameExtractionStage(
-        extraction_policies=(FrameExtractionPolicy.sequence,),
-        extract_purposes=(FramePurpose.EMBEDDINGS,),
-        target_res=(-1, -1),
-        verbose=True,
-    )
-)
-pipe.add_stage(InternVideo2FrameCreationStage(model_dir="/models", target_fps=2.0, verbose=True))
-pipe.add_stage(InternVideo2EmbeddingStage(model_dir="/models", gpu_memory_gb=20.0, verbose=True))
-pipe.run()
-```
 
 ## Troubleshooting
 

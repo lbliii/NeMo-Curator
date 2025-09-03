@@ -26,9 +26,15 @@ Generate clip-level embeddings for search, question answering, filtering, and du
 - Provide frames for embeddings or sample at the required rate. Refer to [Frame Extraction](video-process-frame-extraction).
 - Access to model weights on each node (the stages download weights if missing).
 
-## Quick Start
+---
 
-The typical flow is: create clips → extract frames → prepare model-ready frames → generate embeddings.
+## Quickstart
+
+Use the pipeline stages or the example script flags to generate clip-level embeddings.
+
+::::{tab-set}
+
+:::{tab-item} Pipeline Stage
 
 ```python
 from nemo_curator.pipeline import Pipeline
@@ -40,7 +46,7 @@ from nemo_curator.stages.video.embedding.internvideo2 import (
     InternVideo2EmbeddingStage,
 )
 
-pipe = Pipeline(name="video_embeddings")
+pipe = Pipeline(name="video_embeddings_example")
 pipe.add_stage(
     ClipFrameExtractionStage(
         extraction_policies=(FrameExtractionPolicy.sequence,),
@@ -50,9 +56,32 @@ pipe.add_stage(
     )
 )
 pipe.add_stage(InternVideo2FrameCreationStage(model_dir="/models", target_fps=2.0, verbose=True))
-pipe.add_stage(InternVideo2EmbeddingStage(model_dir="/models", gpu_memory_gb=10.0, verbose=True))
+pipe.add_stage(InternVideo2EmbeddingStage(model_dir="/models", gpu_memory_gb=20.0, verbose=True))
 pipe.run()
 ```
+
+:::
+
+:::{tab-item} Script Flags
+
+```bash
+# InternVideo2
+python -m nemo_curator.examples.video.video_split_clip_example \
+  ... \
+  --generate-embeddings \
+  --embedding-algorithm internvideo2 \
+  --embedding-gpu-memory-gb 20.0
+
+# Cosmos-Embed1 (224p)
+python -m nemo_curator.examples.video.video_split_clip_example \
+  ... \
+  --generate-embeddings \
+  --embedding-algorithm cosmos-embed1-224p \
+  --embedding-gpu-memory-gb 20.0
+```
+
+:::
+::::
 
 ## Embedding Options
 
@@ -275,5 +304,3 @@ pipe.run()
 
 - Use embeddings for duplicate removal. Refer to [Duplicate Removal](video-process-dedup).
 - Generate captions and previews for review workflows. Refer to [Captions & Preview](video-process-captions-preview).
-
-<!-- end -->

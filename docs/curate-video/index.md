@@ -153,17 +153,6 @@ Generate clip-level embeddings with InternVideo2 or Cosmos-Embed1 for search and
 {bdg-secondary}`cosmos-embed1`
 :::
 
-:::{grid-item-card} {octicon}`git-branch;1.5em;sd-mr-1` Remove Duplicate Embeddings
-:link: video-process-dedup
-:link-type: ref
-Remove near-duplicates using semantic clustering and similarity with generated embeddings.
-+++
-{bdg-primary}`clips`
-{bdg-secondary}`semantic`
-{bdg-secondary}`pairwise`
-{bdg-secondary}`kmeans`
-:::
-
 :::{grid-item-card} {octicon}`comment-discussion;1.5em;sd-mr-1` Create Captions & Preview
 :link: video-process-captions-preview
 :link-type: ref
@@ -173,6 +162,17 @@ Generate Qwen‑VL captions and optional WebP previews; optionally enhance with 
 {bdg-primary}`previews`
 {bdg-secondary}`qwen`
 {bdg-secondary}`webp`
+:::
+
+:::{grid-item-card} {octicon}`git-branch;1.5em;sd-mr-1` Remove Duplicate Embeddings
+:link: video-process-dedup
+:link-type: ref
+Remove near-duplicates using semantic clustering and similarity with generated embeddings.
++++
+{bdg-primary}`clips`
+{bdg-secondary}`semantic`
+{bdg-secondary}`pairwise`
+{bdg-secondary}`kmeans`
 :::
 
 ::::

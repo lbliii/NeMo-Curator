@@ -20,7 +20,7 @@ Create a `Pipeline` and add stages for clip extraction, optional re-encoding and
 
 ## Processing Options
 
-<!-- one-sentence intro here -->
+Choose from the following stages to split, encode, filter, embed, caption, preview, and remove duplicates in your videos:
 
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2
@@ -76,16 +76,6 @@ Generate clip-level embeddings with InternVideo2 or Cosmos-Embed1 for search and
 {bdg-secondary}`cosmos-embed1`
 :::
 
-:::{grid-item-card} {octicon}`git-branch;1.5em;sd-mr-1` Remove Duplicate Embeddings
-:link: video-process-dedup
-:link-type: ref
-Remove near-duplicates using semantic clustering and similarity with generated embeddings.
-+++
-{bdg-primary}`clips`
-{bdg-secondary}`semantic`
-{bdg-secondary}`pairwise`
-:::
-
 :::{grid-item-card} {octicon}`comment-discussion;1.5em;sd-mr-1` Create Captions & Preview
 :link: video-process-captions-preview
 :link-type: ref
@@ -95,6 +85,16 @@ Produce clip captions and optional preview images for review workflows.
 {bdg-primary}`frames`
 {bdg-secondary}`captions`
 {bdg-secondary}`preview`
+:::
+
+:::{grid-item-card} {octicon}`git-branch;1.5em;sd-mr-1` Remove Duplicate Embeddings
+:link: video-process-dedup
+:link-type: ref
+Remove near-duplicates using semantic clustering and similarity with generated embeddings.
++++
+{bdg-primary}`clips`
+{bdg-secondary}`semantic`
+{bdg-secondary}`pairwise`
 :::
 
 ::::
@@ -137,6 +137,6 @@ Encode Clips <transcoding>
 Filter Clips and Frames <filtering>
 Extract Frames <frame-extraction>
 Create Embeddings <embeddings>
-Remove Duplicate Embeddings <dedup>
 Create Captions & Preview <captions-preview>
+Remove Duplicate Embeddings <dedup>
 ```

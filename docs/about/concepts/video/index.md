@@ -50,7 +50,7 @@ Video pipelines in Curator run on Ray with the `XennaExecutor` integration for s
 
 ## Infrastructure Components
 
-The video curation concepts build on NVIDIA NeMo Curator's core infrastructure components. All modalities (text, image, video) use these components. These components include:
+The video curation concepts build on NVIDIA NeMo Curator's core infrastructure components. All modalities (text, image, video, and audio) use these components. These components include:
 
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2

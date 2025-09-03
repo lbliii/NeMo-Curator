@@ -94,4 +94,4 @@ Stages transform tasks stage by stage (for example, `VideoReader` populates `Vid
 
 ## Executors
 
-Executors run pipelines on a backend. Curator uses `XennaExecutor` to translate `ProcessingStage` definitions into Cosmos-Xenna stage specifications and run them on Ray with automatic scaling. Execution modes include streaming (default) and batch.
+Executors run pipelines on a backend. Curator uses [`XennaExecutor`](https://github.com/nvidia-cosmos/cosmos-xenna) to translate `ProcessingStage` definitions into Cosmos-Xenna stage specifications and run them on Ray with automatic scaling. Execution modes include streaming (default) and batch.

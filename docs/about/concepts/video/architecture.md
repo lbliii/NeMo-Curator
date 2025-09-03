@@ -43,12 +43,3 @@ Key executor configuration (actual keys):
 - `autoscale_interval_s`: Auto-scaling interval in seconds (applies in streaming mode; default: 180)
 
 Use `Pipeline.describe()` to review stage resources and input/output requirements at a glance during development.
-
-### Other Executors
-
-While `XennaExecutor` is the default and recommended backend for video pipelines, Curator also includes experimental Ray-based executors for advanced use cases:
-
-- `RayDataExecutor` (experimental)
-- `RayActorPoolExecutor` (experimental)
-
-Refer to the execution backends reference for details and current status.

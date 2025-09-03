@@ -14,12 +14,100 @@ modality: "video-only"
 
 Split long videos into shorter clips for downstream processing.
 
+## How it Works
+
 NeMo Curator provides two clipping stages: **Fixed Stride** and **TransNetV2** scene-change detection.
 
 - Use Fixed Stride create uniform segments.
 - Use TransNetV2 to cut at visual shot boundaries.
 
+## Before You Start
+
+Ensure inputs contain video bytes and basic metadata. The clipping stages require `video.source_bytes` to be present and metadata with `framerate` and `num_frames`.
+
 ---
+
+## Quickstart
+
+Use either the pipeline stages or the example script flags to create clips.
+
+::::{tab-set}
+
+:::{tab-item} Pipeline Stage
+
+```python
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna import XennaExecutor
+from nemo_curator.stages.video.clipping.clip_extraction_stages import (
+    FixedStrideExtractorStage,
+)
+from nemo_curator.stages.video.clipping.video_frame_extraction import (
+    VideoFrameExtractionStage,
+)
+from nemo_curator.stages.video.clipping.transnetv2_extraction import (
+    TransNetV2ClipExtractionStage,
+)
+
+pipe = Pipeline(name="clipping_examples")
+
+# Fixed Stride
+pipe.add_stage(
+    FixedStrideExtractorStage(
+        clip_len_s=10.0,
+        clip_stride_s=10.0,
+        min_clip_length_s=2.0,
+        limit_clips=0,
+    )
+)
+
+# TransNetV2 (requires full-video frame extraction first)
+pipe.add_stage(VideoFrameExtractionStage(decoder_mode="pynvc", verbose=True))
+pipe.add_stage(
+    TransNetV2ClipExtractionStage(
+        model_dir="/models",
+        threshold=0.4,
+        min_length_s=2.0,
+        max_length_s=10.0,
+        max_length_mode="stride",
+        crop_s=0.5,
+        gpu_memory_gb=10.0,
+        limit_clips=-1,
+        verbose=True,
+    )
+)
+
+pipe.run()
+```
+
+:::
+
+:::{tab-item} Script Flags
+
+```bash
+# Fixed stride
+python -m nemo_curator.examples.video.video_split_clip_example \
+  ... \
+  --splitting-algorithm fixed_stride \
+  --fixed-stride-split-duration 10.0 \
+  --fixed-stride-min-clip-length-s 2.0 \
+  --limit-clips 0
+
+# TransNetV2
+python -m nemo_curator.examples.video.video_split_clip_example \
+  ... \
+  --splitting-algorithm transnetv2 \
+  --transnetv2-frame-decoder-mode pynvc \
+  --transnetv2-threshold 0.4 \
+  --transnetv2-min-length-s 2.0 \
+  --transnetv2-max-length-s 10.0 \
+  --transnetv2-max-length-mode stride \
+  --transnetv2-crop-s 0.5 \
+  --transnetv2-gpu-memory-gb 10.0 \
+  --limit-clips 0
+```
+
+:::
+::::
 
 ## Clipping Options
 
@@ -59,11 +147,11 @@ Using extracted frames of size 27×48×3, the model predicts shot transitions, c
    )
    ```
 
-    :::{important}
-    Frames must be `(27, 48, 3)` per frame; the stage accepts arrays shaped `(num_frames, 27, 48, 3)` and transposes from `(48, 27, 3)` automatically.
-    :::
+   :::{important}
+   Frames must be `(27, 48, 3)` per frame; the stage accepts arrays shaped `(num_frames, 27, 48, 3)` and transposes from `(48, 27, 3)` automatically.
+   :::
 
-2. Configure TransNetV2 and run the stage in your pipeline to generate clips from the detected scenes.
+1. Configure TransNetV2 and run the stage in your pipeline to generate clips from the detected scenes.
 
    ```python
    transnet = TransNetV2ClipExtractionStage(

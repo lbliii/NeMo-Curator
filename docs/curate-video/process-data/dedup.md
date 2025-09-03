@@ -27,9 +27,20 @@ Duplicate removal operates on clip-level embeddings produced during processing:
    - Pairwise: `PairwiseStage` computes within-cluster similarity on GPU and, for each clip, emits `max_id` and `cosine_sim_score`. Ranking controls whether to prefer outliers ("hard") or representatives ("easy").
    - Identify: `IdentifyDuplicatesStage` filters pairs with `cosine_sim_score >= 1.0 - eps` and writes Parquet files of duplicate `id`s for removal during export.
 
+## Before You Start
+
+- Verify local paths or configure S3-compatible credentials. Provide `storage_options` in read/write keyword arguments when reading or writing cloud paths.
+- Create output directories for `KMeansStage`, `PairwiseStage`, and `IdentifyDuplicatesStage`.
+
+---
+
 ## Quickstart
 
-Use the generic semantic duplicate-removal stages with clip embeddings written to parquet.
+Use the generic semantic duplicate-removal stages with clip embeddings written to Parquet.
+
+::::{tab-set}
+
+:::{tab-item} Pipeline Stage
 
 ```python
 from nemo_curator.stages.deduplication.semantic.kmeans import KMeansStage
@@ -37,12 +48,11 @@ from nemo_curator.stages.deduplication.semantic.pairwise import PairwiseStage
 from nemo_curator.stages.deduplication.semantic.ranking import RankingStrategy
 from nemo_curator.stages.deduplication.semantic.identify_duplicates import IdentifyDuplicatesStage
 
-# Example: cluster embeddings, compute pairwise within clusters, then write duplicate IDs
 kmeans = KMeansStage(
     n_clusters=1000,
     id_field="id",
     embedding_field="embedding",
-    input_path="/path/to/embeddings/",   # parquet files with id + embedding
+    input_path="/path/to/embeddings/",
     output_path="/path/to/kmeans_out/",
     input_filetype="parquet",
 )
@@ -59,10 +69,19 @@ pairwise = PairwiseStage(
 )
 
 identify = IdentifyDuplicatesStage(
-    output_path="/path/to/duplicates/",  # writes parquet of duplicate ids
-    eps=0.1,  # keep pairs with cosine_sim_score >= 0.9
+    output_path="/path/to/duplicates/",
+    eps=0.1,
 )
 ```
+
+:::
+
+:::{tab-item} Script Flags
+
+No example script flags are available for duplicate removal in the split pipeline. Run these stages as a separate job against Parquet embeddings written by the example pipeline's writer.
+
+:::
+::::
 
 Input format: Parquet with columns `id` and `embedding` (produced by the video pipeline’s embedding stages and writer). Duplicate removal operates at the clip level using these embeddings. The `IdentifyDuplicatesStage` writes Parquet files containing duplicate `id`s; perform removal by filtering out rows whose `id` appears in those files during export.
 
@@ -116,42 +135,4 @@ Embeddings are written by the [`ClipWriterStage`](video-save-export) under `iv2_
   - Batch size for GPU pairwise computation (default `1024`). Increase with available memory.
 * - `embedding_dim`
   - Embedding dimension for memory estimates and batching.
-* - `read_kwargs` / `write_kwargs`
-  - Storage options for Parquet I/O, including cloud credentials.
-```
-
-:::
-
-:::{tab-item} IdentifyDuplicatesStage
-
-```{list-table} IdentifyDuplicatesStage (filter pairs)
-:header-rows: 1
-
-* - Parameter
-  - Description
-* - `eps`
-  - Similarity tolerance. Keeps pairs with `cosine_sim_score >= 1.0 - eps` (for example, `0.1` → similarity ≥ 0.9).
-* - `output_path`
-  - Directory for Parquet files with duplicate `id`s.
-* - `read_kwargs` / `write_kwargs`
-  - Storage options for reading pairwise outputs and writing final duplicate IDs.
-```
-
-:::
-
-::::
-
-## Tuning Guidelines
-
-- Start with `n_clusters` in the low thousands; increase for large datasets to bound per‑cluster size.
-- Set `embedding_dim` to match your model (InternVideo2: 512). Incorrect dimensions can cause memory issues.
-- Use `which_to_keep="hard"` to favor diversity (outliers). Use `"easy"` to keep more representative clips.
-- Increase `pairwise_batch_size` when GPU memory allows to improve throughput.
-
-## Troubleshooting
-
-- "No data found for cluster": Confirm K‑means output path and storage credentials.
-- Out‑of‑memory during pairwise: Lower `pairwise_batch_size` and verify `embedding_dim`.
-- Empty duplicate outputs: Reduce `eps` (for example, `0.2` → similarity ≥ 0.8) or check that embeddings use the same model across clips.
-
-<!-- end -->
+* - `
