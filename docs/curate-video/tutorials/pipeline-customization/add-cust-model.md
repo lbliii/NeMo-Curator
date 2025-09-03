@@ -12,16 +12,16 @@ modality: "video-only"
 (video-tutorials-pipeline-cust-add-model)=
 # Adding Custom Models
 
-Learn how to integrate custom models into Ray Curator stages.
+Learn how to integrate custom models into NeMo Curator stages.
 
-The NeMo Video Curator container includes a robust set of default models, however, they may not always meet your pipeline requirements. In this tutorial, we'll demonstrate how to add a custom x model used in a new pipeline stage.
+The NeMo Curator container includes a robust set of default models, but you can add your own for specialized tasks.
 
 ## Before You Start
 
 Before you begin adding a custom model, make sure that you have:
 
 * Reviewed the [pipeline concepts and diagrams](about-concepts-video).  
-* A working Ray Curator development environment.  
+* A working NeMo Curator development environment.  
 * Optionally prepared a container image that includes your model dependencies.  
 * Optionally [created a custom environment](video-tutorials-pipeline-cust-env) to support your new custom model.
 
@@ -31,7 +31,7 @@ Before you begin adding a custom model, make sure that you have:
 
 ### Review Model Interface
 
-In Ray Curator, models are defined by classes inheriting from `nemo_curator.models.base.ModelInterface`. The interface looks like this:
+In NeMo Curator, models inherit from `nemo_curator.models.base.ModelInterface` and must implement `model_id_names` and `setup`:
 
 ```py
 class ModelInterface(abc.ABC):
@@ -94,12 +94,6 @@ class MyModel(ModelInterface):
 
 Let's go through each part of the code piece by piece.
 
-#### Define Guard Imports
-
-If your model has optional imports tied to specific environments, guard them at import time in your stage or during setup to avoid import errors on workers that do not require that environment.
-
-This condition checks to make sure we are running in a Conda environment that has our model's dependencies.
-
 #### Define the PyTorch Model
 
 ```py
@@ -111,16 +105,16 @@ class MyCore(torch.nn.Module):
         # Initialize network and load weights from a local path derived from model_dir and WEIGHTS_MODEL_ID
 ```
 
-`WEIGHTS_NAME = "nvidia/C-RADIO"` is used to define where the model is on HuggingFace, and where it will be in our local model weights cache. During the execution of the pipelines the model weights for all models will be downloaded before `CRadio.setup()` is called (and therefore before `CRadioCore` is constructed), so you may assume the weights will be at `model_utils.get_local_dir_for_weights_name(WEIGHTS_NAME)`
+Provide a model ID (for example, a HuggingFace ID) if you plan to cache or fetch weights. The pipeline can download weights prior to `setup()` via your model class method if you provide one (see `InternVideo2MultiModality.download_weights_on_node`).
 
-#### Define the Model Interface
+#### Implement the Model Interface
 
 ```py
 class MyModel(ModelInterface):
 	...
 ```
 
-Our `CRadio` class implements the model interface. It defines a collection of methods that ensure the model weights can be downloaded and that it is initialized properly.
+Your model implements the interface. It defines methods to declare weight identifiers and to initialize the underlying core network.
 
 ```py
     def setup(self) -> None:
@@ -128,30 +122,20 @@ Our `CRadio` class implements the model interface. It defines a collection of me
         self._model.eval()
 ```
 
-The setup method initializes the underlying `CRadioCore` class that performs the model inference.
+The setup method initializes the underlying `MyCore` class that performs the model inference.
 
 ```py
     def model_id_names(self) -> list[str]:
         return [WEIGHTS_MODEL_ID]
 ```
 
-The `weights_names` property returns a list of weights. These are used to identify the model weights that are cached locally or on S3. They typically correspond to the name of the HuggingFace models, but they don't have to.
+The `model_id_names` property returns a list of weight IDs. These typically correspond to model repository names but do not have to.
 
-Remove references to `id_file_mapping` and similar utilities; Ray Curator does not expose this in the base interface.
-
-`id_file_mapping` is used when running the model download/upload script to selectively choose which files from the model repository should be downloaded. We don't need to make such a selection here, so we mark it as `None`.
-
-If your stage requires a specific environment, manage that in the stage’s `resources` (for example, `gpu_memory_gb`, `nvdecs`, `nvencs`) and container image, rather than on the model.
-
-`conda_env_name` defines the conda environment that should be used when running this model in a pipeline.
-
-GPU allocation is managed at the stage level using `Resources`, not on the model.
-
-`num_gpus` specifies the fractional amount of GPU resources that this model will need. This value is only used for scheduling workers across GPUs or on the same GPU, and it does nothing to actually limit the usage of the GPU(s) allocated to this model.
+If your stage requires a specific environment, manage that in the stage’s `resources` (for example, `gpu_memory_gb`, `nvdecs`, `nvencs`) and container image, rather than on the model. GPU allocation is managed at the stage level using `Resources`, not on the model.
 
 ### Manage model weights
 
-Provide your model with a `model_dir` where weights are stored. Your stage should ensure that any required weights are available at runtime (for example, by mounting them into the container or downloading them prior to execution). See existing models such as `InternVideo2MultiModality` for reference: `ray-curator/ray_curator/models/internvideo2_mm.py`.
+Provide your model with a `model_dir` where weights are stored. Your stage should ensure that any required weights are available at runtime (for example, by mounting them into the container or downloading them prior to execution). See existing models such as `InternVideo2MultiModality` for reference: `nemo_curator/models/internvideo2_mm.py`.
 
 ## Next Steps
 

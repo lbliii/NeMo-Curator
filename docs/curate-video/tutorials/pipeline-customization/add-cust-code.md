@@ -12,16 +12,16 @@ modality: "video-only"
 (video-tutorials-pipeline-cust-add-code)=
 # Adding Custom Code
 
-Learn how to extend Ray Curator by adding custom code to a new or existing stage.
+Learn how to extend NeMo Curator by adding custom code to a new or existing stage.
 
-The NeMo Video Curator container includes a robust set of default pipelines with commonly used stages, however, they may not always meet your pipeline requirements. In this tutorial, we'll demonstrate how to extend the default pipeline.
+The NeMo Curator container includes a robust set of default pipelines with commonly used stages. If they do not meet your requirements, extend them with your own modules.
 
 ## Before You Start
 
 Before you begin adding custom code, make sure that you have:
 
 * Reviewed the [pipeline concepts and diagrams](about-concepts-video).  
-* A working Ray Curator development environment.  
+* A working NeMo Curator development environment.  
 * Optionally prepared a container image that includes your dependencies.  
 * Optionally [created a custom environment](video-tutorials-pipeline-cust-env) to support your new custom code.
 
@@ -54,8 +54,10 @@ Before you begin adding custom code, make sure that you have:
 Create or edit a stage to use your code, then assemble a pipeline and run it in Python:
 
 ```py
-from nemo_curator.pipeline.pipeline import Pipeline
-from nemo_curator.stages.video.io.video_reader import VideoReaderStage
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.stages.base import ProcessingStage
+from nemo_curator.tasks.video import VideoTask
+from nemo_curator.stages.video.io.video_reader import VideoReader
 from nemo_curator.stages.video.io.clip_writer import ClipWriterStage
 
 from my_code.my_file import MyClass
@@ -68,15 +70,28 @@ class MyStage(ProcessingStage[VideoTask, VideoTask]):
 
 pipeline = (
     Pipeline(name="my-pipeline")
-    .add_stage(VideoReaderStage())
+    .add_stage(VideoReader(input_video_path="/path/to/videos", video_limit=10))
     .add_stage(MyStage())
-    .add_stage(ClipWriterStage())
+    .add_stage(
+        ClipWriterStage(
+            output_path="/path/to/output",
+            input_path="/path/to/videos",
+            upload_clips=True,
+            dry_run=False,
+            generate_embeddings=False,
+            generate_previews=False,
+            generate_captions=False,
+            embedding_algorithm="cosmos-embed1",
+            caption_models=["qwen"],
+            enhanced_caption_models=["qwen_lm"],
+        )
+    )
 )
 
 pipeline.run()
 ```
 
-To containerize, use a Dockerfile to copy your code and install dependencies, then build and run with your preferred tooling.
+To containerize, use a Dockerfile to copy your code and install dependencies, then build and run with your preferred tooling. Prefer aligning packages with optional extras in `pyproject.toml`.
 
 ## Next Steps
 

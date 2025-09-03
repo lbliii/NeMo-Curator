@@ -12,17 +12,17 @@ modality: "video-only"
 (video-tutorials-pipeline-cust-series)=
 # Video Pipeline Customization Tutorials
 
-Use the tutorials in this section to learn how to customize video pipelines using Ray Curator.
+Use the tutorials in this section to learn how to customize video pipelines using NeMo Curator.
 
-You can customize the **environments**, **code**, **models**, and **stages** used in Ray Curator pipelines.
+You can customize the **environments**, **code**, **models**, and **stages** used in NeMo Curator pipelines.
 
 ## Before You Start
 
-Before you begin customizing Ray Curator pipelines, make sure that you have:
+Before you begin customizing NeMo Curator pipelines, make sure that you have:
 
 - Reviewed the [pipeline concepts and diagrams](about-concepts-video).  
-- A working Ray Curator development environment.
-<!-- - Reviewed the [default environments](reference-infrastructure-container-environments) available. -->
+- A working NeMo Curator development environment.  
+- Reviewed the [container environments](reference-infrastructure-container-environments) reference.
 
 ---
 
