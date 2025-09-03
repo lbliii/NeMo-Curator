@@ -101,7 +101,7 @@ pipe.add_stage(
     )
 )
 pipe.add_stage(VideoReaderStage(verbose=True))
-pipe.run(XennaExecutor())
+pipe.run()
 ```
 
 ## Supported File Types
