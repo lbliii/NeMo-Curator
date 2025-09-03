@@ -120,7 +120,7 @@ from nemo_curator.stages.video.clipping.clip_extraction_stages import FixedStrid
 pipe = Pipeline(name="transcode_example")
 pipe.add_stage(FixedStrideExtractorStage(clip_len_s=10.0, clip_stride_s=10.0))
 pipe.add_stage(ClipTranscodingStage(encoder="libopenh264", encode_batch_size=16, encoder_threads=1, verbose=True))
-pipe.run(XennaExecutor())
+pipe.run()
 ```
 
 :::
