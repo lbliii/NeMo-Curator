@@ -59,7 +59,7 @@ from nemo_curator.stages.video.io.video_reader import VideoReader
 
 pipe = Pipeline(name="video_read", description="Read videos and extract metadata")
 pipe.add_stage(VideoReader(input_video_path="s3://my-bucket/videos/", video_limit=None, verbose=True))
-pipe.run(XennaExecutor())
+pipe.run()
 ```
 
 (video-load-data-json-list)=
