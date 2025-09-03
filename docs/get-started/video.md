@@ -72,7 +72,7 @@ For this quickstart, we're going to set up support for **IV2**.
 
 ### Prepare IV2 Model Weights
 
-The following steps are required when setting `--embedding-algorithim` to `internvideo2` or when pre-staging models for offline use.
+The following steps are required when setting `--embedding-algorithm` to `internvideo2` or when pre-staging models for offline use.
 
 1. Create a model directory.
    :::{tip}
