@@ -106,7 +106,7 @@ pipeline.add_stage(
 
 ### Split into Clips
 
-Create clip windows using fixed intervals or scene-change detection.
+[Create clip windows](video-process-clipping) using fixed intervals or scene-change detection.
 
 ::::{tab-set}
 
@@ -172,7 +172,7 @@ pipeline.add_stage(
 
 ### Prepare Frames for Embeddings (Optional)
 
-Extract frames at target rates for downstream embedding models.
+[Extract frames](video-process-frame-extraction) at target rates for downstream embedding models.
 
 ```python
 pipeline.add_stage(
@@ -200,7 +200,11 @@ pipeline.add_stage(
 
 ### Write Clips and Metadata
 
-Write clips, embeddings, and metadata to the output directory.
+Write clips, embeddings, and metadata to the output directory. Refer to [Save & Export](video-save-export) for a full list of parameters.
+
+::::{tab-set}
+
+:::{tab-item} ClipWriterStage
 
 ```python
 pipeline.add_stage(
@@ -220,7 +224,9 @@ pipeline.add_stage(
 )
 ```
 
-#### Writing outputs CLI (example)
+:::
+
+:::{tab-item} CLI
 
 When using the example pipeline module, configure the writer-related flags:
 
@@ -235,6 +241,10 @@ python -m nemo_curator.examples.video.video_split_clip_example \
   --generate-captions        # optional: enable captions JSON
   --generate-previews        # optional: enable .webp previews
 ```
+
+:::
+
+::::
 
 ## 4. Run the Pipeline
 

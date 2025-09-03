@@ -19,7 +19,7 @@ NeMo Curator's video curation system builds on Ray, a distributed computing fram
 
 NeMo Curator leverages two essential Ray Core capabilities:
 
-- **Distributed Actor Management**: Creates and manages Ray actors across a cluster. Cosmos-Xenna supports per-stage runtime environments. Configure them as needed; the default adapter does not set a separate runtime environment per stage.
+- **Distributed Actor Management**: Creates and manages Ray actors across a cluster. Cosmos-Xenna supports per-stage runtime environments. In Curator today, per-stage `runtime_env` is not user-configurable through stage specs; the integration sets only limited executor-level environment variables.
 - **Ray Object Store and References**: Uses Ray's object store and data references to reduce data movement and increase throughput.
 
 ![Ray Architecture](./_images/stages-pipelines-diagram.png)
@@ -43,3 +43,12 @@ Key executor configuration (actual keys):
 - `autoscale_interval_s`: Auto-scaling interval in seconds (applies in streaming mode; default: 180)
 
 Use `Pipeline.describe()` to review stage resources and input/output requirements at a glance during development.
+
+### Other Executors
+
+While `XennaExecutor` is the default and recommended backend for video pipelines, Curator also includes experimental Ray-based executors for advanced use cases:
+
+- `RayDataExecutor` (experimental)
+- `RayActorPoolExecutor` (experimental)
+
+Refer to the execution backends reference for details and current status.

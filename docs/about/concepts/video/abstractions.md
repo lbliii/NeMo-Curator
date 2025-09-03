@@ -10,6 +10,7 @@ only: not ga
 ---
 
 (about-concepts-video-abstractions)=
+
 # Key Abstractions
 
 NeMo Curator introduces core abstractions to organize and scale video curation workflows:
@@ -69,6 +70,17 @@ class MyStage(ProcessingStage[X, Y]):
 ```
 
 Refer to the stage base and resources definitions in Curator for full details.
+
+### Resource Semantics
+
+`Resources` support both fractional and whole‑GPU semantics:
+
+- `gpu_memory_gb`: Request a fraction of a single GPU by memory; Curator rounds to a fractional GPU share and enforces that `gpu_memory_gb` stays within one device.
+- `entire_gpu`: Request an entire GPU regardless of memory (also implies access to NVDEC/NVENC on that device).
+- `gpus`: Request more than one GPU for a stage that is multi‑GPU aware.
+- `nvdecs` / `nvencs`: Request hardware decode/encode units when needed.
+
+Choose one of `gpu_memory_gb` (single‑GPU fractional) or `gpus` (multi‑GPU). Combining both is not allowed.
 
 ## Tasks
 

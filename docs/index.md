@@ -83,17 +83,21 @@ Install and run NeMo Curator for specific modalities.
 :::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Text Curation Quickstart
 :link: gs-text
 :link-type: ref
-Quickly set up and run text curation workflows.
-+++
-{bdg-secondary}`setup` {bdg-secondary}`installation` {bdg-secondary}`quickstart`
+Set up and run text curation workflows.
 :::
 
 :::{grid-item-card} {octicon}`image;1.5em;sd-mr-1` Image Curation Quickstart
 :link: gs-image
 :link-type: ref
-Quickly set up and run image curation workflows.
-+++
-{bdg-secondary}`setup` {bdg-secondary}`installation` {bdg-secondary}`quickstart`
+Set up and run image curation workflows.
+
+:::
+
+:::{grid-item-card} {octicon}`video;1.5em;sd-mr-1` Video Curation Quickstart
+:link: gs-video
+:link-type: ref
+Set up and run video curation workflows.
+
 :::
 
 ::::
