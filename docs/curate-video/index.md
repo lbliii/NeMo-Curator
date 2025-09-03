@@ -12,11 +12,13 @@ modality: "video-only"
 
 # About Video Curation
 
-Video curation is the process of taking long-form video content and dividing it into short, semantically consistent clips that you can filter for your use case.
+Learn what video curation is and how you use NeMo Curator to turn long videos into high‑quality, searchable clips.
 Depending on the use case, this can involve processing 100+ PB of videos.
 To efficiently process this quantity of videos, NeMo Curator provides highly optimized curation pipelines.
 
 ## Use Cases
+
+Identify when to use NeMo Curator by matching your goals to common video curation scenarios.
 
 * Generating clips for video world model training
 * Generating clips for generative video model fine-tuning
@@ -24,21 +26,17 @@ To efficiently process this quantity of videos, NeMo Curator provides highly opt
 
 ## Architecture
 
-The following diagram outlines NeMo Curator's video curation architecture.
+Understand how components work together so you can plan, scale, and troubleshoot video pipelines. The following diagram outlines NeMo Curator's video curation architecture:
 
 ```{image} ../about/concepts/video/_images/video-pipeline-diagram.png
 :alt: High-level outline of NeMo Curator's video curation architecture
 ```
 
-Pipelines read videos from local or S3-compatible storage and write curated outputs to local storage.
-
-Execution runs on Ray using our executor with streaming mode, per-stage resource settings (CPU, optional GPU, NVDEC/NVENC), and automatic scaling to balance workers across stages.
-
 ---
 
 ## Introduction
 
-Master the fundamentals of NeMo Curator and set up your video processing environment.
+Get oriented and prepare your environment so you can start curating videos with confidence.
 
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2
@@ -65,7 +63,11 @@ Install NeMo Curator, configure storage, prepare data, and run your first video 
 
 ## Curation Tasks
 
+Follow task-based guides to load, process, and write curated video data end to end.
+
 ### Load Data
+
+Bring videos into your pipeline from local paths or remote sources you control.
 
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2
@@ -92,6 +94,8 @@ Provide an explicit JSON file list for remote datasets under a root prefix.
 ::::
 
 ### Process Data
+
+Transform raw videos into curated clips, frames, embeddings, and metadata you can use.
 
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2
@@ -175,6 +179,8 @@ Generate Qwen‑VL captions and optional WebP previews; optionally enhance with 
 
 ### Write Data
 
+Save outputs in formats your training or retrieval systems can consume at scale.
+
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2
 
@@ -193,6 +199,8 @@ Understand output directories, parquet embeddings, and packaging for training.
 ---
 
 ## Tutorials
+
+Practice with guided, hands-on examples to build, customize, and run video pipelines.
 
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2
