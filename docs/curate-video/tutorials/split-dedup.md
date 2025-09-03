@@ -150,7 +150,7 @@ pipe.add_stage(
     )
 )
 
-pipe.run(XennaExecutor())
+pipe.run()
 ```
 
 ---
