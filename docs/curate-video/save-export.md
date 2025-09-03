@@ -9,27 +9,124 @@ modality: "video-only"
 ---
 
 (video-save-export)=
-# Save and  Export
 
-NeMo Curator writes clips, metadata, and embeddings to an output directory. Use these paths to integrate with training workflows.
+# Save and Export
 
-## Output Layout
+NeMo Curator writes clips, metadata, previews, and embeddings to a structured output directory. Use this guide to add the writer to your pipeline, understand the directories it creates, and prepare artifacts for training.
 
-Common directories include:
+## Step 1. Add the writer stage
+
+Use `ClipWriterStage` as the final stage in your pipeline.
+
+```python
+from nemo_curator.stages.video.io.clip_writer import ClipWriterStage
+
+pipeline.add_stage(
+    ClipWriterStage(
+        output_path=OUT_DIR,
+        input_path=VIDEO_DIR,
+        upload_clips=True,
+        dry_run=False,
+        generate_embeddings=True,
+        generate_previews=False,
+        generate_captions=False,
+        embedding_algorithm="internvideo2",  # or "cosmos-embed1"
+        caption_models=["qwen"],
+        enhanced_caption_models=["qwen_lm"],
+        verbose=True,
+    )
+)
+```
+
+Key parameters:
+
+- `output_path` (str): Base directory or URI for outputs.
+- `input_path` (str): Root of input videos; used to derive processed metadata paths. Must be a prefix of input video paths.
+- `upload_clips` (Boolean): Write `.mp4` clips to `clips/` and filtered clips to `filtered_clips/`.
+- `dry_run` (Boolean): Skip writing clip bytes, preview images, embeddings, and per-clip metadata. Video-level and chunk-level metadata are still written.
+- `generate_embeddings` (Boolean): When true, the stage logs errors if embeddings for the selected algorithm are missing. When embeddings exist, the stage writes per-clip pickles and per-chunk Parquet files.
+- `generate_previews` (Boolean): When true, logs errors for missing preview bytes; writes `.webp` images when present.
+- `generate_captions` (Boolean): The stage includes captions in metadata when upstream stages provide them.
+- `embedding_algorithm` (str): `internvideo2` or `cosmos-embed1`.
+- `caption_models` (list[str] | None): Ordered caption models to emit. Use `[]` when not using captions.
+- `enhanced_caption_models` (list[str] | None): Ordered enhancement models to emit. Use `[]` when not using enhanced captions.
+- `verbose` (Boolean): Emit detailed logs.
+- `max_workers` (int): Thread pool size for writing.
+- `log_stats` (Boolean): Reserved for future detailed stats logging.
+
+## Step 2. Understand the output layout
+
+The writer produces these directories under `output_path`:
 
 - `clips/`: Encoded clip media (`.mp4`).
 - `filtered_clips/`: Media for filtered-out clips.
-- `metas/v0/`: Clip metadata (`.json`).
-- `iv2_embd/`, `ce1_embd/`: Per-clip embeddings (`.pickle`).
-- `iv2_embd_parquet/`, `ce1_embd_parquet/`: Parquet embeddings with columns `id` and `embedding`.
 - `previews/`: Preview images (`.webp`).
+- `metas/v0/`: Per-clip metadata (`.json`).
+- `iv2_embd/`, `ce1_embd/`: Per-clip embeddings (`.pickle`).
+- `iv2_embd_parquet/`, `ce1_embd_parquet/`: Parquet batches with columns `id` and `embedding`.
 - `processed_videos/`, `processed_clip_chunks/`: Video-level metadata and per-chunk statistics.
 
-## Parquet Embeddings
+## Step 3. Resolve paths programmatically
 
-The pipeline writes embeddings in Parquet batches to support scalable downstream processing and duplicate removal.
+Use helpers to construct paths consistently:
 
-## Packaging
+```python
+from nemo_curator.stages.video.io.clip_writer import ClipWriterStage
 
-Package outputs as needed for training (for example, shard tar archives or a parquet index plus media files). Choose shard sizes that match your training I/O.
+OUT = "/outputs"
+
+clips_dir = ClipWriterStage.get_output_path_clips(OUT)
+filtered_clips_dir = ClipWriterStage.get_output_path_clips(OUT, filtered=True)
+previews_dir = ClipWriterStage.get_output_path_previews(OUT)
+metas_dir = ClipWriterStage.get_output_path_metas(OUT, "v0")
+iv2_parquet_dir = ClipWriterStage.get_output_path_iv2_embd_parquet(OUT)
+ce1_parquet_dir = ClipWriterStage.get_output_path_ce1_embd_parquet(OUT)
+processed_videos_dir = ClipWriterStage.get_output_path_processed_videos(OUT)
+processed_chunks_dir = ClipWriterStage.get_output_path_processed_clip_chunks(OUT)
+```
+
+## Step 4. Inspect per-clip metadata
+
+Each clip writes a JSON file under `metas/v0/` with clip- and window-level fields:
+
+```json
+{
+  "span_uuid": "d2d0b3d1-...",
+  "source_video": "/data/videos/vid.mp4",
+  "duration_span": [0.0, 5.0],
+  "width_source": 1920,
+  "height_source": 1080,
+  "framerate_source": 30.0,
+  "clip_location": "/outputs/clips/d2/d2d0b3d1-....mp4",
+  "motion_score": { "global_mean": 0.51, "per_patch_min_256": 0.29 },
+  "aesthetic_score": 0.72,
+  "windows": [
+    {
+      "start_frame": 0,
+      "end_frame": 30,
+      "qwen_caption": "A person walks across a room",
+      "qwen_lm_enhanced_caption": "A person briskly crosses a bright modern room"
+    }
+  ],
+  "valid": true
+}
+```
+
+Notes:
+
+- Caption keys follow `<model>_caption` and `<model>_enhanced_caption`, based on `caption_models` and `enhanced_caption_models`.
+- With `dry_run=True`, per-clip metadata is not written. Video- and chunk-level metadata are still written.
+- The stage writes video-level metadata and per-chunk stats to `processed_videos/` and `processed_clip_chunks/`.
+
+## Step 5. Embeddings and Parquet outputs
+
+- When embeddings exist, the stage writes per-clip `.pickle` files under `iv2_embd/` or `ce1_embd/`.
+- The stage also batches embeddings per clip chunk into Parquet files under `iv2_embd_parquet/` or `ce1_embd_parquet/` with columns `id` and `embedding` and writes those files to disk.
+
+## Step 6. Package for training
+
+Package outputs to match your training I/O:
+
+- Create shard tar archives (for example, WebDataset) of media and metadata, or
+- Use a Parquet index with media files on disk or object storage.
 <!-- end -->

@@ -41,6 +41,16 @@ python -m nemo_curator.examples.video.video_split_clip_example \
   --verbose
 ```
 
+Writer-related flags you can add:
+
+```bash
+  --no-upload-clips          # do not write mp4s
+  --dry-run                   # write nothing, validate pipeline
+  --generate-embeddings      # write per-clip pickle + parquet batches
+  --generate-captions        # include caption fields in JSON metadata
+  --generate-previews        # write .webp previews for caption windows
+```
+
 The pipeline writes embeddings under `$OUT_DIR/iv2_embd_parquet/` (or `ce1_embd_parquet/` if you use Cosmos-Embed1).
 
 ### Embedding Format Example
