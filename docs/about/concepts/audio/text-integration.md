@@ -19,10 +19,9 @@ Audio-text integration in NeMo Curator operates on multiple levels:
 
 ### Data Structure Integration
 
-**Format Conversion**: `AudioBatch` ↔ `DocumentBatch`
-- Transcriptions become primary text content
+**Format Conversion**: `AudioBatch` → `DocumentBatch`
+- Fields are preserved without remapping (`text` and `pred_text` remain unchanged)
 - Audio metadata preserved as additional fields
-- Bidirectional conversion for flexible workflows
 
 **Metadata Preservation**: Audio characteristics maintained during conversion
 - File paths for traceability
@@ -167,36 +166,21 @@ audio_data = {
     "duration": 3.4
 }
 
-# Becomes DocumentBatch with text as primary content
+# Becomes DocumentBatch with the same fields preserved
 document_data = {
-    "text": "asr prediction",           # Primary text field
-    "audio_filepath": "/audio.wav",     # Preserved metadata
-    "ground_truth": "ground truth",     # Preserved metadata
-    "wer": 15.2,                       # Preserved quality metric
-    "duration": 3.4                    # Preserved audio characteristic
-}
-```
-
-**DocumentBatch to AudioBatch**:
-```python
-# Reverse conversion for audio-specific processing
-document_data = {
-    "text": "transcription",
     "audio_filepath": "/audio.wav",
-    "metadata": {"duration": 3.4}
-}
-
-# Becomes AudioBatch for audio processing
-audio_data = {
-    "audio_filepath": "/audio.wav", 
-    "text": "transcription",
+    "text": "ground truth",
+    "pred_text": "asr prediction",
+    "wer": 15.2,
     "duration": 3.4
 }
 ```
 
+Note: A built-in `DocumentBatch` → `AudioBatch` conversion stage is not provided. Implement a custom stage if reverse conversion is required.
+
 ### Metadata Flow
 
-**Additive Processing**: Each stage adds metadata without removing existing fields
+**Additive Processing**: Stages commonly add metadata without removing existing fields
 
 ```python
 # Stage 1: Initial loading
@@ -231,6 +215,7 @@ Ensure consistency between audio and text quality:
 ### Multimodal Quality Metrics
 
 **Composite Quality Scoring**:
+Conceptual example (not a built-in stage):
 ```python
 composite_quality = (
     0.4 * audio_quality_score +      # ASR accuracy, duration appropriateness
@@ -254,7 +239,7 @@ composite_quality = (
 - Large batches increase processing efficiency but consume more RAM
 
 **Conversion Overhead**:
-- AudioBatch ↔ DocumentBatch conversion is lightweight
+- AudioBatch → DocumentBatch conversion is lightweight
 - Metadata copying has minimal performance impact
 - Batch size affects conversion performance
 
@@ -270,10 +255,13 @@ audio_pipeline.run() → text_pipeline.run()
 
 **Parallel**: Audio ∥ Text (higher memory, faster)
 ```python
-# Process audio and text simultaneously
-with concurrent.futures.ThreadPoolExecutor():
-    audio_future = audio_pipeline.run_async()
-    text_future = text_pipeline.run_async()
+# Run a single pipeline that includes both audio and text stages using an executor
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna import XennaExecutor
+
+pipeline = Pipeline(name="audio_text")
+# ... add audio and text stages ...
+results = pipeline.run(XennaExecutor())
 ```
 
 ### Scaling Strategies

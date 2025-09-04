@@ -20,7 +20,7 @@ Understanding the `AudioBatch` data structure, which serves as the core containe
 - **File Path Management**: Validates audio file existence and accessibility
 - **Batch Processing**: Groups multiple audio samples for efficient processing
 - **Metadata Handling**: Preserves audio characteristics and processing results
-- **Error Tracking**: Monitors validation failures and processing errors
+- **Warning Logging**: Logs validation warnings during file existence checks
 
 ## Structure and Components
 
@@ -100,9 +100,9 @@ for i, item in enumerate(audio_batch.data):
 
 The validation process checks:
 
-1. **File Existence**: Verifies audio files exist at specified paths
-2. **Path Accessibility**: Ensures files can be read by the process
-3. **Required Fields**: Confirms essential metadata is present
+1. **File Existence**: Verifies audio files exist at specified paths when `filepath_key` is provided
+
+Note: Validation is invoked during task construction and logs warnings for missing files. It does not enforce required metadata fields (such as `text`) and does not abort processing.
 
 **Warning Handling**: Invalid files generate warnings but don't stop processing:
 
@@ -118,14 +118,16 @@ The validation process checks:
 Choose batch sizes based on your hardware and processing requirements:
 
 ```python
+from nemo_curator.stages.audio.metrics.get_wer import GetPairwiseWerStage
+
 # GPU processing - larger batches for efficiency
-gpu_batch = AudioBatch(data=audio_samples).with_(batch_size=32)
+wer_stage_gpu = GetPairwiseWerStage().with_(batch_size=32)
 
 # CPU processing - smaller batches to avoid memory issues  
-cpu_batch = AudioBatch(data=audio_samples).with_(batch_size=8)
+wer_stage_cpu = GetPairwiseWerStage().with_(batch_size=8)
 
 # Memory-constrained environments
-small_batch = AudioBatch(data=audio_samples).with_(batch_size=4)
+wer_stage_small = GetPairwiseWerStage().with_(batch_size=4)
 ```
 
 ### Dynamic Batching
@@ -177,7 +179,6 @@ audio_sample = {
     # Processing results
     "pred_text": "asr prediction",
     "wer": 12.5,
-    "cer": 8.3,
     
     # Dataset metadata
     "language": "en_us",
@@ -189,6 +190,9 @@ audio_sample = {
     "noise_level": "low"
 }
 ```
+
+:::{note} Character error rate (CER) is available as a utility function and typically requires a custom stage to compute and store it.
+:::
 
 ### Metadata Evolution
 
@@ -243,7 +247,7 @@ invalid_sample = {
     "audio_filepath": "/valid/audio.wav",
     # Missing required "text" field
 }
-# Validation catches missing required fields
+# AudioBatch does not enforce required metadata fields. Add a validation stage if required.
 ```
 
 ### Error Recovery Strategies

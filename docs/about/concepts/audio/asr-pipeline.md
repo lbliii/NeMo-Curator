@@ -9,6 +9,7 @@ modality: "audio-only"
 ---
 
 (about-concepts-audio-asr-pipeline)=
+
 # ASR Pipeline Architecture
 
 This guide provides a comprehensive overview of NeMo Curator's automatic speech recognition (ASR) pipeline architecture, from audio input through transcription and quality assessment.
@@ -48,38 +49,41 @@ graph TD
 ### 1. Audio Input Management
 
 **AudioBatch Structure**: The foundation for audio processing
+
 - Contains audio file paths and metadata
 - Validates file existence and accessibility
 - Supports batch processing for efficiency
 
 **Input Validation**: Ensures audio quality before processing
-- File format verification using soundfile
-- Path validation and accessibility checks
-- Metadata consistency validation
+
+- Path existence checks using `AudioBatch.validate()` and `validate_item()`
+- Optional metadata checks added by downstream stages (for example, duration, format)
 
 ### 2. ASR Model Integration
 
 **NeMo Framework Integration**: Leverages state-of-the-art ASR models
+
 - Automatic model downloading and caching
 - GPU-accelerated inference when available
 - Support for multilingual and domain-specific models
 
-**Model Management**: Efficient resource utilization
+**Model Management**: Efficient resource use
+
 - Lazy loading of models to conserve memory
-- GPU/CPU device selection based on availability
-- Batch size optimization for hardware configuration
+- GPU/CPU device selection based on configured resources
+- Model-level batching behavior handled inside NeMo models
 
 ### 3. Inference Processing
 
 **Batch Processing**: Optimized for throughput
-- Configurable batch sizes based on GPU memory
-- Parallel processing of audio files
-- Error handling for corrupted or invalid audio
+
+- Vectorized transcription over a list of files passed to the model
+- The NeMo ASR model handles batching; this stage does not expose a batch size control
 
 **Output Generation**: Structured transcription results
+
 - Predicted text extraction from NeMo outputs
 - Metadata preservation throughout processing
-- Error tracking for failed transcriptions
 
 ## Processing Stages
 
@@ -109,8 +113,8 @@ asr_stage = InferenceAsrNemoStage(
     model_name="nvidia/stt_en_fastconformer_hybrid_large_pc"
 )
 
-# GPU/CPU device selection
-device = asr_stage.check_cuda()  # Auto-detects GPU availability
+# GPU/CPU device selection (based on configured resources)
+device = asr_stage.check_cuda()
 
 # Model loading
 asr_stage.setup()  # Downloads and loads model
@@ -155,7 +159,7 @@ duration_stage = GetAudioDurationStage(
 
 1. **Model Loading** → NeMo ASR model initialization
 2. **Batch Creation** → Group audio files for efficient processing  
-3. **GPU Processing** → Parallel transcription generation
+3. **GPU Processing** → Transcription generation
 4. **Result Aggregation** → Combine transcriptions with metadata
 
 ### Output Data Flow
@@ -169,41 +173,37 @@ duration_stage = GetAudioDurationStage(
 
 ### Scalability Factors
 
-**Batch Size Impact**: 
-- Larger batches improve GPU utilization
-- Memory constraints limit maximum batch size
-- Optimal range: 8-32 files per batch for most GPUs
-
 **Model Selection Impact**:
-- Larger models provide better accuracy but slower inference
-- Streaming models enable real-time processing
+
+- Larger models can provide better accuracy but may be slower
+- Some NeMo models support streaming; this stage performs offline transcription
 - Language-specific models improve accuracy for target languages
 
-**Hardware Utilization**:
-- GPU acceleration provides 5-10x speedup over CPU
-- Multi-GPU scaling for large datasets
-- Memory requirements scale with model size and batch size
+**Hardware Use**:
+
+- GPU acceleration typically outperforms CPU for larger workloads
+- Memory requirements scale with model size and input lengths
 
 ### Optimization Strategies
 
 **Memory Management**:
+
 ```python
 # Optimize for memory-constrained environments
 asr_stage = InferenceAsrNemoStage(
     model_name="nvidia/stt_en_fastconformer_hybrid_small"  # Smaller model
 ).with_(
-    batch_size=4,  # Smaller batches
-    resources=Resources(gpus=0.5)  # Share GPU
+    resources=Resources(gpus=0.5)  # Request fractional GPU via executor/backends
 )
 ```
 
 **Throughput Optimization**:
+
 ```python
 # Optimize for maximum throughput
 asr_stage = InferenceAsrNemoStage(
     model_name="nvidia/stt_en_fastconformer_hybrid_large_pc"
 ).with_(
-    batch_size=32,  # Larger batches
     resources=Resources(gpus=1.0)  # Dedicated GPU
 )
 ```
@@ -226,26 +226,16 @@ except RuntimeError as e:
 ### Audio Processing Errors
 
 ```python
-# Built-in error handling in AudioBatch
+# Validate and filter invalid file paths
 audio_batch = AudioBatch(data=audio_data, filepath_key="audio_filepath")
 
-# Validation removes invalid files automatically
+# Filter out entries that do not exist on disk
 valid_samples = [item for item in audio_batch.data if audio_batch.validate_item(item)]
 ```
 
 ### Pipeline Recovery
 
-```python
-# Checkpoint-based recovery for long-running pipelines
-pipeline = Pipeline(name="recoverable_asr")
-
-# Add checkpointing between stages
-pipeline.add_stage(asr_stage.with_(checkpoint=True))
-pipeline.add_stage(quality_stage.with_(checkpoint=True))
-
-# Resume from last successful checkpoint
-pipeline.run(executor, resume=True)
-```
+For guidance on resumable processing and recovery at the executor/backends level, refer to [Resumable Processing](../../../reference/infrastructure/resumable-processing.md).
 
 ## Integration Points
 
@@ -262,9 +252,9 @@ audio_to_text = [
 ]
 ```
 
-### Multimodal Integration
+### Multi-Modal Integration
 
-Support for audio-visual and audio-text multimodal workflows:
+Support for audio-visual and audio-text multi-modal workflows:
 
 ```python
 # Audio + Video processing
@@ -286,4 +276,3 @@ multimodal_pipeline.add_stage(multimodal_fusion_stage)
 - **[AudioBatch Structure](audio-batch.md)** - Core data structures for audio processing
 - **[Text Integration](text-integration.md)** - Combining audio and text workflows
 - **[Infrastructure Components](../../reference/infrastructure/index.md)** - Distributed processing foundations
-

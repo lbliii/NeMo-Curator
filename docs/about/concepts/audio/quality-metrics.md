@@ -40,6 +40,12 @@ WER = (Substitutions + Deletions + Insertions) / Total_Words × 100
 # WER = 1/3 × 100 = 33.33% (1 substitution out of 3 words)
 ```
 
+Implementation reference: `nemo_curator/stages/audio/metrics/get_wer.py:23-29` (utility) and `nemo_curator/stages/audio/metrics/get_wer.py:48-72` (stage)
+
+::::{note}
+WER and CER utilities depend on the `editdistance` package.
+::::
+
 ### Character Error Rate (CER)
 
 More granular accuracy measurement at the character level:
@@ -63,15 +69,21 @@ CER = (Character_Substitutions + Character_Deletions + Character_Insertions) / T
 # CER = 1/5 × 100 = 20% (1 deletion out of 5 characters)
 ```
 
+Implementation reference: `nemo_curator/stages/audio/metrics/get_wer.py:32-35`
+
 ## Audio Characteristic Metrics
 
 ### Duration Analysis
 
 **Audio Duration**: Precise measurement of audio file length in seconds.
 
+Implementation reference: `nemo_curator/stages/audio/common.py:43-68` (`GetAudioDurationStage` reads audio using `soundfile` and sets seconds as frames ÷ sample rate; sets -1.0 on error)
+
 **Speech Rate Metrics**:
 - **Words per Second**: `word_count / duration`
 - **Characters per Second**: `character_count / duration`
+
+Implementation reference: `nemo_curator/stages/audio/metrics/get_wer.py:38-45` (`get_wordrate`, `get_charrate`)
 
 **Quality Indicators**:
 - **Optimal Speech Rate**: 2-4 words per second for most languages
@@ -79,12 +91,16 @@ CER = (Character_Substitutions + Character_Deletions + Character_Insertions) / T
 - **Very Short Audio** (< 0.5s): Often incomplete utterances
 - **Very Long Audio** (> 60s): May contain multiple speakers or topics
 
+::::{note}
+These ranges are guidelines for dataset curation, not enforced defaults. To enforce thresholds in a pipeline, use `PreserveByValueStage`.
+::::
+
 ### Format and Technical Metrics
 
 **Sample Rate**: Audio sampling frequency (typically 16 kHz for ASR)
 **Bit Depth**: Audio resolution (16-bit or 24-bit)
 **Channels**: Mono (preferred) or stereo audio
-**Codec**: Audio compression format (WAV, FLAC preferred for quality)
+**Encoding format**: Compression format (WAV, FLAC preferred for quality)
 
 ## Quality Assessment Strategies
 
@@ -119,6 +135,8 @@ quality_thresholds = {
     "min_words": 1,          # At least 1 word
 }
 ```
+
+Filtering mechanism reference: `nemo_curator/stages/audio/common.py:71-116` (`PreserveByValueStage` supports `lt`, `le`, `eq`, `ne`, `ge`, `gt` over a value key)
 
 ### Language-Specific Considerations
 
@@ -179,11 +197,15 @@ def calculate_composite_quality(wer: float, duration: float, text: str) -> float
     return round(composite_score, 2)
 ```
 
+::::{note}
+This function is an example-only snippet to illustrate a possible scoring approach. It is not a built-in utility. To use it in a pipeline, implement a custom stage that writes a `composite_quality` field. For end-to-end examples, refer to the custom metrics guidance.
+::::
+
 ### Domain-Specific Scoring
 
 **Conversational Speech**:
 - Emphasis on natural speech patterns
-- Tolerance for disfluencies and hesitations
+- Tolerance for pauses and filler words
 - Speaker change detection importance
 
 **Broadcast Speech**:
@@ -231,6 +253,10 @@ def analyze_quality_distribution(manifest_data: list) -> dict:
     }
 ```
 
+::::{note}
+This distribution function is a documentation example, not part of the shipped API. It requires `numpy` (for example, `import numpy as np`). Consider integrating it in analysis notebooks or a custom stage.
+::::
+
 ## Best Practices
 
 ### Quality Threshold Selection
@@ -267,3 +293,5 @@ def analyze_quality_distribution(manifest_data: list) -> dict:
 - **[AudioBatch Structure](audio-batch.md)** - Data structure concepts
 - **[Quality Assessment Implementation](../../curate-audio/process-data/quality-assessment/index.md)** - Practical quality filtering
 - **[WER Filtering Guide](../../curate-audio/process-data/quality-assessment/wer-filtering.md)** - Detailed WER filtering
+ - **[Duration Filtering](../../curate-audio/process-data/quality-assessment/duration-filtering.md)** - Filter by audio length and speech rate
+ - **[Audio Analysis](../../curate-audio/process-data/audio-analysis/index.md)** - Duration extraction and format/metadata analysis
