@@ -68,7 +68,7 @@ The audio curation concepts build on NVIDIA NeMo Curator's core infrastructure c
 :::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Distributed Computing
 :link: reference-infra-dist-computing
 :link-type: ref
-Configure and manage distributed processing across multiple machines
+Configure and manage distributed processing on one or more machines
 +++
 {bdg-secondary}`dask`
 {bdg-secondary}`clusters`
@@ -88,7 +88,7 @@ Optimize memory usage when processing large audio datasets
 :::{grid-item-card} {octicon}`zap;1.5em;sd-mr-1` GPU Acceleration
 :link: reference-infra-gpu-processing
 :link-type: ref
-Leverage NVIDIA GPUs for faster ASR inference and audio processing
+Use NVIDIA GPUs to speed up ASR inference and audio processing
 +++
 {bdg-secondary}`cuda`
 {bdg-secondary}`nemo-toolkit`
@@ -98,7 +98,7 @@ Leverage NVIDIA GPUs for faster ASR inference and audio processing
 :::{grid-item-card} {octicon}`sync;1.5em;sd-mr-1` Resumable Processing
 :link: reference-infra-resumable-processing
 :link-type: ref
-Continue interrupted operations across large audio datasets
+Resume interrupted operations across large audio datasets
 +++
 {bdg-secondary}`checkpoints`
 {bdg-secondary}`recovery`

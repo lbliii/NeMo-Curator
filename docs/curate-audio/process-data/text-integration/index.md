@@ -43,7 +43,8 @@ audio_batch = AudioBatch(data=[
 ])
 
 # Output: DocumentBatch compatible with text processing
-document_batch = converter.process(audio_batch)
+batches = converter.process(audio_batch)
+document_batch = batches[0]
 ```
 
 ### Preserving Audio Metadata
@@ -51,11 +52,11 @@ document_batch = converter.process(audio_batch)
 ```python
 # Audio metadata is preserved during conversion
 converted_data = {
-    "text": "asr predicted text",           # Primary text content
+    "text": "ground truth text",                 # Original transcription
     "audio_filepath": "/data/audio/sample.wav",  # Original audio reference
-    "ground_truth": "ground truth text",         # Original transcription  
-    "wer": 12.5,                                # Quality metrics
-    "duration": 3.2,                           # Audio characteristics
+    "pred_text": "asr predicted text",           # ASR prediction
+    "wer": 12.5,                                   # Quality metrics
+    "duration": 3.2,                               # Audio characteristics
 }
 ```
 
@@ -64,8 +65,8 @@ converted_data = {
 ### Apply Text Filters to Transcriptions
 
 ```python
-from nemo_curator.filters import WordCountFilter, NonAlphaNumericFilter
-from nemo_curator.stages.text.filters import ScoreFilter
+from nemo_curator.stages.text.filters import WordCountFilter, NonAlphaNumericFilter
+from nemo_curator.stages.text.modules import ScoreFilter
 
 # Create integrated audio-text pipeline
 pipeline = Pipeline(name="audio_text_integration")
@@ -98,18 +99,20 @@ pipeline.add_stage(
 ### Language Detection on Transcriptions
 
 ```python
-from nemo_curator.stages.text.language import LanguageIdentificationStage
+from nemo_curator.stages.text.filters import FastTextLangId
+from nemo_curator.stages.text.modules import ScoreFilter
 
 # Detect language of ASR predictions
-language_detector = LanguageIdentificationStage(
-    text_field="pred_text",
-    language_field="detected_language"
+pipeline.add_stage(
+    ScoreFilter(
+        FastTextLangId(model_path="/path/to/lid.176.bin", min_langid_score=0.3),
+        text_field="pred_text",
+        score_field="language",
+    )
 )
-
-pipeline.add_stage(language_detector)
 ```
 
-## Multimodal Workflows
+## Cross-Modal Workflows
 
 ### Audio-Text Paired Processing
 
@@ -120,7 +123,7 @@ def create_multimodal_pipeline(audio_manifest: str) -> Pipeline:
     pipeline = Pipeline(name="multimodal_audio_text")
     
     # Load audio data
-    pipeline.add_stage(JsonlReader(path=audio_manifest))
+    pipeline.add_stage(JsonlReader(file_paths=audio_manifest))
     
     # Audio processing branch
     audio_branch = [
@@ -142,8 +145,8 @@ def create_multimodal_pipeline(audio_manifest: str) -> Pipeline:
         ScoreFilter(WordCountFilter(min_words=5), text_field="pred_text"),
         
         # Language consistency check
-        LanguageIdentificationStage(text_field="text", language_field="gt_language"),
-        LanguageIdentificationStage(text_field="pred_text", language_field="pred_language"),
+        ScoreFilter(FastTextLangId(model_path="/path/to/lid.176.bin", min_langid_score=0.3), text_field="text", score_field="gt_language"),
+        ScoreFilter(FastTextLangId(model_path="/path/to/lid.176.bin", min_langid_score=0.3), text_field="pred_text", score_field="pred_language"),
     ]
     
     for stage in text_branch:
@@ -226,35 +229,6 @@ def create_conditional_text_pipeline() -> Pipeline:
     return pipeline
 ```
 
-### Synthetic Data Enhancement
-
-```python
-# Use high-quality transcriptions for synthetic data generation
-def enhance_with_synthetic_data(pipeline: Pipeline) -> Pipeline:
-    """Add synthetic data generation to audio pipeline."""
-    
-    # Filter for highest quality samples (WER <= 10%)
-    pipeline.add_stage(
-        PreserveByValueStage("wer", 10.0, "le")
-    )
-    
-    # Convert to text format
-    pipeline.add_stage(AudioToDocumentStage())
-    
-    # Generate synthetic variations of high-quality transcriptions
-    from nemo_curator.stages.text.synthetic import SyntheticDataStage
-    
-    pipeline.add_stage(
-        SyntheticDataStage(
-            input_field="pred_text",
-            output_field="synthetic_variations",
-            num_variations=3
-        )
-    )
-    
-    return pipeline
-```
-
 ## Output Formats
 
 ### Integrated Manifests
@@ -268,8 +242,8 @@ Combined audio-text manifests preserve both modalities:
     "pred_text": "asr predicted transcription",
     "wer": 15.2,
     "duration": 3.4,
-    "word_count": 6,
-    "language_detected": "en",
+    "word_count_score": 6,
+    "language": "en",
     "multimodal_quality": 87.5
 }
 ```
@@ -282,7 +256,7 @@ Export audio and text data separately while maintaining relationships:
 # Export audio metadata
 audio_metadata = {
     "audio_id": "sample_001", 
-    "filepath": "/data/audio/sample.wav",
+    "audio_filepath": "/data/audio/sample.wav",
     "duration": 3.4,
     "wer": 15.2
 }
@@ -291,7 +265,7 @@ audio_metadata = {
 text_content = {
     "audio_id": "sample_001",  # Link to audio
     "text": "asr predicted transcription",
-    "word_count": 6,
+    "word_count_score": 6,
     "language": "en"
 }
 ```
@@ -333,5 +307,4 @@ def streaming_converter(audio_batch: AudioBatch) -> DocumentBatch:
 - **[Audio Processing Overview](../index.md)** - Complete audio processing workflow
 - **[Quality Assessment](../quality-assessment/index.md)** - Audio quality metrics
 - **[Text Curation](../../../curate-text/index.md)** - Text processing capabilities
-- **[Multimodal Concepts](../../../about/concepts/index.md)** - Cross-modal processing concepts
-
+- **[Cross-Modal Concepts](../../../about/concepts/index.md)** - Cross-modal processing concepts

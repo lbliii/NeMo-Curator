@@ -55,6 +55,9 @@ from nemo_curator.stages.audio.metrics.get_wer import get_cer
 cer_value = get_cer("hello world", "helo world")  # Returns 9.09
 ```
 
+:::{note} The WER and CER utilities depend on the `editdistance` package.
+:::
+
 ### Speech Rate Metrics
 
 Analyze speaking speed and content density:
@@ -91,6 +94,7 @@ poor_quality_filter = PreserveByValueStage(
     target_value=80.0,
     operator="lt"  # less than
 )
+# Preserves only entries with WER < 80%
 ```
 
 ### Duration-based Filtering
@@ -98,6 +102,8 @@ poor_quality_filter = PreserveByValueStage(
 Filter by audio length to remove very short or long samples:
 
 ```python
+from nemo_curator.stages.audio.common import PreserveByValueStage
+
 # Keep samples between 1-30 seconds
 duration_min_filter = PreserveByValueStage(
     input_value_key="duration",
@@ -116,6 +122,8 @@ duration_max_filter = PreserveByValueStage(
 
 ```python
 from nemo_curator.pipeline import Pipeline
+from nemo_curator.stages.audio.metrics.get_wer import GetPairwiseWerStage
+from nemo_curator.stages.audio.common import GetAudioDurationStage, PreserveByValueStage
 
 # Create multi-stage quality pipeline
 quality_pipeline = Pipeline(name="audio_quality_assessment")
@@ -158,9 +166,9 @@ The `PreserveByValueStage` supports multiple comparison operators:
 Create domain-specific quality assessments:
 
 ```python
+from dataclasses import dataclass, field
 from nemo_curator.stages.audio.common import LegacySpeechStage
 from nemo_curator.tasks import AudioBatch
-from dataclasses import dataclass
 
 @dataclass
 class CustomAudioQualityStage(LegacySpeechStage):
@@ -188,6 +196,10 @@ class CustomAudioQualityStage(LegacySpeechStage):
 ### Language-specific Quality
 
 ```python
+from dataclasses import dataclass, field
+from nemo_curator.stages.audio.common import LegacySpeechStage
+from nemo_curator.tasks import AudioBatch
+
 @dataclass  
 class LanguageQualityStage(LegacySpeechStage):
     """Language-specific quality assessment."""
@@ -225,24 +237,7 @@ wer_stage = GetPairwiseWerStage().with_(batch_size=100)
 duration_stage = GetAudioDurationStage().with_(batch_size=50)
 ```
 
-### Parallel Filtering
-
-```python
-# Process multiple quality metrics in parallel
-from concurrent.futures import ThreadPoolExecutor
-
-def parallel_quality_assessment(audio_batch: AudioBatch) -> AudioBatch:
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        # Submit quality calculations in parallel
-        wer_future = executor.submit(calculate_wer, audio_batch)
-        duration_future = executor.submit(calculate_duration, audio_batch)
-        
-        # Collect results
-        wer_results = wer_future.result()
-        duration_results = duration_future.result()
-        
-    return combine_results(audio_batch, wer_results, duration_results)
-```
+Parallelism is managed by the pipeline executor. Configure resources per stage using `.with_(resources=...)` and run with your chosen executor.
 
 ## Quality Analysis
 

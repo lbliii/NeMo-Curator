@@ -8,14 +8,21 @@ content_type: "how-to"
 modality: "audio-only"
 ---
 
+
+
 (audio-analysis-format-validation)=
+
 # Format Validation
 
-Validate audio file formats and detect corrupted files to ensure robust audio curation pipelines with reliable data quality.
+Verify audio file formats and detect corrupted files to ensure robust audio curation pipelines with reliable data quality.
 
 ## Overview
 
 The format validation processor verifies audio file integrity, format compatibility, and accessibility before processing. This prevents pipeline failures and ensures consistent data quality across large audio datasets.
+
+:::note
+This page shows a custom approach to format validation. Classes such as `AudioFormatValidator` and `AudioValidationFilter` are examples and are not built-in stages. Create these as custom stages using `soundfile` for detection and validation, or adapt the example stage patterns from the overview page.
+:::
 
 ## Key Features
 
@@ -26,26 +33,28 @@ The format validation processor verifies audio file integrity, format compatibil
 
 ## Supported Formats
 
-NeMo Curator supports all formats compatible with the soundfile library:
+NeMo Curator supports formats compatible with the `soundfile` library (backed by `libsndfile`):
 
 - **WAV** - Uncompressed audio (recommended for high quality)
 - **FLAC** - Lossless compression with metadata support
 - **OGG** - Open-source compressed format
-- **MP3** - Compressed format (requires additional dependencies)
+- **MP3** - Compressed format (requires system dependencies)
 - **M4A** - Apple compressed format
 - **AIFF** - Apple uncompressed format
 
-## How It Works
+## How it Works
 
 The format validation processor performs comprehensive checks on audio files:
 
+:::note
+Example: The following code uses `AudioFormatValidator` as a conceptual class. Create a similar custom stage (for example, a `LegacySpeechStage` that calls `sf.info(...)`) to populate validation fields such as `is_valid` and `validation_status` in your batch entries.
+:::
+
 ```python
-from nemo_curator.stages.audio import AudioFormatValidator
+# Conceptual example (not built-in)
+from nemo_curator.stages.audio import AudioFormatValidator  # example-only
 
-# Initialize format validator
 format_validator = AudioFormatValidator()
-
-# Validate AudioBatch files
 validated_batch = format_validator(audio_batch)
 ```
 
@@ -62,30 +71,30 @@ validated_batch = format_validator(audio_batch)
 ### Basic Configuration
 
 ```python
-from nemo_curator.stages.audio import AudioFormatValidator
+# Conceptual configuration (not built-in)
+from nemo_curator.stages.audio import AudioFormatValidator  # example-only
 
-# Default configuration
 format_validator = AudioFormatValidator(
-    audio_field="audio_filepath",     # Field containing audio file paths
-    validation_field="is_valid",      # Output field for validation results
-    supported_formats=["wav", "flac", "ogg"]  # Allowed formats
+    audio_field="audio_filepath",
+    validation_field="is_valid",
+    supported_formats=["wav", "flac", "ogg"]
 )
 ```
 
 ### Advanced Configuration
 
 ```python
-# Comprehensive validation with detailed reporting
+# Conceptual advanced configuration (not built-in)
 format_validator = AudioFormatValidator(
     audio_field="audio_filepath",
     validation_field="validation_status",
     supported_formats=["wav", "flac", "ogg", "mp3"],
-    check_corruption=True,           # Deep corruption checking
-    check_metadata=True,             # Validate metadata fields
-    max_file_size_mb=500,           # Maximum file size limit
-    min_file_size_kb=1,             # Minimum file size limit
-    report_details=True,            # Include detailed error messages
-    remove_invalid=False            # Keep invalid files with status
+    check_corruption=True,
+    check_metadata=True,
+    max_file_size_mb=500,
+    min_file_size_kb=1,
+    report_details=True,
+    remove_invalid=False
 )
 ```
 
@@ -95,17 +104,16 @@ format_validator = AudioFormatValidator(
 
 ```python
 from nemo_curator.datasets import AudioDataset
+
+# Conceptual validator (not built-in)
 from nemo_curator.stages.audio import AudioFormatValidator
 
-# Load audio dataset
 audio_dataset = AudioDataset.from_manifest("audio_manifest.jsonl")
 audio_batch = audio_dataset.to_batch()
 
-# Validate formats
 format_validator = AudioFormatValidator()
 validated_batch = format_validator(audio_batch)
 
-# Check validation results
 valid_count = sum(1 for sample in validated_batch.data if sample.get("is_valid", False))
 total_count = len(validated_batch.data)
 print(f"Valid files: {valid_count}/{total_count}")
@@ -114,23 +122,20 @@ print(f"Valid files: {valid_count}/{total_count}")
 ### Filtering Invalid Files
 
 ```python
+# Conceptual example (not built-in)
 from nemo_curator.stages.audio import AudioFormatValidator, AudioValidationFilter
 
-# Validate and filter in pipeline
 format_validator = AudioFormatValidator(remove_invalid=False)
 validation_filter = AudioValidationFilter(validation_field="is_valid")
 
-# Process pipeline
 validated_batch = format_validator(audio_batch)
 clean_batch = validation_filter(validated_batch)
-
-print(f"Removed {len(audio_batch.data) - len(clean_batch.data)} invalid files")
 ```
 
 ### Detailed Error Reporting
 
 ```python
-# Enable detailed validation reporting
+# Conceptual reporting (not built-in)
 format_validator = AudioFormatValidator(
     report_details=True,
     validation_field="validation_status"
@@ -138,7 +143,6 @@ format_validator = AudioFormatValidator(
 
 validated_batch = format_validator(audio_batch)
 
-# Analyze validation results
 for sample in validated_batch.data:
     status = sample.get("validation_status", {})
     if not status.get("is_valid", False):
@@ -150,12 +154,12 @@ for sample in validated_batch.data:
 ### Custom Format Support
 
 ```python
-# Add custom format support
+# Conceptual custom support (not built-in)
 format_validator = AudioFormatValidator(
     supported_formats=["wav", "flac", "ogg", "m4a", "aiff"],
     format_converters={
-        "m4a": "ffmpeg",    # Use ffmpeg for M4A conversion
-        "aiff": "soundfile" # Use soundfile for AIFF
+        "m4a": "ffmpeg",
+        "aiff": "soundfile"
     }
 )
 ```
@@ -186,48 +190,49 @@ The processor adds validation information to each audio sample:
 Format validation is typically the first step in audio processing pipelines:
 
 ```python
-from nemo_curator.stages.audio import (
-    AudioFormatValidator,
-    AudioValidationFilter,
-    AudioDurationCalculator,
-    ASRInference
-)
+# Example pipeline combining a custom validator with built-in stages
+from nemo_curator.stages.audio.common import GetAudioDurationStage, PreserveByValueStage
+from nemo_curator.stages.audio.inference.asr_nemo import InferenceAsrNemoStage
 
-# Complete preprocessing pipeline
+# Custom validator (example-only, not built-in). Implement similar to examples above.
+class AudioFormatValidationStage:  # placeholder for your custom stage
+    def __call__(self, batch):
+        # populate fields like is_valid or validation_status
+        return batch
+
 preprocessing_pipeline = [
-    AudioFormatValidator(),           # Validate file formats
-    AudioValidationFilter(),          # Remove invalid files
-    AudioDurationCalculator(),        # Calculate durations
-    ASRInference()                    # Perform transcription
+    AudioFormatValidationStage(),
+    GetAudioDurationStage(audio_filepath_key="audio_filepath", duration_key="duration"),
+    PreserveByValueStage(input_value_key="duration", target_value=1.0, operator="ge"),
+    InferenceAsrNemoStage(model_name="nvidia/stt_en_fastconformer_hybrid_large_pc")
 ]
 
-# Process audio batch
 processed_batch = audio_batch
 for stage in preprocessing_pipeline:
     processed_batch = stage(processed_batch)
 ```
 
-## Performance Optimization
+## Performance optimization
 
 ### Parallel Validation
 
 ```python
-# Use parallel processing for large datasets
+# Conceptual parallel configuration (not built-in)
 format_validator = AudioFormatValidator(
-    parallel_workers=8,        # Use 8 parallel workers
-    chunk_size=100,           # Process 100 files per chunk
-    use_threading=True        # Use threading for I/O operations
+    parallel_workers=8,
+    chunk_size=100,
+    use_threading=True
 )
 ```
 
 ### Caching Results
 
 ```python
-# Cache validation results to avoid reprocessing
+# Conceptual caching configuration (not built-in)
 format_validator = AudioFormatValidator(
-    cache_validation=True,     # Cache results by file path
-    cache_size=10000,         # Cache up to 10k validation results
-    cache_ttl_hours=24        # Cache timeout of 24 hours
+    cache_validation=True,
+    cache_size=10000,
+    cache_ttl_hours=24
 )
 ```
 
@@ -235,36 +240,38 @@ format_validator = AudioFormatValidator(
 
 ### Common Issues
 
-**Unsupported Format Errors**
+Unsupported format errors
+
 ```python
-# Check format support before validation
 import soundfile as sf
 print("Available formats:", sf.available_formats())
 
-# Add format conversion if needed
+# Conceptual conversion configuration (not built-in)
 format_validator = AudioFormatValidator(
-    auto_convert=True,         # Automatically convert unsupported formats
-    conversion_format="wav",   # Target format for conversion
-    keep_original=False        # Remove original after conversion
+    auto_convert=True,
+    conversion_format="wav",
+    keep_original=False
 )
 ```
 
-**File Permission Issues**
+File permission issues
+
 ```python
-# Handle permission errors gracefully
+# Conceptual permission handling (not built-in)
 format_validator = AudioFormatValidator(
-    handle_permissions=True,   # Skip files with permission issues
-    log_permission_errors=True # Log permission errors for review
+    handle_permissions=True,
+    log_permission_errors=True
 )
 ```
 
-**Large File Handling**
+Large file handling
+
 ```python
-# Optimize for large audio files
+# Conceptual large-file settings (not built-in)
 format_validator = AudioFormatValidator(
-    max_file_size_mb=1000,    # Allow files up to 1GB
-    stream_validation=True,   # Stream large files for validation
-    quick_check=True          # Use header-only validation for speed
+    max_file_size_mb=1000,
+    stream_validation=True,
+    quick_check=True
 )
 ```
 
@@ -273,16 +280,16 @@ format_validator = AudioFormatValidator(
 ### Validation Modes
 
 ```python
-# Different error handling strategies
+# Conceptual error handling modes (not built-in)
 strict_validator = AudioFormatValidator(
-    validation_mode="strict",  # Fail on any invalid file
-    stop_on_error=True        # Stop processing on first error
+    validation_mode="strict",
+    stop_on_error=True
 )
 
 lenient_validator = AudioFormatValidator(
-    validation_mode="lenient", # Continue with warnings
-    log_errors=True,          # Log all errors for review
-    fallback_validation=True  # Use fallback validation methods
+    validation_mode="lenient",
+    log_errors=True,
+    fallback_validation=True
 )
 ```
 
@@ -290,7 +297,7 @@ lenient_validator = AudioFormatValidator(
 
 ```python
 def custom_error_handler(filepath, error):
-    """Custom error handling function"""
+    """Custom error handling function (conceptual)"""
     print(f"Validation error for {filepath}: {error}")
     return {"is_valid": False, "error_type": type(error).__name__}
 
@@ -300,17 +307,3 @@ format_validator = AudioFormatValidator(
 )
 ```
 
-## Best Practices
-
-1. **Validate Early**: Run format validation before other processing stages
-2. **Log Results**: Keep detailed logs of validation results for debugging
-3. **Handle Errors**: Implement robust error handling for production pipelines
-4. **Monitor Performance**: Track validation speed and resource usage
-5. **Cache Results**: Use caching for repeated validation of the same files
-
-## Related Topics
-
-- **[Duration Calculation](duration-calculation.md)** - Calculate audio duration after validation
-- **[Audio Analysis Overview](index.md)** - Complete audio analysis capabilities
-- **[Quality Assessment](../quality-assessment/index.md)** - Quality filtering workflows
-- **[Local File Loading](../../load-data/local-files.md)** - Loading audio files for validation

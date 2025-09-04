@@ -34,6 +34,10 @@ NeMo Curator supports all audio formats compatible with the soundfile library:
 | OGG | `.ogg` | Open-source compression | General purpose |
 | M4A | `.m4a` | AAC compression | Mobile recordings |
 
+```{note}
+MP3 (`.mp3`) and M4A (`.m4a`) support depends on your system's libsndfile build. For the most reliable behavior across environments, prefer WAV (`.wav`) or FLAC (`.flac`).
+```
+
 ## Directory Scanning
 
 ::::{tab-set}
@@ -404,6 +408,14 @@ def match_audio_transcriptions(audio_dir: str, transcript_dir: str) -> tuple[lis
 ```python
 from nemo_curator.pipeline import Pipeline
 from nemo_curator.backends.xenna import XennaExecutor
+from nemo_curator.stages.function_decorators import processing_stage
+from nemo_curator.stages.resources import Resources
+from nemo_curator.tasks import EmptyTask, AudioBatch
+from nemo_curator.stages.audio.inference.asr_nemo import InferenceAsrNemoStage
+from nemo_curator.stages.audio.metrics.get_wer import GetPairwiseWerStage
+from nemo_curator.stages.audio.common import GetAudioDurationStage
+from nemo_curator.stages.audio.io.convert import AudioToDocumentStage
+from nemo_curator.stages.text.io.writer import JsonlWriter
 
 def create_local_audio_pipeline(audio_directory: str) -> Pipeline:
     """Create pipeline for processing local audio files."""
@@ -412,7 +424,7 @@ def create_local_audio_pipeline(audio_directory: str) -> Pipeline:
     
     # 1. Custom stage to load local files
     @processing_stage(name="local_file_loader")
-    def load_local_files(_: _EmptyTask) -> list[AudioBatch]:
+    def load_local_files(_: EmptyTask) -> list[AudioBatch]:
         # Discover and validate audio files
         audio_files = discover_audio_files(audio_directory)
         
@@ -456,6 +468,12 @@ pipeline.run(executor)
 :::{tab-item} Incremental Processing
 
 ```python
+import os
+import json
+from nemo_curator.stages.function_decorators import processing_stage
+from nemo_curator.tasks import EmptyTask, AudioBatch
+from nemo_curator.pipeline import Pipeline
+
 def create_incremental_pipeline(audio_dir: str, processed_manifest: str = None) -> Pipeline:
     """Process only new files since last run."""
     
@@ -468,7 +486,7 @@ def create_incremental_pipeline(audio_dir: str, processed_manifest: str = None) 
                 processed_files.add(entry["audio_filepath"])
     
     @processing_stage(name="incremental_loader")
-    def load_new_files(_: _EmptyTask) -> list[AudioBatch]:
+    def load_new_files(_: EmptyTask) -> list[AudioBatch]:
         # Discover all files
         all_files = discover_audio_files(audio_dir)
         
@@ -643,6 +661,7 @@ for batch in loader:
 ```python
 from concurrent.futures import ThreadPoolExecutor
 import multiprocessing
+import concurrent.futures
 
 def parallel_file_discovery(directories: list[str]) -> list[dict]:
     """Discover audio files in parallel across multiple directories."""
@@ -748,7 +767,7 @@ def process_local_audio_collection(audio_dir: str, output_dir: str) -> None:
     pipeline = Pipeline(name="local_audio_complete")
     
     # Load from manifest
-    pipeline.add_stage(JsonlReader(path=manifest_path))
+    pipeline.add_stage(JsonlReader(file_paths=manifest_path))
     
     # ASR processing
     pipeline.add_stage(

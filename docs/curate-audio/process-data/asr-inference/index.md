@@ -7,10 +7,9 @@ difficulty: "intermediate"
 content_type: "how-to"
 modality: "audio-only"
 ---
-
 # ASR Inference
 
-Perform automatic speech recognition (ASR) on audio files using NeMo Framework's pretrained models. The ASR inference stage transcribes audio into text, enabling downstream quality assessment and text processing workflows.
+Perform automatic speech recognition (ASR) on audio files using NeMo Framework models. The ASR inference stage transcribes audio into text, enabling downstream quality assessment and text processing workflows.
 
 ## How it Works
 
@@ -63,7 +62,7 @@ armenian_asr = InferenceAsrNemoStage(
 
 ### Model Selection
 
-NeMo Framework provides pretrained ASR models for multiple languages and domains:
+NeMo Framework provides ready-to-use ASR models for several languages and domains:
 
 ```python
 # Domain-specific models
@@ -82,11 +81,13 @@ from nemo_curator.stages.resources import Resources
 # GPU configuration
 asr_stage = asr_stage.with_(
     resources=Resources(
-        gpus=1.0,           # Number of GPUs
-        cpus=4.0,           # CPU cores
-        memory="16GB"       # Memory allocation
+        gpus=1.0,           # Number of GPUs (multi-GPU aware stages)
+        cpus=4.0            # CPU cores
     )
 )
+
+# Alternatively, request fractional single-GPU memory (do not combine with gpus):
+# asr_stage = asr_stage.with_(resources=Resources(cpus=4.0, gpu_memory_gb=16.0))
 ```
 
 ### Batch Processing
@@ -94,9 +95,11 @@ asr_stage = asr_stage.with_(
 ```python
 # Optimize batch size based on GPU memory
 asr_stage = asr_stage.with_(
-    batch_size=32  # Larger batches for better GPU utilization
+    batch_size=32  # Larger batches improve GPU utilization
 )
 ```
+
+Note: `batch_size` controls the number of tasks the executor groups per call. The ASR stage does not define `process_batch()`; the executor batches tasks.
 
 ## Input Requirements
 
@@ -125,10 +128,10 @@ audio_batch = AudioBatch(
 
 ### Audio File Requirements
 
-- **Supported Formats**: WAV, MP3, FLAC, OGG (any format supported by NeMo Framework)
-- **Sample Rates**: 16 kHz recommended (models handle resampling automatically)
-- **Channels**: Mono or stereo (converted to mono during processing)
-- **Duration**: No strict limits, but very long files may require chunking
+- **Supported Formats**: Determined by the selected NeMo ASR model; refer to NeMo ASR documentation.
+- **Sample Rates**: Typically 16 kHz; refer to the model card for details.
+- **Channels**: Mono or stereo; channel handling (for example, down-mixing) depends on the model.
+- **Duration**: Long files may require manual chunking before inference.
 
 ## Output Structure
 
@@ -158,12 +161,11 @@ except RuntimeError as e:
 
 ### Processing Errors
 
-The stage handles common audio processing errors:
+Processing behavior:
 
-- **Corrupted audio files**: Skipped with warning logs
-- **Unsupported formats**: Graceful failure with error metadata
-- **GPU memory issues**: Automatic batch size reduction
-- **Network timeouts**: Model download retry logic
+- **Input validation**: The stage raises `ValueError` when the task fails validation.
+- **Model loading failures**: `setup()` raises `RuntimeError` if model download or initialization fails.
+- **No automatic retries or auto-tuning**: The stage does not perform automatic batch size reduction or network retries. `AudioBatch.validate()` can emit file existence warnings when applicable; the stage does not auto-skip files.
 
 ## Performance Optimization
 
@@ -184,10 +186,13 @@ asr_stage = InferenceAsrNemoStage(
 ```python
 from nemo_curator.backends.xenna import XennaExecutor
 
-# Configure for multi-GPU processing
+# Configure executor (refer to Pipeline Execution Backends)
 executor = XennaExecutor(
-    num_workers=4,
-    resources_per_worker=Resources(gpus=1.0)
+    config={
+        "execution_mode": "streaming",
+        "logging_interval": 60,
+        "ignore_failures": False
+    }
 )
 ```
 
@@ -214,7 +219,7 @@ pipeline.add_stage(AudioToDocumentStage())
 
 - **[NeMo ASR Models](nemo-models.md)** - Available models and selection guide
 - **[Batch Processing](batch-processing.md)** - Optimization strategies for large datasets
-- **[Quality Assessment](../quality-assessment/index.md)** - Evaluate transcription accuracy
+- **[Quality Assessment](../quality-assessment/index.md)** - Assess transcription accuracy
 - **[Text Integration](../text-integration/index.md)** - Convert to text processing workflows
 
 ```{toctree}
@@ -225,4 +230,3 @@ pipeline.add_stage(AudioToDocumentStage())
 NeMo ASR Models <nemo-models.md>
 Batch Processing <batch-processing.md>
 ```
-

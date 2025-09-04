@@ -16,10 +16,13 @@ Extract and analyze audio file characteristics for quality control, metadata gen
 
 Audio analysis in NeMo Curator examines audio files to extract:
 
-1. **Duration Information**: Precise timing measurements using soundfile
-2. **Format Characteristics**: Sample rate, bit depth, channels, codec
+1. **Duration Information**: Precise timing measurements using `soundfile`
+2. **Format Characteristics**: Sample rate, bit depth, channels, and format
 3. **Quality Indicators**: File integrity, format compliance, technical quality
 4. **Metadata Extraction**: Embedded metadata and file properties
+
+:::{note} NeMo Curator provides duration extraction as a built-in stage (`GetAudioDurationStage`). The format and metadata examples below show how to build custom stages and are not built-in.
+:::
 
 ## Duration Analysis
 
@@ -36,8 +39,9 @@ duration_stage = GetAudioDurationStage(
 ```
 
 The duration calculation:
-- Uses the soundfile library for precision
-- Handles various audio formats automatically
+
+- Uses the `soundfile` library; computes duration as frames ÷ sample rate
+- Handles formats supported by `soundfile` (`libsndfile`)
 - Returns -1.0 for corrupted or unreadable files
 - Calculates: `duration = sample_count / sample_rate`
 
@@ -72,7 +76,30 @@ def analyze_duration_distribution(audio_data: list[dict]) -> dict:
     }
 ```
 
+### Duration Filtering Example
+
+```python
+from nemo_curator.stages.audio.common import PreserveByValueStage
+
+# Keep samples between 1 and 15 seconds
+min_duration_filter = PreserveByValueStage(
+    input_value_key="duration",
+    target_value=1.0,
+    operator="ge"
+)
+max_duration_filter = PreserveByValueStage(
+    input_value_key="duration",
+    target_value=15.0,
+    operator="le"
+)
+```
+
+Refer to [Duration Filtering](../quality-assessment/duration-filtering.md) for end-to-end examples.
+
 ## Format Validation
+
+:::{note} The following format validation examples illustrate a custom approach and are not built-in stages.
+:::
 
 ### Audio Format Analysis
 
@@ -210,6 +237,8 @@ class AudioFormatValidationStage(LegacySpeechStage):
 
 ### Comprehensive Audio Metadata
 
+Note: The following metadata extraction example illustrates a custom approach and is not a built-in stage.
+
 ```python
 def extract_comprehensive_metadata(audio_file: str) -> dict:
     """Extract all available audio metadata."""
@@ -345,4 +374,3 @@ def characterize_audio_dataset(audio_files: list[dict]) -> dict:
 - **[Format Validation](format-validation.md)** - Audio format validation techniques
 - **[Quality Assessment](../quality-assessment/index.md)** - Using analysis results for quality filtering
 - **[Local File Loading](../../load-data/local-files.md)** - Loading files for analysis
-

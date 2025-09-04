@@ -93,7 +93,7 @@ production_model = InferenceAsrNemoStage(
     model_name="nvidia/stt_en_fastconformer_hybrid_large_pc"
 ).with_(
     batch_size=8,  # Smaller batches for large models
-    resources=Resources(gpus=1.0, memory="16GB")
+    resources=Resources(gpus=1.0)
 )
 ```
 
@@ -210,19 +210,16 @@ from nemo_curator.stages.resources import Resources
 # GPU configuration for different model sizes
 model_resources = {
     "large_model": Resources(
-        gpus=1.0,
-        cpus=4.0, 
-        memory="16GB"
+        cpus=4.0,
+        gpu_memory_gb=16.0
     ),
     "medium_model": Resources(
-        gpus=0.5,
         cpus=2.0,
-        memory="8GB"
+        gpu_memory_gb=8.0
     ),
     "small_model": Resources(
-        gpus=0.25,
         cpus=1.0,
-        memory="4GB"
+        gpu_memory_gb=4.0
     )
 }
 
@@ -275,7 +272,7 @@ def get_optimal_batch_size(model_size: str, gpu_memory: str) -> int:
 :::{tab-item} Model Caching
 
 ```python
-# Pre-load models to avoid repeated downloads
+# Preload models to avoid repeated downloads
 def setup_model_cache(model_names: list[str], cache_dir: str = "~/.cache/nemo"):
     """Pre-download and cache NeMo models."""
     
@@ -286,7 +283,7 @@ def setup_model_cache(model_names: list[str], cache_dir: str = "~/.cache/nemo"):
             print(f"Downloading {model_name}...")
             model = nemo_asr.models.ASRModel.from_pretrained(
                 model_name=model_name,
-                map_location="cpu"  # Download only, don't load to GPU
+                map_location="cpu"  # Download only; do not load to GPU
             )
             print(f"Cached {model_name}")
             
@@ -305,29 +302,15 @@ setup_model_cache([
 :::{tab-item} Multi-GPU Processing
 
 ```python
-# Distribute processing across multiple GPUs
-def create_multi_gpu_asr_pipeline(model_name: str, num_gpus: int = 2) -> Pipeline:
-    """Create ASR pipeline using multiple GPUs."""
-    
-    pipeline = Pipeline(name="multi_gpu_asr")
-    
-    # Load and partition data
-    pipeline.add_stage(data_loading_stage)
-    
-    # Create parallel ASR stages for each GPU
-    for gpu_id in range(num_gpus):
-        asr_stage = InferenceAsrNemoStage(
-            model_name=model_name
-        ).with_(
-            resources=Resources(gpus=1.0),
-            device_id=gpu_id  # Specify GPU device
+# Parallel execution is backend-controlled. Define a single-stage pipeline and
+# configure parallelism in the executor/backend configuration.
+def create_asr_pipeline(model_name: str) -> Pipeline:
+    pipeline = Pipeline(name="asr")
+    pipeline.add_stage(
+        InferenceAsrNemoStage(model_name=model_name).with_(
+            resources=Resources(gpus=1.0)
         )
-        
-        pipeline.add_parallel_stage(asr_stage)
-    
-    # Merge results
-    pipeline.add_stage(merge_results_stage)
-    
+    )
     return pipeline
 ```
 
@@ -500,17 +483,17 @@ except Exception as e:
 optimization_configs = {
     "nvidia/stt_en_fastconformer_hybrid_large_pc": {
         "optimal_batch_size": 16,
-        "min_gpu_memory": "12GB",
+        "min_gpu_memory_gb": 12.0,
         "recommended_precision": "fp16"
     },
     "nvidia/stt_multilingual_fastconformer_hybrid_large_pc": {
         "optimal_batch_size": 12,
-        "min_gpu_memory": "16GB", 
+        "min_gpu_memory_gb": 16.0, 
         "recommended_precision": "fp16"
     },
     "nvidia/stt_en_fastconformer_hybrid_small_pc": {
         "optimal_batch_size": 64,
-        "min_gpu_memory": "4GB",
+        "min_gpu_memory_gb": 4.0,
         "recommended_precision": "fp32"
     }
 }
@@ -520,17 +503,14 @@ def optimize_asr_stage(model_name: str) -> InferenceAsrNemoStage:
     
     config = optimization_configs.get(model_name, {
         "optimal_batch_size": 16,
-        "min_gpu_memory": "8GB"
+        "min_gpu_memory_gb": 8.0
     })
     
     return InferenceAsrNemoStage(
         model_name=model_name
     ).with_(
         batch_size=config["optimal_batch_size"],
-        resources=Resources(
-            gpus=1.0,
-            memory=config["min_gpu_memory"]
-        )
+        resources=Resources(gpu_memory_gb=config["min_gpu_memory_gb"]) 
     )
 ```
 
@@ -580,23 +560,12 @@ def select_model_by_dataset(dataset_characteristics: dict) -> str:
 :::{tab-item} Model Initialization Options
 
 ```python
-# Advanced model configuration
+# Advanced model configuration (supported fields)
 asr_stage = InferenceAsrNemoStage(
     model_name="nvidia/stt_en_fastconformer_hybrid_large_pc",
-    
-    # Field configuration
     filepath_key="audio_filepath",
     pred_text_key="transcription",
-    
-    # Processing configuration
     batch_size=16,
-    
-    # Model-specific parameters (if supported)
-    model_kwargs={
-        "precision": "fp16",           # Use half precision for speed
-        "enable_cache": True,          # Enable attention caching
-        "max_sequence_length": 512     # Limit input length
-    }
 )
 ```
 

@@ -10,7 +10,9 @@ modality: "audio-only"
 
 # Custom Quality Metrics
 
-Implement custom quality assessment metrics for specialized audio curation use cases, domain-specific requirements, and advanced filtering strategies beyond standard WER and duration filtering.
+Create custom quality assessment metrics for specialized audio curation use cases, domain-specific requirements, and advanced filtering strategies beyond standard WER and duration filtering.
+
+Note: The example thresholds and weights in this article are illustrative. Calibrate them for your dataset and goals.
 
 ## Creating Custom Quality Stages
 
@@ -38,7 +40,7 @@ class CustomAudioQualityStage(LegacySpeechStage):
         
         # Calculate custom quality metric
         quality_score = self.calculate_quality_metric(
-            audio_filepath, text, pred_text, duration
+            data_entry, audio_filepath, text, pred_text, duration
         )
         
         # Add metric to data entry
@@ -51,7 +53,7 @@ class CustomAudioQualityStage(LegacySpeechStage):
         else:
             return []  # Filter out low-quality samples
     
-    def calculate_quality_metric(self, audio_filepath: str, text: str, 
+    def calculate_quality_metric(self, data_entry: dict, audio_filepath: str, text: str, 
                                pred_text: str, duration: float) -> float:
         """Override this method to implement custom quality calculation."""
         # Placeholder implementation
@@ -64,10 +66,11 @@ class CustomAudioQualityStage(LegacySpeechStage):
 
 ```python
 @dataclass
-class ConversationalQualityStage(LegacySpeechStage):
+class ConversationalQualityStage(CustomAudioQualityStage):
     """Quality assessment specialized for conversational speech."""
+    metric_name: str = "conversational_quality"
     
-    def calculate_quality_metric(self, audio_filepath: str, text: str,
+    def calculate_quality_metric(self, data_entry: dict, audio_filepath: str, text: str,
                                pred_text: str, duration: float) -> float:
         """Calculate conversational speech quality score."""
         
@@ -145,10 +148,11 @@ class ConversationalQualityStage(LegacySpeechStage):
 
 ```python
 @dataclass
-class BroadcastQualityStage(LegacySpeechStage):
+class BroadcastQualityStage(CustomAudioQualityStage):
     """Quality assessment for broadcast and professional speech."""
+    metric_name: str = "broadcast_quality"
     
-    def calculate_quality_metric(self, audio_filepath: str, text: str,
+    def calculate_quality_metric(self, data_entry: dict, audio_filepath: str, text: str,
                                pred_text: str, duration: float) -> float:
         """Calculate broadcast speech quality score."""
         
@@ -222,10 +226,11 @@ class BroadcastQualityStage(LegacySpeechStage):
 
 ```python
 @dataclass
-class TelephonyQualityStage(LegacySpeechStage):
+class TelephonyQualityStage(CustomAudioQualityStage):
     """Quality assessment for telephony and call center audio."""
+    metric_name: str = "telephony_quality"
     
-    def calculate_quality_metric(self, audio_filepath: str, text: str,
+    def calculate_quality_metric(self, data_entry: dict, audio_filepath: str, text: str,
                                pred_text: str, duration: float) -> float:
         """Calculate telephony-specific quality score."""
         
@@ -301,11 +306,14 @@ class TelephonyQualityStage(LegacySpeechStage):
 ### Audio Signal Quality
 
 ```python
+from loguru import logger
+
 @dataclass
-class AcousticQualityStage(LegacySpeechStage):
+class AcousticQualityStage(CustomAudioQualityStage):
     """Assess acoustic signal quality characteristics."""
+    metric_name: str = "acoustic_quality"
     
-    def calculate_quality_metric(self, audio_filepath: str, text: str,
+    def calculate_quality_metric(self, data_entry: dict, audio_filepath: str, text: str,
                                pred_text: str, duration: float) -> float:
         """Calculate acoustic signal quality."""
         
@@ -405,8 +413,10 @@ class AcousticQualityStage(LegacySpeechStage):
 ### Language-Specific Metrics
 
 ```python
+from dataclasses import dataclass, field
+
 @dataclass
-class LanguageSpecificQualityStage(LegacySpeechStage):
+class LanguageSpecificQualityStage(CustomAudioQualityStage):
     """Language-specific quality assessment."""
     
     language_configs: dict = field(default_factory=lambda: {
@@ -427,7 +437,7 @@ class LanguageSpecificQualityStage(LegacySpeechStage):
         }
     })
     
-    def calculate_quality_metric(self, audio_filepath: str, text: str,
+    def calculate_quality_metric(self, data_entry: dict, audio_filepath: str, text: str,
                                pred_text: str, duration: float) -> float:
         """Calculate language-specific quality metrics."""
         
@@ -515,10 +525,11 @@ class LanguageSpecificQualityStage(LegacySpeechStage):
 
 ```python
 @dataclass
-class AudioTextConsistencyStage(LegacySpeechStage):
+class AudioTextConsistencyStage(CustomAudioQualityStage):
     """Assess consistency between audio characteristics and text content."""
+    metric_name: str = "audio_text_consistency"
     
-    def calculate_quality_metric(self, audio_filepath: str, text: str,
+    def calculate_quality_metric(self, data_entry: dict, audio_filepath: str, text: str,
                                pred_text: str, duration: float) -> float:
         """Calculate audio-text consistency score."""
         
@@ -589,6 +600,11 @@ class AudioTextConsistencyStage(LegacySpeechStage):
 ### Combined Quality Assessment
 
 ```python
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.stages.function_decorators import processing_stage
+from nemo_curator.tasks import AudioBatch
+from nemo_curator.stages.audio.common import PreserveByValueStage
+
 def create_ensemble_quality_pipeline() -> Pipeline:
     """Create pipeline with multiple quality assessment methods."""
     
@@ -647,11 +663,14 @@ def create_ensemble_quality_pipeline() -> Pipeline:
 
 ### Cross-Validation with Human Assessment
 
+Requirements: `numpy`, `scipy`, and `scikit-learn`.
+
 ```python
 def calibrate_custom_metric(custom_scores: list[float], 
                           human_ratings: list[float]) -> dict:
     """Calibrate custom quality metric against human assessments."""
     
+    import numpy as np
     from scipy.stats import pearsonr, spearmanr
     from sklearn.metrics import mean_absolute_error
     
@@ -687,6 +706,8 @@ def calibrate_custom_metric(custom_scores: list[float],
 
 ### A/B Testing Framework
 
+Requirements: `numpy`.
+
 ```python
 def ab_test_quality_metrics(audio_data: list[dict], 
                           metric_a_func: callable,
@@ -694,6 +715,7 @@ def ab_test_quality_metrics(audio_data: list[dict],
                           validation_set: list[dict]) -> dict:
     """A/B test different quality metrics."""
     
+    import numpy as np
     # Calculate metrics for both approaches
     scores_a = [metric_a_func(item) for item in audio_data]
     scores_b = [metric_b_func(item) for item in audio_data]
@@ -729,7 +751,7 @@ def ab_test_quality_metrics(audio_data: list[dict],
 ### Custom Metric Development
 
 1. **Start Simple**: Begin with basic metrics and add complexity gradually
-2. **Validate Against Ground Truth**: Compare with human assessments when possible
+2. **Compare with Ground Truth**: Compare with human assessments when possible
 3. **Domain Expertise**: Incorporate domain knowledge into metric design
 4. **Computational Efficiency**: Balance accuracy with processing speed
 
@@ -742,10 +764,10 @@ def ab_test_quality_metrics(audio_data: list[dict],
 
 ### Performance Considerations
 
-1. **Computational Cost**: Monitor processing time for complex metrics
+1. **Computational Cost**: Measure processing time for complex metrics
 2. **Memory Usage**: Consider memory requirements for signal analysis
 3. **Batch Processing**: Ensure metrics work efficiently in batch mode
-4. **Error Handling**: Implement robust error handling for edge cases
+4. **Error Handling**: Use robust error handling for edge cases
 
 ## Related Topics
 
@@ -753,4 +775,3 @@ def ab_test_quality_metrics(audio_data: list[dict],
 - **[WER Filtering](wer-filtering.md)** - Standard transcription quality filtering
 - **[Duration Filtering](duration-filtering.md)** - Audio length-based filtering
 - **[Audio Analysis](../audio-analysis/index.md)** - Technical audio analysis methods
-

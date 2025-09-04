@@ -105,9 +105,9 @@ def create_multi_tier_wer_pipeline() -> Pipeline:
         
         return AudioBatch(data=good_data, filepath_key=audio_batch.filepath_key)
     
-    # Process tiers in parallel
-    pipeline.add_parallel_stage(excellent_quality_filter)
-    pipeline.add_parallel_stage(good_quality_filter)
+    # Add both tier filters to the pipeline
+    pipeline.add_stage(excellent_quality_filter)
+    pipeline.add_stage(good_quality_filter)
     
     return pipeline
 ```
@@ -154,6 +154,8 @@ class AdaptiveWerFilterStage(LegacySpeechStage):
 ### Statistical WER Filtering
 
 ```python
+import numpy as np
+
 def create_statistical_wer_filter(audio_data: list[dict], percentile: float = 75) -> float:
     """Calculate WER threshold based on dataset statistics."""
     
@@ -276,6 +278,8 @@ language_filter = create_language_aware_wer_filter(language_thresholds)
 ### WER Distribution Analysis
 
 ```python
+import numpy as np
+
 def analyze_wer_distribution(audio_data: list[dict]) -> dict:
     """Analyze WER distribution to inform filtering decisions."""
     
@@ -339,6 +343,8 @@ def recommend_wer_threshold(analysis: dict, target_retention: float = 0.8) -> fl
 ### Error Pattern Analysis
 
 ```python
+import numpy as np
+
 def analyze_wer_error_patterns(audio_data: list[dict]) -> dict:
     """Analyze common error patterns in high-WER samples."""
     
@@ -410,7 +416,7 @@ def create_progressive_wer_pipeline() -> Pipeline:
         PreserveByValueStage(
             input_value_key="wer",
             target_value=75.0,
-            operator="lt"  # less than (not equal)
+            operator="lt"  # strictly less than
         )
     )
     
@@ -534,6 +540,9 @@ class ContextAwareWerFilterStage(LegacySpeechStage):
 ### Quality vs. Quantity Trade-offs
 
 ```python
+import numpy as np
+import pandas as pd
+
 def evaluate_filtering_trade_offs(audio_data: list[dict], 
                                 thresholds: list[float]) -> pd.DataFrame:
     """Evaluate quality vs. quantity trade-offs for different WER thresholds."""
@@ -584,6 +593,8 @@ print(trade_off_analysis)
 ### Validation Strategies
 
 ```python
+import numpy as np
+
 def validate_wer_filtering_effectiveness(original_data: list[dict], 
                                        filtered_data: list[dict]) -> dict:
     """Validate effectiveness of WER filtering."""
@@ -622,6 +633,8 @@ def validate_wer_filtering_effectiveness(original_data: list[dict],
 
 **Too Aggressive Filtering**: Very high WER threshold rejection
 ```python
+import numpy as np
+
 # Diagnose: Check WER distribution
 wer_dist = [item["wer"] for item in audio_data]
 print(f"WER distribution: P50={np.percentile(wer_dist, 50):.1f}, P75={np.percentile(wer_dist, 75):.1f}")
@@ -639,6 +652,8 @@ error_analysis = analyze_wer_error_patterns(audio_data)
 
 **Language-Specific Issues**: Poor performance for certain languages
 ```python
+import numpy as np
+
 # Diagnose: Check language-specific WER distribution
 for lang in languages:
     lang_data = [item for item in audio_data if item.get("language") == lang]

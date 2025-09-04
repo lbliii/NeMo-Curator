@@ -19,14 +19,14 @@ NeMo Curator supports multiple manifest formats for audio data loading:
 
 ::::{tab-set}
 
-:::{tab-item} JSONL (Recommended)
+:::{tab-item} JSON Lines (JSONL) (Recommended)
 
 The standard format for audio manifests compatible with NeMo Framework:
 
 ```json
-{"audio_filepath": "/data/audio/sample_001.wav", "text": "hello world", "duration": 2.1, "language": "en"}
-{"audio_filepath": "/data/audio/sample_002.wav", "text": "good morning", "duration": 1.8, "language": "en"}
-{"audio_filepath": "/data/audio/sample_003.wav", "text": "how are you", "duration": 2.3, "language": "en"}
+{"audio_filepath": "/data/audio/sample_001.wav", "text": "hello world", "duration": 2.1, "language": "en_us"}
+{"audio_filepath": "/data/audio/sample_002.wav", "text": "good morning", "duration": 1.8, "language": "en_us"}
+{"audio_filepath": "/data/audio/sample_003.wav", "text": "how are you", "duration": 2.3, "language": "en_us"}
 ```
 
 :::
@@ -37,9 +37,12 @@ Tab-separated format useful for spreadsheet compatibility:
 
 ```bash
 audio_filepath	text	duration	language
-/data/audio/sample_001.wav	hello world	2.1	en
-/data/audio/sample_002.wav	good morning	1.8	en
-/data/audio/sample_003.wav	how are you	2.3	en
+/data/audio/sample_001.wav	hello world	2.1	en_us
+/data/audio/sample_002.wav	good morning	1.8	en_us
+/data/audio/sample_003.wav	how are you	2.3	en_us
+```
+
+```{note} NeMo Curator does not provide a generic TSV reader stage. Convert TSV inputs to JSONL before loading, or use dataset-specific importers (for example, the FLEURS manifest creator) that parse TSV and emit JSONL-compatible entries.
 ```
 
 :::
@@ -190,15 +193,11 @@ Load existing manifests into NeMo Curator pipelines:
 
 ```python
 from nemo_curator.stages.text.io.reader import JsonlReader
-from nemo_curator.stages.audio.io.convert import DocumentToAudioStage
 
-# Load JSONL manifest
-reader = JsonlReader(path="/data/my_dataset/manifest.jsonl")
-
-# Convert to AudioBatch format
-audio_converter = DocumentToAudioStage(
-    filepath_key="audio_filepath",
-    text_key="text"
+# Load JSONL manifest (outputs DocumentBatch)
+reader = JsonlReader(
+    file_paths="/data/my_dataset/manifest.jsonl",
+    fields=["audio_filepath", "text"]
 )
 ```
 
@@ -397,24 +396,42 @@ def validate_audio_entry(entry: dict) -> bool:
 
 ```python
 from nemo_curator.pipeline import Pipeline
+from nemo_curator.stages.text.io.reader import JsonlReader
+from nemo_curator.stages.audio.inference.asr_nemo import InferenceAsrNemoStage
+from nemo_curator.stages.audio.metrics.get_wer import GetPairwiseWerStage
+from nemo_curator.stages.audio.common import PreserveByValueStage
 
 def create_custom_audio_pipeline(manifest_path: str) -> Pipeline:
     """Create pipeline for custom audio manifest."""
     
     pipeline = Pipeline(name="custom_audio_processing")
     
-    # Load custom manifest
-    pipeline.add_stage(CustomManifestLoader(manifest_path))
+    # Load custom manifest (DocumentBatch)
+    pipeline.add_stage(
+        JsonlReader(
+            file_paths=manifest_path,
+            fields=["audio_filepath", "text"]
+        )
+    )
     
-    # Process with standard stages
-    pipeline.add_stage(InferenceAsrNemoStage(
-        model_name="nvidia/stt_en_fastconformer_hybrid_large_pc"
-    ))
+    # ASR inference (consumes DocumentBatch; emits AudioBatch)
+    pipeline.add_stage(
+        InferenceAsrNemoStage(
+            model_name="nvidia/stt_en_fastconformer_hybrid_large_pc",
+            filepath_key="audio_filepath",
+            pred_text_key="pred_text",
+        )
+    )
     
-    pipeline.add_stage(GetPairwiseWerStage())
+    # Compute WER between ground truth and prediction
+    pipeline.add_stage(
+        GetPairwiseWerStage(text_key="text", pred_text_key="pred_text", wer_key="wer")
+    )
     
-    # Filter based on custom criteria
-    pipeline.add_stage(PreserveByValueStage("wer", 40.0, "le"))
+    # Filter entries by WER threshold
+    pipeline.add_stage(
+        PreserveByValueStage(input_value_key="wer", target_value=40.0, operator="le")
+    )
     
     return pipeline
 ```

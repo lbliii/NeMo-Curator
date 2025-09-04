@@ -8,14 +8,16 @@ content_type: "how-to"
 modality: "audio-only"
 ---
 
+
 (audio-save-export)=
+
 # Save & Export Audio Data
 
-Export processed audio data and transcriptions in formats optimized for ASR model training, multimodal applications, and downstream analysis workflows.
+Export processed audio data and transcriptions in formats optimized for ASR model training, audio-and-text applications, and downstream analysis workflows.
 
 ## Output Formats
 
-NeMo Curator's audio curation pipeline supports multiple output formats tailored for different use cases:
+NeMo Curator's audio curation pipeline supports several output formats tailored for different use cases:
 
 ### JSONL Manifests
 
@@ -66,15 +68,16 @@ pipeline.add_stage(
 :::{tab-item} Custom Export Options
 
 ```python
-# Export with specific filename patterns
+# Export with custom formatting and selected fields
 writer = JsonlWriter(
     path="/output/processed_audio",
-    filename_pattern="audio_manifest_{partition:04d}.jsonl",
     write_kwargs={
         "force_ascii": False,
-        "ensure_ascii": False,
+        "double_precision": 2,
         "indent": None  # Compact format
-    }
+    },
+    # Include only these columns in the output
+    fields=["audio_filepath", "text", "pred_text", "wer", "duration"]
 )
 ```
 
@@ -86,14 +89,13 @@ writer = JsonlWriter(
 
 ### Standard Output Layout
 
-```
+When `source_files` metadata exists, the writer generates deterministic hashed file names. Otherwise, it generates UUID-based names.
+
+```text
 /output/audio_manifests/
-├── audio_manifest_0000.jsonl    # Partition 0
-├── audio_manifest_0001.jsonl    # Partition 1
-├── ...
-└── _metadata                    # Processing metadata
-    ├── schema.json              # Data schema
-    └── stats.json              # Processing statistics
+├── <hash>.jsonl   # Deterministic hash if metadata.source_files present, else UUID
+├── <hash>.jsonl
+└── ...
 ```
 
 ### Organized by Language
@@ -113,7 +115,7 @@ for lang in ["en_us", "es_419", "hy_am"]:
 
 ### Validation Checks
 
-Before export, validate your processed data:
+Before export, check your processed data:
 
 ```python
 from nemo_curator.stages.audio.common import PreserveByValueStage
@@ -145,20 +147,10 @@ for filter_stage in quality_filters:
 
 ### Export Statistics
 
-```python
-# Generate processing statistics
-from nemo_curator.utils.statistics import DatasetStatistics
+Refer to related workflows for post-export analysis and quality reporting:
 
-stats = DatasetStatistics()
-stats.calculate_audio_stats(output_path="/output/audio_manifests")
-
-# Statistics include:
-# - Total audio duration
-# - Average WER
-# - Duration distribution
-# - Language distribution
-# - Quality score distribution
-```
+- Audio analysis and dataset characterization: refer to Audio Analysis workflow.
+- Quality assessment and WER/CER metrics: refer to Quality Assessment workflow.
 
 ## Integration with Training Workflows
 
@@ -173,7 +165,7 @@ validation_manifest: "/output/audio_manifests/dev_manifest.jsonl"
 test_manifest: "/output/audio_manifests/test_manifest.jsonl"
 ```
 
-### Multimodal Training
+### Cross-Modal Training
 
 ```python
 # Export for multimodal training (audio + text)
@@ -198,12 +190,14 @@ multimodal_export = {
 For datasets with millions of audio files:
 
 ```python
-# Partition large exports
+# Use compression and control batch sizes upstream
 writer = JsonlWriter(
     path="/output/large_dataset",
-    partition_size=100000,  # 100K samples per file
-    compression="gzip"      # Compress output files
+    write_kwargs={"compression": "gzip"}
 )
+
+# Tip: reduce upstream batch sizes when converting/writing
+pipeline.add_stage(AudioToDocumentStage().with_(batch_size=1))
 ```
 
 :::
@@ -211,12 +205,17 @@ writer = JsonlWriter(
 :::{tab-item}  Storage Optimization
 
 ```python
-# Optimize for storage efficiency
-export_config = {
-    "compression": "gzip",
-    "precision": 2,  # Round float values to 2 decimal places
-    "exclude_fields": ["intermediate_scores"],  # Remove temporary fields
-}
+# Optimize for storage efficiency using writer options
+writer = JsonlWriter(
+    path="/output/processed_audio",
+    write_kwargs={
+        "compression": "gzip",
+        "double_precision": 2,
+        "indent": None,
+    },
+    # Select only needed columns
+    fields=["audio_filepath", "text", "pred_text", "wer", "duration"]
+)
 ```
 
 :::
@@ -243,17 +242,18 @@ JsonlWriter(write_kwargs={"compression": "gzip"})
 Ensure proper encoding
 
 ```python
-JsonlWriter(write_kwargs={"force_ascii": False, "ensure_ascii": False})
+JsonlWriter(write_kwargs={"force_ascii": False})
 ```
 
 :::
 
 :::{tab-item} Memory issues
 
- Reduce partition sizes
+ Reduce upstream batch sizes
 
 ```python
-JsonlWriter(partition_size=10000)  # Smaller partitions
+# Example: write smaller batches by adjusting upstream stage
+AudioToDocumentStage().with_(batch_size=1)
 ```
 
 :::
