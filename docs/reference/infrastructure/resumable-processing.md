@@ -32,10 +32,10 @@ NeMo Curator provides built-in functionality for resuming operations from where 
 Use file listing utilities and deterministic output naming to skip already processed inputs:
 
 ```python
-from nemo_curator.utils.file_utils import get_all_file_paths_under
+from nemo_curator.utils.file_utils import get_file_paths
 
-input_files = set(get_all_file_paths_under("input_directory/", recurse_subdirectories=True, keep_extensions=[".jsonl"]))
-output_files = set(get_all_file_paths_under("output_directory/", recurse_subdirectories=True, keep_extensions=[".jsonl"]))
+input_files = set(get_file_paths("input_directory/", recursive=True, extensions=[".jsonl"]))
+output_files = set(get_file_paths("output_directory/", recursive=True, extensions=[".jsonl"]))
 
 # Example: outputs mirror input filenames in the output directory
 def corresponding_output_path(input_path: str) -> str:
