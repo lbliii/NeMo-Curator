@@ -1,7 +1,7 @@
 ---
-description: "Basic audio processing capabilities for ASR inference, quality assessment, and filtering using NeMo models"
+description: "Comprehensive audio curation capabilities for speech data processing including ASR inference, quality assessment, and text integration workflows"
 categories: ["workflows"]
-tags: ["audio-processing", "asr", "speech-recognition", "quality-filtering", "transcription"]
+tags: ["audio-curation", "asr-inference", "speech-processing", "quality-metrics", "manifests", "text-integration"]
 personas: ["data-scientist-focused", "mle-focused"]
 difficulty: "beginner"
 content_type: "workflow"
@@ -9,97 +9,186 @@ modality: "audio-only"
 ---
 
 (audio-overview)=
-# About Audio Processing
 
-NeMo Curator provides basic audio processing capabilities for speech datasets. The toolkit includes stages for ASR inference using NeMo models, quality assessment through WER calculation, and filtering based on transcription accuracy.
+# About Audio Curation
 
-## Available Functionality
+NeMo Curator provides comprehensive audio curation capabilities to prepare high-quality speech data for automatic speech recognition (ASR) and multi-modal model training. The toolkit includes processors for loading audio datasets, performing ASR inference, assessing transcription quality, and integrating with text curation workflows.
 
-NeMo Curator provides these core audio processing capabilities:
+## Use Cases
 
-- **ASR Inference**: Transcribe audio using pretrained NeMo ASR models
-- **Quality Assessment**: Calculate WER between ground truth and ASR predictions  
-- **Duration Analysis**: Extract audio file duration and filter by length
-- **Format Handling**: Built-in support for WAV, FLAC, MP3, and other common formats
-- **Data Export**: Convert results to text processing format for further curation
+- Process and curate large-scale speech datasets for ASR model training
+- Perform quality assessment and filtering based on transcription accuracy metrics
+- Generate transcriptions using state-of-the-art NVIDIA NeMo ASR models
+- Integrate audio processing with text curation pipelines for multi-modal workflows
+- Scale audio processing across GPU clusters efficiently
 
-## Available Stages
+---
 
-NeMo Curator provides these audio processing stages:
+## Introduction
 
-- **`InferenceAsrNemoStage`**: ASR inference using NeMo Framework models
-- **`GetPairwiseWerStage`**: Calculate WER between ground truth and predictions  
-- **`GetAudioDurationStage`**: Extract audio file duration using soundfile
-- **`PreserveByValueStage`**: Filter data based on numeric thresholds
-- **`AudioToDocumentStage`**: Convert AudioBatch to DocumentBatch for export
-- **`CreateInitialManifestFleursStage`**: Load FLEURS multilingual dataset
+Master the fundamentals of NeMo Curator and set up your audio processing environment.
 
-## Getting Started
+::::{grid} 1 1 1 2
+:gutter: 1 1 1 2
+
+:::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Concepts
+:link: about-concepts-audio
+:link-type: ref
+Learn about AudioBatch, ASR pipelines, and other core data structures for efficient audio curation
++++
+{bdg-secondary}`data-structures`
+{bdg-secondary}`asr-pipeline`
+{bdg-secondary}`quality-metrics`
+:::
+
+:::{grid-item-card} {octicon}`rocket;1.5em;sd-mr-1` Get Started
+:link: gs-audio
+:link-type: ref
+Learn prerequisites, setup instructions, and initial configuration for audio curation
++++
+{bdg-secondary}`setup`
+{bdg-secondary}`configuration`
+{bdg-secondary}`quickstart`
+:::
+
+::::
+
+## Curation Tasks
 
 ### Load Data
 
-Load audio data into NeMo Curator for processing:
+Import your audio data from various sources into NeMo Curator's processing pipeline.
 
-- **[FLEURS Dataset](load-data/fleurs-dataset.md)** - Automated multilingual speech dataset loading
-- **[Custom Manifests](load-data/custom-manifests.md)** - Create JSONL manifests for your audio files  
-- **[Local Files](load-data/local-files.md)** - Process audio files from local directories
+::::{grid} 1 1 1 2
+:gutter: 1 1 1 2
+
+:::{grid-item-card} {octicon}`file-media;1.5em;sd-mr-1` Local Files
+:link: audio-load-data-local-files
+:link-type: ref
+Load audio files from local directories and file systems
++++
+{bdg-secondary}`local-storage`
+{bdg-secondary}`file-discovery`
+{bdg-secondary}`batch-processing`
+:::
+
+:::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Custom Manifests
+:link: audio-load-data-custom-manifests
+:link-type: ref
+Create and load custom audio dataset manifests with metadata
++++
+{bdg-secondary}`manifests`
+{bdg-secondary}`metadata`
+{bdg-secondary}`custom-formats`
+:::
+
+:::{grid-item-card} {octicon}`download;1.5em;sd-mr-1` FLEURS Dataset
+:link: audio-load-data-fleurs-dataset
+:link-type: ref
+Load and process the multilingual FLEURS speech dataset
++++
+{bdg-secondary}`fleurs`
+{bdg-secondary}`multilingual`
+{bdg-secondary}`benchmarks`
+:::
+
+::::
 
 ### Process Data
 
-Apply audio processing stages to your data:
+Transform and enhance your audio data through ASR inference, quality assessment, and analysis.
 
-- **[ASR Inference](process-data/asr-inference/index.md)** - Transcribe audio using NeMo ASR models
-- **[Quality Assessment](process-data/quality-assessment/index.md)** - Calculate WER and filter by quality
-- **[Audio Analysis](process-data/audio-analysis/index.md)** - Extract duration and basic metadata
-- **[Text Integration](process-data/text-integration/index.md)** - Convert to DocumentBatch for export
+::::{grid} 1 1 1 2
+:gutter: 1 1 1 2
 
-## Working Example
+:::{grid-item-card} {octicon}`comment-discussion;1.5em;sd-mr-1` ASR Inference
+:link: audio-process-data-asr-inference
+:link-type: ref
+Generate transcriptions using NVIDIA NeMo ASR models
++++
+{bdg-secondary}`nemo-models`
+{bdg-secondary}`transcription`
+{bdg-secondary}`gpu-accelerated`
+:::
 
-The FLEURS tutorial demonstrates the complete audio processing workflow:
+:::{grid-item-card} {octicon}`shield-check;1.5em;sd-mr-1` Quality Assessment
+:link: audio-process-data-quality-assessment
+:link-type: ref
+Assess transcription quality using WER, CER, and custom metrics
++++
+{bdg-secondary}`wer-filtering`
+{bdg-secondary}`duration-filtering`
+{bdg-secondary}`custom-metrics`
+:::
 
-```python
-from nemo_curator.pipeline import Pipeline
-from nemo_curator.stages.audio.datasets.fleurs.create_initial_manifest import CreateInitialManifestFleursStage
-from nemo_curator.stages.audio.inference.asr_nemo import InferenceAsrNemoStage
-from nemo_curator.stages.audio.metrics.get_wer import GetPairwiseWerStage
-from nemo_curator.stages.audio.common import GetAudioDurationStage, PreserveByValueStage
-from nemo_curator.stages.audio.io.convert import AudioToDocumentStage
-from nemo_curator.stages.text.io.writer import JsonlWriter
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Audio Analysis
+:link: audio-process-data-audio-analysis
+:link-type: ref
+Analyze audio characteristics including duration and format validation
++++
+{bdg-secondary}`duration-calculation`
+{bdg-secondary}`format-validation`
+{bdg-secondary}`metadata-extraction`
+:::
 
-# Create audio processing pipeline
-pipeline = Pipeline(name="audio_processing")
+:::{grid-item-card} {octicon}`git-merge;1.5em;sd-mr-1` Text Integration
+:link: audio-process-data-text-integration
+:link-type: ref
+Integrate audio processing results with text curation workflows
++++
+{bdg-secondary}`multimodal`
+{bdg-secondary}`text-filtering`
+{bdg-secondary}`pipeline-integration`
+:::
 
-# Load FLEURS dataset
-pipeline.add_stage(CreateInitialManifestFleursStage(
-    lang="hy_am", 
-    split="dev", 
-    raw_data_dir="/data/fleurs"
-))
+::::
 
-# ASR inference
-pipeline.add_stage(InferenceAsrNemoStage(
-    model_name="nvidia/stt_hy_fastconformer_hybrid_large_pc"
-))
+### Save & Export
 
-# Quality assessment
-pipeline.add_stage(GetPairwiseWerStage())
-pipeline.add_stage(GetAudioDurationStage(
-    audio_filepath_key="audio_filepath", 
-    duration_key="duration"
-))
+Save processed audio data and transcriptions in formats suitable for downstream training and analysis.
 
-# Filter by WER threshold
-pipeline.add_stage(PreserveByValueStage(
-    input_value_key="wer", 
-    target_value=75.0, 
-    operator="le"
-))
+::::{grid} 1 1 1 2
+:gutter: 1 1 1 2
 
-# Export results
-pipeline.add_stage(AudioToDocumentStage())
-pipeline.add_stage(JsonlWriter(path="/output/results"))
-```
+:::{grid-item-card} {octicon}`device-camera;1.5em;sd-mr-1` Save & Export
+:link: audio-save-export
+:link-type: ref
+Export curated audio datasets with transcriptions and quality metrics
++++
+{bdg-secondary}`manifests`
+{bdg-secondary}`parquet`
+{bdg-secondary}`metadata`
+:::
+
+::::
+
+---
 
 ## Tutorials
 
-- **[FLEURS Tutorial](tutorials/beginner.md)** - Complete working example using the FLEURS dataset
+Build practical experience with step-by-step guides for common audio curation workflows.
+
+::::{grid} 1 1 1 2
+:gutter: 1 1 1 2
+
+:::{grid-item-card} {octicon}`mortar-board;1.5em;sd-mr-1` Beginner Tutorial
+:link: audio-tutorials-beginner
+:link-type: ref
+Learn the basics of audio loading, ASR inference, and quality filtering
++++
+{bdg-secondary}`asr-inference`
+{bdg-secondary}`quality-filtering`
+{bdg-secondary}`basic-workflow`
+:::
+
+:::{grid-item-card} {octicon}`mortar-board;1.5em;sd-mr-1` Advanced Quality Assessment
+:link: audio-tutorials-advanced-quality
+:link-type: ref
+Build sophisticated quality metrics and custom filtering strategies
++++
+{bdg-secondary}`custom-metrics`
+{bdg-secondary}`advanced-filtering`
+{bdg-secondary}`optimization`
+:::
+
+::::

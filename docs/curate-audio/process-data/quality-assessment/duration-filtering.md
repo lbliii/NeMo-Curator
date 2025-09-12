@@ -111,99 +111,58 @@ def create_use_case_duration_filter(use_case: str) -> list[PreserveByValueStage]
 
 ### Calculate Speech Rate Metrics
 
+Use the built-in speech rate calculation functions to analyze speaking speed:
+
 ```python
 from nemo_curator.stages.audio.metrics.get_wer import get_wordrate, get_charrate
 
-@dataclass
-class SpeechRateAnalysisStage(LegacySpeechStage):
-    """Calculate speech rate metrics for quality assessment."""
-    
-    text_key: str = "text"
-    duration_key: str = "duration"
-    
-    def process_dataset_entry(self, data_entry: dict) -> list[AudioBatch]:
-        text = data_entry.get(self.text_key, "")
-        duration = data_entry.get(self.duration_key, 0)
-        
-        if duration > 0 and text:
-            # Calculate speech rate metrics
-            word_rate = get_wordrate(text, duration)
-            char_rate = get_charrate(text, duration)
-            
-            # Add to data entry
-            data_entry["words_per_second"] = word_rate
-            data_entry["characters_per_second"] = char_rate
-            
-            # Classify speech rate
-            data_entry["speech_rate_category"] = self._categorize_speech_rate(word_rate)
-            
-        else:
-            data_entry["words_per_second"] = 0.0
-            data_entry["characters_per_second"] = 0.0
-            data_entry["speech_rate_category"] = "invalid"
-        
-        return [AudioBatch(data=data_entry)]
-    
-    def _categorize_speech_rate(self, words_per_second: float) -> str:
-        """Categorize speech rate for analysis."""
-        if words_per_second < 1.0:
-            return "very_slow"
-        elif words_per_second < 2.0:
-            return "slow"
-        elif words_per_second <= 4.0:
-            return "normal"
-        elif words_per_second <= 6.0:
-            return "fast"
-        else:
-            return "very_fast"
+# Calculate speech rate metrics for a sample
+text = "Hello world this is a test"
+duration = 2.5  # seconds
+
+word_rate = get_wordrate(text, duration)  # Returns words per second
+char_rate = get_charrate(text, duration)  # Returns characters per second
+
+print(f"Word rate: {word_rate} words/second")
+print(f"Character rate: {char_rate} chars/second")
 ```
+
+:::{note}
+The speech rate functions `get_wordrate()` and `get_charrate()` are utility functions. To use them in a processing pipeline, you would need to create a custom stage that calls these functions and adds the results to your data.
+:::
 
 ### Speech Rate Filtering
 
+If you have pre-calculated speech rate metrics in your data, you can filter based on them:
+
 ```python
-def create_speech_rate_pipeline() -> Pipeline:
-    """Create pipeline with speech rate-based filtering."""
-    
-    pipeline = Pipeline(name="speech_rate_filtering")
-    
-    # Calculate speech rate
-    pipeline.add_stage(SpeechRateAnalysisStage())
-    
-    # Filter by speech rate (2-5 words per second)
-    pipeline.add_stage(
-        PreserveByValueStage(
-            input_value_key="words_per_second",
-            target_value=2.0,
-            operator="ge"
-        )
+from nemo_curator.stages.audio.common import PreserveByValueStage
+from nemo_curator.pipeline import Pipeline
+
+# Example: Filter by speech rate if you have word_rate field in your data
+pipeline = Pipeline(name="speech_rate_filtering")
+
+# Filter by speech rate (1.5-5 words per second)
+pipeline.add_stage(
+    PreserveByValueStage(
+        input_value_key="word_rate",  # Assumes this field exists in your data
+        target_value=1.5,
+        operator="ge"
     )
-    
-    pipeline.add_stage(
-        PreserveByValueStage(
-            input_value_key="words_per_second",
-            target_value=5.0,
-            operator="le"
-        )
+)
+
+pipeline.add_stage(
+    PreserveByValueStage(
+        input_value_key="word_rate",
+        target_value=5.0,
+        operator="le"
     )
-    
-    # Optional: Filter out extreme speech rates
-    @processing_stage(name="extreme_rate_filter")
-    def filter_extreme_rates(audio_batch: AudioBatch) -> AudioBatch:
-        filtered_data = []
-        
-        for item in audio_batch.data:
-            rate_category = item.get("speech_rate_category", "normal")
-            
-            # Keep normal, slow, and fast; filter very_slow and very_fast
-            if rate_category not in ["very_slow", "very_fast"]:
-                filtered_data.append(item)
-        
-        return AudioBatch(data=filtered_data, filepath_key=audio_batch.filepath_key)
-    
-    pipeline.add_stage(filter_extreme_rates)
-    
-    return pipeline
+)
 ```
+
+:::{note}
+This example assumes you have already calculated and stored speech rate metrics in your audio data. The built-in stages do not automatically calculate speech rates - you would need to create a custom stage for that functionality.
+:::
 
 ## Advanced Duration Filtering
 
@@ -440,77 +399,74 @@ def visualize_duration_distribution(audio_data: list[dict], output_path: str = N
 ### Normal Speech Rate Range
 
 ```python
-@dataclass
-class SpeechRateFilterStage(LegacySpeechStage):
-    """Filter based on speech rate characteristics."""
-    
-    min_words_per_second: float = 1.5
-    max_words_per_second: float = 5.0
-    min_chars_per_second: float = 8.0
-    max_chars_per_second: float = 30.0
-    
-    def process_dataset_entry(self, data_entry: dict) -> list[AudioBatch]:
-        text = data_entry.get("text", "")
-        duration = data_entry.get("duration", 0)
-        
-        if duration <= 0 or not text:
-            return []
-        
-        # Calculate rates
-        word_rate = len(text.split()) / duration
-        char_rate = len(text) / duration
-        
-        # Apply filters
-        word_rate_ok = self.min_words_per_second <= word_rate <= self.max_words_per_second
-        char_rate_ok = self.min_chars_per_second <= char_rate <= self.max_chars_per_second
-        
-        if word_rate_ok and char_rate_ok:
-            data_entry["speech_rate_filter_passed"] = True
-            data_entry["word_rate"] = word_rate
-            data_entry["char_rate"] = char_rate
-            return [AudioBatch(data=data_entry)]
-        else:
-            return []
+from nemo_curator.stages.audio.common import PreserveByValueStage
+
+# Filter by word rate (assumes word_rate field exists in your data)
+# Normal speech: 1.5-5.0 words per second
+word_rate_min_filter = PreserveByValueStage(
+    input_value_key="word_rate",
+    target_value=1.5,
+    operator="ge"
+)
+
+word_rate_max_filter = PreserveByValueStage(
+    input_value_key="word_rate",
+    target_value=5.0,
+    operator="le"
+)
+
+# Filter by character rate (assumes char_rate field exists in your data)
+# Normal speech: 8-30 characters per second
+char_rate_min_filter = PreserveByValueStage(
+    input_value_key="char_rate",
+    target_value=8.0,
+    operator="ge"
+)
+
+char_rate_max_filter = PreserveByValueStage(
+    input_value_key="char_rate",
+    target_value=30.0,
+    operator="le"
+)
 ```
+
+:::{note}
+These examples assume you have pre-calculated speech rate metrics in your audio data. Use the `get_wordrate()` and `get_charrate()` utility functions to calculate these values in a custom processing stage.
+:::
 
 ### Language-Specific Speech Rates
 
 ```python
 # Speech rate norms by language
 language_speech_rates = {
-    "en": {"min_wps": 1.8, "max_wps": 4.5, "optimal": (2.5, 3.5)},
-    "es": {"min_wps": 2.0, "max_wps": 5.0, "optimal": (3.0, 4.0)},  # Spanish tends faster
-    "de": {"min_wps": 1.5, "max_wps": 4.0, "optimal": (2.0, 3.0)},  # German compound words
-    "fr": {"min_wps": 2.0, "max_wps": 4.8, "optimal": (2.8, 3.8)},
-    "zh": {"min_wps": 1.0, "max_wps": 3.5, "optimal": (1.5, 2.5)}   # Character-based measurement
+    "en": {"min_wps": 1.8, "max_wps": 4.5, "typical": (2.5, 3.5)},
+    "es": {"min_wps": 2.0, "max_wps": 5.0, "typical": (3.0, 4.0)},  # Spanish tends faster
+    "de": {"min_wps": 1.5, "max_wps": 4.0, "typical": (2.0, 3.0)},  # German compound words
+    "fr": {"min_wps": 2.0, "max_wps": 4.8, "typical": (2.8, 3.8)},
+    "zh": {"min_wps": 1.0, "max_wps": 3.5, "typical": (1.5, 2.5)}   # Character-based measurement
 }
 
-@dataclass
-class LanguageAwareSpeechRateStage(LegacySpeechStage):
-    """Apply language-specific speech rate filtering."""
-    
-    def process_dataset_entry(self, data_entry: dict) -> list[AudioBatch]:
-        language = data_entry.get("language", "en")
-        text = data_entry.get("text", "")
-        duration = data_entry.get("duration", 0)
-        
-        if duration <= 0 or not text:
-            return []
-        
-        # Get language-specific thresholds
-        lang_config = language_speech_rates.get(language, language_speech_rates["en"])
-        
-        word_rate = len(text.split()) / duration
-        
-        # Apply language-specific filtering
-        if lang_config["min_wps"] <= word_rate <= lang_config["max_wps"]:
-            data_entry["language_speech_rate_passed"] = True
-            data_entry["word_rate"] = word_rate
-            data_entry["language_thresholds"] = lang_config
-            return [AudioBatch(data=data_entry)]
-        else:
-            return []
+# Example: Apply language-specific filtering (assumes language and word_rate fields exist)
+from nemo_curator.stages.audio.common import PreserveByValueStage
+
+# For English audio samples
+en_word_rate_filter = PreserveByValueStage(
+    input_value_key="word_rate",
+    target_value=1.8,  # English minimum
+    operator="ge"
+)
+
+# For Spanish audio samples  
+es_word_rate_filter = PreserveByValueStage(
+    input_value_key="word_rate",
+    target_value=2.0,  # Spanish minimum
+    operator="ge"
+)
 ```
+
+:::{note}
+This shows reference speech rate values for different languages. To implement language-aware filtering, you would need to create custom logic that selects appropriate thresholds based on your data language field.
+:::
 
 ## Combined Duration and Quality Filtering
 
@@ -626,6 +582,7 @@ def assess_filtering_impact(original_data: list[dict],
 ### Common Pitfalls
 
 **Over-Filtering**: Removing too much data
+
 ```python
 # Check retention rates before applying filters
 retention_rate = filtered_count / original_count
@@ -634,6 +591,7 @@ if retention_rate < 0.5:  # Less than 50% retained
 ```
 
 **Under-Filtering**: Keeping problematic samples
+
 ```python
 # Monitor quality distribution after filtering
 post_filter_analysis = analyze_duration_characteristics(filtered_data)
@@ -680,9 +638,79 @@ def validate_duration_filtering_strategy(audio_data: list[dict],
     return validation_report
 ```
 
+## Real Working Example
+
+Here's a complete working example from the NeMo Curator tutorials showing actual duration filtering in practice:
+
+```python
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.stages.audio.common import GetAudioDurationStage, PreserveByValueStage
+from nemo_curator.stages.audio.datasets.fleurs.create_initial_manifest import CreateInitialManifestFleursStage
+from nemo_curator.stages.audio.inference.asr_nemo import InferenceAsrNemoStage
+from nemo_curator.stages.audio.metrics.get_wer import GetPairwiseWerStage
+from nemo_curator.stages.audio.io.convert import AudioToDocumentStage
+from nemo_curator.stages.resources import Resources
+
+def create_audio_pipeline(raw_data_dir: str, wer_threshold: float = 75.0) -> Pipeline:
+    """Real working pipeline from NeMo Curator tutorials."""
+    
+    pipeline = Pipeline(name="audio_inference", description="Inference audio and filter by WER threshold.")
+    
+    # Load FLEURS dataset
+    pipeline.add_stage(
+        CreateInitialManifestFleursStage(
+            lang="hy_am",
+            split="dev", 
+            raw_data_dir=raw_data_dir,
+        ).with_(batch_size=4)
+    )
+    
+    # ASR inference
+    pipeline.add_stage(
+        InferenceAsrNemoStage(
+            model_name="nvidia/stt_hy_fastconformer_hybrid_large_pc"
+        ).with_(resources=Resources(gpus=1.0))
+    )
+    
+    # Calculate WER
+    pipeline.add_stage(
+        GetPairwiseWerStage(
+            text_key="text", 
+            pred_text_key="pred_text", 
+            wer_key="wer"
+        )
+    )
+    
+    # Calculate duration
+    pipeline.add_stage(
+        GetAudioDurationStage(
+            audio_filepath_key="audio_filepath", 
+            duration_key="duration"
+        )
+    )
+    
+    # Filter by WER threshold
+    pipeline.add_stage(
+        PreserveByValueStage(
+            input_value_key="wer", 
+            target_value=wer_threshold, 
+            operator="le"
+        )
+    )
+    
+    # Convert to document format
+    pipeline.add_stage(AudioToDocumentStage().with_(batch_size=1))
+    
+    return pipeline
+```
+
+:::{note}
+This example comes directly from `tutorials/audio/fleurs/pipeline.py` and shows the correct parameter names and usage patterns for the built-in stages.
+:::
+
 ## Related Topics
 
-- **[Quality Assessment Overview](index.md)** - Complete quality filtering workflow
-- **[WER Filtering](wer-filtering.md)** - Transcription accuracy filtering
-- **[Custom Metrics](custom-metrics.md)** - Additional quality measures
-- **[Audio Analysis](../audio-analysis/index.md)** - Duration calculation and analysis
+- **[Quality Assessment Overview](index.md)**: Complete quality filtering workflow
+- **[WER Filtering](wer-filtering.md)**: Transcription accuracy filtering
+- **[Custom Metrics](custom-metrics.md)**: More quality measures
+- **[Audio Analysis](../audio-analysis/index.md)**: Duration calculation and analysis

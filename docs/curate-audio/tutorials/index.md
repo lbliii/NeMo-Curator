@@ -33,16 +33,6 @@ Run your first audio processing pipeline using the FLEURS dataset, including ASR
 {bdg-secondary}`wer-filtering`
 :::
 
-:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Advanced Quality Assessment
-:link: audio-tutorials-advanced-quality
-:link-type: ref
-Apply multi-criteria quality filtering using WER, duration, character rate, and word rate metrics for sophisticated data curation.
-+++
-{bdg-secondary}`multi-criteria-filtering`
-{bdg-secondary}`quality-metrics`
-{bdg-secondary}`data-curation`
-:::
-
 ::::
 
 ```{toctree}
@@ -50,5 +40,5 @@ Apply multi-criteria quality filtering using WER, duration, character rate, and 
 :maxdepth: 4
 
 Beginner Tutorial <beginner>
-Advanced Quality Assessment <advanced-quality>
+
 ```

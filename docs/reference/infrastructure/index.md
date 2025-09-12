@@ -66,7 +66,6 @@ Available environments and configurations in NeMo Curator containers. Includes S
 :maxdepth: 2
 :hidden:
 
-distributed-computing
 memory-management
 gpu-processing
 resumable-processing
