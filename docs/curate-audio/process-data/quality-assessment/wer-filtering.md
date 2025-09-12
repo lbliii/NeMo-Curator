@@ -18,7 +18,7 @@ Filter audio samples based on Word Error Rate (WER) thresholds to ensure high-qu
 
 Word Error Rate measures transcription accuracy by calculating the percentage of words that differ between ground truth and ASR predictions:
 
-```
+```text
 WER = (Substitutions + Deletions + Insertions) / Total_Reference_Words × 100
 ```
 
@@ -72,6 +72,7 @@ pipeline.add_stage(wer_filter)
 ```python
 def create_multi_tier_wer_pipeline() -> Pipeline:
     """Create pipeline with multiple WER quality tiers."""
+    from nemo_curator.stages.function_decorators import processing_stage
     
     pipeline = Pipeline(name="multi_tier_wer")
     
@@ -115,6 +116,8 @@ def create_multi_tier_wer_pipeline() -> Pipeline:
 ### Adaptive WER Thresholds
 
 ```python
+from dataclasses import dataclass, field
+
 @dataclass
 class AdaptiveWerFilterStage(LegacySpeechStage):
     """Apply WER filtering with adaptive thresholds based on dataset characteristics."""
@@ -237,6 +240,7 @@ broadcast_filter = PreserveByValueStage(
 ```python
 def create_language_aware_wer_filter(language_thresholds: dict) -> Pipeline:
     """Create WER filter with language-specific thresholds."""
+    from nemo_curator.stages.function_decorators import processing_stage
     
     pipeline = Pipeline(name="language_aware_wer")
     
@@ -405,6 +409,7 @@ def analyze_wer_error_patterns(audio_data: list[dict]) -> dict:
 ```python
 def create_progressive_wer_pipeline() -> Pipeline:
     """Create pipeline with progressive WER filtering stages."""
+    from nemo_curator.stages.function_decorators import processing_stage
     
     pipeline = Pipeline(name="progressive_wer")
     
@@ -479,6 +484,8 @@ def create_progressive_wer_pipeline() -> Pipeline:
 ### Context-Aware Filtering
 
 ```python
+from dataclasses import dataclass
+
 @dataclass
 class ContextAwareWerFilterStage(LegacySpeechStage):
     """Filter based on WER with context awareness."""
@@ -632,6 +639,7 @@ def validate_wer_filtering_effectiveness(original_data: list[dict],
 ### Common WER Filtering Issues
 
 **Too Aggressive Filtering**: Very high WER threshold rejection
+
 ```python
 import numpy as np
 
@@ -643,6 +651,7 @@ print(f"WER distribution: P50={np.percentile(wer_dist, 50):.1f}, P75={np.percent
 ```
 
 **Inconsistent Quality**: High variance in WER values
+
 ```python
 # Diagnose: Analyze error patterns
 error_analysis = analyze_wer_error_patterns(audio_data)
@@ -651,6 +660,7 @@ error_analysis = analyze_wer_error_patterns(audio_data)
 ```
 
 **Language-Specific Issues**: Poor performance for certain languages
+
 ```python
 import numpy as np
 

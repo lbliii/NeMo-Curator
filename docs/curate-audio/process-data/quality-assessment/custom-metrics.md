@@ -12,7 +12,9 @@ modality: "audio-only"
 
 Create custom quality assessment metrics for specialized audio curation use cases, domain-specific requirements, and advanced filtering strategies beyond standard WER and duration filtering.
 
-Note: The example thresholds and weights in this article are illustrative. Calibrate them for your dataset and goals.
+```{important}
+The example thresholds and weights in this article are illustrative and should be calibrated for your specific dataset and goals. Performance may vary significantly based on audio quality, domain, and language.
+```
 
 ## Creating Custom Quality Stages
 
@@ -201,7 +203,10 @@ class BroadcastQualityStage(CustomAudioQualityStage):
             else:
                 technical_score = 0.3
                 
-        except:
+        except ImportError:
+            logger.warning("soundfile not available for technical quality analysis")
+            technical_score = 0.5  # Default when dependencies missing
+        except Exception:
             technical_score = 0.5  # Default if cannot analyze
         
         quality_factors.append(("technical_quality", technical_score, 0.2))
@@ -290,7 +295,10 @@ class TelephonyQualityStage(CustomAudioQualityStage):
             else:
                 compression_score = 0.7
                 
-        except:
+        except ImportError:
+            logger.warning("soundfile not available for compression analysis")
+            compression_score = 0.5
+        except Exception:
             compression_score = 0.5
         
         quality_factors.append(("compression_tolerance", compression_score, 0.3))
@@ -405,6 +413,9 @@ class AcousticQualityStage(CustomAudioQualityStage):
             
             return acoustic_quality
             
+        except ImportError:
+            logger.warning(f"soundfile or numpy not available for acoustic analysis")
+            return 0.5  # Default score when dependencies missing
         except Exception as e:
             logger.warning(f"Acoustic analysis failed for {audio_filepath}: {e}")
             return 0.0  # Failed analysis
@@ -663,7 +674,11 @@ def create_ensemble_quality_pipeline() -> Pipeline:
 
 ### Cross-Validation with Human Assessment
 
-Requirements: `numpy`, `scipy`, and `scikit-learn`.
+The calibration functions require additional dependencies. Install them with:
+
+```bash
+pip install scipy scikit-learn
+```
 
 ```python
 def calibrate_custom_metric(custom_scores: list[float], 
@@ -706,7 +721,9 @@ def calibrate_custom_metric(custom_scores: list[float],
 
 ### A/B Testing Framework
 
-Requirements: `numpy`.
+```{note}
+The A/B testing framework requires numpy, which is already included as a core dependency.
+```
 
 ```python
 def ab_test_quality_metrics(audio_data: list[dict], 
@@ -745,33 +762,3 @@ def ab_test_quality_metrics(audio_data: list[dict],
     
     return comparison
 ```
-
-## Best Practices
-
-### Custom Metric Development
-
-1. **Start Simple**: Begin with basic metrics and add complexity gradually
-2. **Compare with Ground Truth**: Compare with human assessments when possible
-3. **Domain Expertise**: Incorporate domain knowledge into metric design
-4. **Computational Efficiency**: Balance accuracy with processing speed
-
-### Metric Integration
-
-1. **Weighted Combinations**: Use appropriate weights for different quality factors
-2. **Threshold Calibration**: Adjust thresholds based on validation results
-3. **Error Analysis**: Analyze cases where metrics disagree with expectations
-4. **Iterative Refinement**: Continuously improve metrics based on downstream performance
-
-### Performance Considerations
-
-1. **Computational Cost**: Measure processing time for complex metrics
-2. **Memory Usage**: Consider memory requirements for signal analysis
-3. **Batch Processing**: Ensure metrics work efficiently in batch mode
-4. **Error Handling**: Use robust error handling for edge cases
-
-## Related Topics
-
-- **[Quality Assessment Overview](index.md)** - Complete quality assessment framework
-- **[WER Filtering](wer-filtering.md)** - Standard transcription quality filtering
-- **[Duration Filtering](duration-filtering.md)** - Audio length-based filtering
-- **[Audio Analysis](../audio-analysis/index.md)** - Technical audio analysis methods

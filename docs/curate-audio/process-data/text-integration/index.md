@@ -93,7 +93,7 @@ pipeline.add_stage(JsonlWriter(path="/output/processed_audio_results"))
 
 ## Custom Integration
 
-If you need to apply text processing to your ASR transcriptions, you'll need to implement custom stages. The `AudioToDocumentStage` provides the foundation for this by converting to the standard `DocumentBatch` format.
+If you need to apply text processing to your ASR transcriptions, you will need to implement custom stages. The `AudioToDocumentStage` provides the foundation for this by converting to the standard `DocumentBatch` format.
 
 ### Example: Custom Text Processing
 

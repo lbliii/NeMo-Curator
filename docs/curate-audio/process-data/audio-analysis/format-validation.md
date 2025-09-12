@@ -18,12 +18,12 @@ NeMo Curator's audio processing stages use the `soundfile` library for audio fil
 
 Audio stages support formats compatible with the `soundfile` library (backed by `libsndfile`):
 
-- **WAV** - Uncompressed audio (recommended for high quality)
-- **FLAC** - Lossless compression with metadata support
-- **OGG** - Open-source compressed format
-- **MP3** - Compressed format (requires system dependencies)
-- **M4A** - Apple compressed format
-- **AIFF** - Apple uncompressed format
+- **WAV**: Uncompressed audio (recommended for high quality)
+- **FLAC**: Lossless compression with metadata support
+- **OGG**: Open-source compressed format
+- **MP3**: Compressed format (requires system dependencies)
+- **M4A**: Apple compressed format
+- **AIFF**: Apple uncompressed format
 
 ## Built-in Error Handling
 
