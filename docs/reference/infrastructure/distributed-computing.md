@@ -19,7 +19,7 @@ This reference documents NeMo Curator's distributed computing functionality. NeM
 ### Start a local Ray cluster
 
 ```python
-from nemo_curator.core.client import RayClient
+from nemo_curator.client import RayClient  # Update to correct import path if needed
 
 # Start a local Ray cluster with optional resource hints
 ray_client = RayClient(
