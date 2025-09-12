@@ -1,181 +1,202 @@
 ---
-description: "Step-by-step beginner tutorial for audio curation using the FLEURS dataset with ASR inference and quality filtering"
+description: "Beginner tutorial for audio processing using the FLEURS dataset"
 categories: ["tutorials"]
-tags: ["beginner", "fleurs-dataset", "asr-inference", "quality-filtering", "hands-on"]
+tags: ["beginner", "fleurs-dataset", "asr-inference", "quality-filtering"]
 personas: ["data-scientist-focused", "mle-focused"]
 difficulty: "beginner"
 content_type: "tutorial"
 modality: "audio-only"
 ---
 
-(audio-tutorials-beginner)=
-# Create an Audio Pipeline
+# Beginner Audio Processing Tutorial
 
-Learn the basics of creating an audio pipeline in Curator by following an ASR inference and quality filtering example.
+Learn the basics of audio processing with NeMo Curator using the FLEURS multilingual speech dataset. This tutorial walks you through a complete audio processing pipeline from data loading to quality assessment and filtering.
 
-```{contents} Tutorial Steps:
-:local:
-:depth: 2
+## Overview
+
+This tutorial demonstrates the core audio processing workflow:
+
+1. **Load Dataset**: Download and prepare the FLEURS dataset
+2. **ASR Inference**: Transcribe audio using NeMo ASR models  
+3. **Quality Assessment**: Calculate Word Error Rate (WER)
+4. **Duration Analysis**: Extract audio file durations
+5. **Filtering**: Keep only high-quality samples
+6. **Export**: Save processed results
+
+## Working Example Location
+
+The complete working code for this tutorial is located at:
+```
+tutorials/audio/fleurs/
 ```
 
-## Before You Start
+## Prerequisites
 
-- Follow the [Get Started guide](gs-audio) to install the package, prepare your environment, and set up your data paths.
+- NeMo Curator installed
+- NVIDIA GPU (recommended for ASR inference)
+- Internet connection for dataset download
+- Basic Python knowledge
 
-### Concepts and Mental Model
+## Step-by-Step Walkthrough
 
-Use this overview to understand how stages pass data through the pipeline.
-
-```{mermaid}
-flowchart LR
-  A[Audio Files] --> R[AudioReader]
-  R --> ASR[ASR Inference]
-  ASR --> M[Quality Metrics]
-  M --> F[Filter by Quality]
-  F --> W[Write Results]
-  classDef dim fill:#f6f8fa,stroke:#d0d7de,color:#24292f;
-  class R,ASR,M,F,W dim;
-```
-
-- **Pipeline**: An ordered list of stages that process data.
-- **Stage**: A modular operation (for example, read, transcribe, filter, write).
-- **Executor**: Runs the pipeline (Ray/Xenna backend).
-- **Data units**: Input audio → transcriptions → quality metrics → filtered samples.
-- **Common choices**:
-  - **ASR Models**: NeMo FastConformer, Whisper, or custom models
-  - **Quality Metrics**: Word Error Rate (WER), confidence scores
-  - **Filtering**: WER thresholds, duration limits, confidence filtering
-- **Outputs**: Filtered manifests (JSONL), quality reports, and processed audio metadata for downstream tasks (such as ASR training).
-
-For more information, refer to the [Audio Concepts](about-concepts-audio) section.
-
----
-
-## 1. Define Imports and Paths
-
-Import required classes and define paths used throughout the example.
+### Step 1: Import Required Modules
 
 ```python
 from nemo_curator.pipeline import Pipeline
-from nemo_curator.backends.xenna import XennaExecutor
-
-from nemo_curator.stages.audio.datasets.fleurs import CreateInitialManifestFleursStage
+from nemo_curator.stages.audio.datasets.fleurs.create_initial_manifest import CreateInitialManifestFleursStage
 from nemo_curator.stages.audio.inference.asr_nemo import InferenceAsrNemoStage
 from nemo_curator.stages.audio.metrics.get_wer import GetPairwiseWerStage
 from nemo_curator.stages.audio.common import GetAudioDurationStage, PreserveByValueStage
 from nemo_curator.stages.audio.io.convert import AudioToDocumentStage
 from nemo_curator.stages.text.io.writer import JsonlWriter
-from nemo_curator.stages.resources import Resources
-
-DATA_DIR = "/path/to/audio_data"
-OUT_DIR = "/path/to/output"
-LANGUAGE = "hy_am"  # Armenian
+from nemo_curator.backends.xenna import XennaExecutor
 ```
 
-## 2. Create the Pipeline
-
-Instantiate a named pipeline to orchestrate the stages.
+### Step 2: Create the Pipeline
 
 ```python
-pipeline = Pipeline(
-    name="audio_curation", 
-    description="ASR inference and quality filtering"
-)
-```
-
-## 3. Define Stages
-
-Add modular stages to read, transcribe, assess quality, filter, and write outputs.
-
-### Load Audio Dataset
-
-Load the FLEURS dataset and create initial audio manifests.
-
-```python
-pipeline.add_stage(
-    CreateInitialManifestFleursStage(
-        lang=LANGUAGE,
-        split="dev",
-        raw_data_dir=DATA_DIR
-    ).with_(batch_size=4)
-)
-```
-
-### Perform ASR Inference
-
-[Transcribe audio](audio-process-asr-nemo) using NeMo Framework models.
-
-```python
-pipeline.add_stage(
-    InferenceAsrNemoStage(
-        model_name="nvidia/stt_hy_fastconformer_hybrid_large_pc",
-        filepath_key="audio_filepath",
-        pred_text_key="pred_text"
-    ).with_(resources=Resources(gpus=1.0))
-)
-```
-
-### Calculate Quality Metrics
-
-Compute Word Error Rate between ground truth and predicted transcriptions.
-
-```python
-pipeline.add_stage(
-    GetPairwiseWerStage(
-        text_key="text",
-        pred_text_key="pred_text", 
-        wer_key="wer"
+def create_audio_pipeline(args):
+    """Create audio processing pipeline."""
+    
+    pipeline = Pipeline(name="audio_inference", description="Process FLEURS dataset with ASR")
+    
+    # Stage 1: Load FLEURS dataset
+    pipeline.add_stage(
+        CreateInitialManifestFleursStage(
+            lang=args.lang,           # e.g., "hy_am" for Armenian
+            split=args.split,         # "dev", "train", or "test"
+            raw_data_dir=args.raw_data_dir
+        )
     )
-)
-```
-
-### Add Audio Duration
-
-Extract audio duration metadata for filtering and analysis.
-
-```python
-pipeline.add_stage(
-    GetAudioDurationStage(
-        audio_filepath_key="audio_filepath",
-        duration_key="duration"
+    
+    # Stage 2: ASR inference
+    pipeline.add_stage(
+        InferenceAsrNemoStage(
+            model_name=args.model_name  # e.g., "nvidia/stt_hy_fastconformer_hybrid_large_pc"
+        )
     )
-)
-```
-
-### Filter by Quality
-
-Keep only high-quality samples based on WER threshold.
-
-```python
-pipeline.add_stage(
-    PreserveByValueStage(
-        input_value_key="wer",
-        target_value=50.0,  # WER <= 50%
-        operator="le"
+    
+    # Stage 3: Calculate WER
+    pipeline.add_stage(
+        GetPairwiseWerStage(
+            text_key="text",           # Ground truth field
+            pred_text_key="pred_text", # ASR prediction field
+            wer_key="wer"             # Output WER field
+        )
     )
-)
-```
-
-### Export Results
-
-Convert to document format and write filtered results. Refer to [Save & Export](audio-save-export) for output format details.
-
-```python
-pipeline.add_stage(AudioToDocumentStage())
-
-pipeline.add_stage(
-    JsonlWriter(
-        path=OUT_DIR,
-        write_kwargs={"force_ascii": False}
+    
+    # Stage 4: Extract duration
+    pipeline.add_stage(
+        GetAudioDurationStage(
+            audio_filepath_key="audio_filepath",
+            duration_key="duration"
+        )
     )
-)
+    
+    # Stage 5: Filter by WER threshold
+    pipeline.add_stage(
+        PreserveByValueStage(
+            input_value_key="wer",
+            target_value=args.wer_threshold,  # e.g., 75.0
+            operator="le"  # less than or equal
+        )
+    )
+    
+    # Stage 6: Convert to DocumentBatch for export
+    pipeline.add_stage(AudioToDocumentStage())
+    
+    # Stage 7: Export results
+    result_dir = f"{args.raw_data_dir}/result"
+    pipeline.add_stage(
+        JsonlWriter(
+            path=result_dir,
+            write_kwargs={"force_ascii": False}
+        )
+    )
+    
+    return pipeline
 ```
 
-## 4. Run the Pipeline
-
-Run the configured pipeline using the executor.
+### Step 3: Run the Pipeline
 
 ```python
-pipeline.run()
+def main():
+    # Configuration
+    class Args:
+        lang = "hy_am"  # Armenian language
+        split = "dev"   # Development split
+        raw_data_dir = "/data/fleurs_output"
+        model_name = "nvidia/stt_hy_fastconformer_hybrid_large_pc"
+        wer_threshold = 75.0
+    
+    args = Args()
+    
+    # Create and run pipeline
+    pipeline = create_audio_pipeline(args)
+    executor = XennaExecutor()
+    pipeline.run(executor)
+    
+    print("Pipeline completed!")
+
+if __name__ == "__main__":
+    main()
 ```
 
+## Running the Complete Example
+
+To run the working tutorial:
+
+```bash
+cd tutorials/audio/fleurs/
+
+# Basic run with default settings
+python run.py --raw_data_dir /data/fleurs_output
+
+# Customize parameters
+python run.py \
+    --raw_data_dir /data/fleurs_output \
+    --lang ko_kr \
+    --split train \
+    --model_name nvidia/stt_ko_fastconformer_hybrid_large_pc \
+    --wer_threshold 50.0
+```
+
+## Understanding the Results
+
+After running the pipeline, you'll find:
+
+- **Downloaded data**: FLEURS audio files and transcriptions
+- **Processed manifest**: JSONL file with ASR predictions and quality metrics
+- **Filtered results**: Only samples meeting the WER threshold
+
+Example output entry:
+```json
+{
+    "audio_filepath": "/data/fleurs_output/dev/sample.wav",
+    "text": "բարև աշխարհ",
+    "pred_text": "բարև աշխարհ", 
+    "wer": 0.0,
+    "duration": 2.3
+}
+```
+
+## Key Concepts Learned
+
+- **AudioBatch**: Core data structure for audio processing
+- **Pipeline Stages**: Modular processing components
+- **ASR Inference**: Speech-to-text using NeMo models
+- **Quality Metrics**: WER calculation for transcription accuracy
+- **Filtering**: Data quality control using thresholds
+
+## Next Steps
+
+- Try different languages from the FLEURS dataset
+- Experiment with different ASR models
+- Adjust quality thresholds based on your needs
+- Create custom manifests for your own audio data
+
+## Related Topics
+
+- **[Custom Manifests](../load-data/custom-manifests.md)** - Process your own audio files
+- **[ASR Inference](../process-data/asr-inference/index.md)** - ASR model configuration
+- **[Quality Assessment](../process-data/quality-assessment/index.md)** - Quality metrics and filtering

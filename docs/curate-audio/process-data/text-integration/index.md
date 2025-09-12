@@ -1,25 +1,24 @@
 ---
-description: "Convert processed audio data to text processing workflows for multimodal applications and downstream text curation"
+description: "Convert processed audio data to DocumentBatch format for downstream processing"
 categories: ["audio-processing"]
-tags: ["text-integration", "multimodal", "format-conversion", "pipeline-integration", "transcription-processing"]
+tags: ["format-conversion", "audio-to-text", "documentbatch"]
 personas: ["data-scientist-focused", "mle-focused"]
-difficulty: "intermediate"
+difficulty: "beginner"
 content_type: "how-to"
 modality: "audio-text"
 ---
 
 # Text Integration for Audio Data
 
-Convert processed audio data to text processing workflows, enabling seamless integration between audio curation and NeMo Curator's comprehensive text processing capabilities.
+Convert processed audio data from `AudioBatch` to `DocumentBatch` format using the built-in `AudioToDocumentStage`. This enables you to export audio processing results or integrate with custom text processing workflows.
 
 ## How it Works
 
-Text integration bridges audio and text modalities by:
+The `AudioToDocumentStage` provides basic format conversion:
 
 1. **Format Conversion**: Transform `AudioBatch` objects to `DocumentBatch` format
-2. **Transcription Processing**: Apply text curation filters to ASR-generated transcriptions
-3. **Metadata Preservation**: Maintain audio-specific metadata during conversion
-4. **Pipeline Integration**: Enable mixed audio-text processing workflows
+2. **Metadata Preservation**: All fields from the audio data are preserved in the conversion
+3. **Export Ready**: Convert audio processing results to pandas DataFrame format for analysis or export
 
 ## Basic Conversion
 
@@ -27,11 +26,12 @@ Text integration bridges audio and text modalities by:
 
 ```python
 from nemo_curator.stages.audio.io.convert import AudioToDocumentStage
+from nemo_curator.tasks import AudioBatch
 
-# Convert audio data to text format
+# Convert audio data to DocumentBatch format
 converter = AudioToDocumentStage()
 
-# Input: AudioBatch with transcriptions
+# Input: AudioBatch with audio processing results
 audio_batch = AudioBatch(data=[
     {
         "audio_filepath": "/data/audio/sample.wav",
@@ -42,269 +42,106 @@ audio_batch = AudioBatch(data=[
     }
 ])
 
-# Output: DocumentBatch compatible with text processing
-batches = converter.process(audio_batch)
-document_batch = batches[0]
+# Output: DocumentBatch with pandas DataFrame
+document_batches = converter.process(audio_batch)
+document_batch = document_batches[0]
+
+# Access the converted data
+print(f"Converted {len(document_batch.data)} audio records to DocumentBatch")
 ```
 
-### Preserving Audio Metadata
+### What Gets Preserved
+
+The conversion preserves all fields from your audio processing pipeline:
 
 ```python
-# Audio metadata is preserved during conversion
-converted_data = {
-    "text": "ground truth text",                 # Original transcription
-    "audio_filepath": "/data/audio/sample.wav",  # Original audio reference
-    "pred_text": "asr predicted text",           # ASR prediction
-    "wer": 12.5,                                   # Quality metrics
-    "duration": 3.2,                               # Audio characteristics
-}
+# All audio processing results are maintained:
+# - audio_filepath: Original audio file reference
+# - text: Ground truth transcription (if available)  
+# - pred_text: ASR prediction
+# - wer: Word Error Rate (if calculated)
+# - duration: Audio duration (if calculated)
+# - Any other metadata fields you've added
 ```
 
-## Text Processing Integration
+## Integration in Pipelines
 
-### Apply Text Filters to Transcriptions
+### Complete Audio Processing with Export
 
 ```python
-from nemo_curator.stages.text.filters import WordCountFilter, NonAlphaNumericFilter
-from nemo_curator.stages.text.modules import ScoreFilter
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.stages.audio.inference.asr_nemo import InferenceAsrNemoStage
+from nemo_curator.stages.audio.metrics.get_wer import GetPairwiseWerStage
+from nemo_curator.stages.audio.common import GetAudioDurationStage
+from nemo_curator.stages.audio.io.convert import AudioToDocumentStage
+from nemo_curator.stages.text.io.writer import JsonlWriter
 
-# Create integrated audio-text pipeline
-pipeline = Pipeline(name="audio_text_integration")
+# Create pipeline that processes audio and exports results
+pipeline = Pipeline(name="audio_processing_with_export")
 
 # Audio processing stages
-pipeline.add_stage(asr_inference_stage)
-pipeline.add_stage(wer_calculation_stage)
+pipeline.add_stage(InferenceAsrNemoStage(model_name="nvidia/stt_en_fastconformer_hybrid_large_pc"))
+pipeline.add_stage(GetPairwiseWerStage(text_key="text", pred_text_key="pred_text"))
+pipeline.add_stage(GetAudioDurationStage(audio_filepath_key="audio_filepath", duration_key="duration"))
 
-# Convert to text format
+# Convert to DocumentBatch for export
 pipeline.add_stage(AudioToDocumentStage())
 
-# Apply text quality filters to transcriptions
-pipeline.add_stage(
-    ScoreFilter(
-        WordCountFilter(min_words=3, max_words=100),
-        text_field="pred_text",  # Filter ASR predictions
-        score_field="word_count_score"
-    )
-)
-
-pipeline.add_stage(
-    ScoreFilter(
-        NonAlphaNumericFilter(max_non_alpha_numeric_to_text_ratio=0.3),
-        text_field="pred_text",
-        score_field="alpha_numeric_score"
-    )
-)
+# Export results
+pipeline.add_stage(JsonlWriter(path="/output/processed_audio_results"))
 ```
 
-### Language Detection on Transcriptions
+## Custom Integration
+
+If you need to apply text processing to your ASR transcriptions, you'll need to implement custom stages. The `AudioToDocumentStage` provides the foundation for this by converting to the standard `DocumentBatch` format.
+
+### Example: Custom Text Processing
 
 ```python
-from nemo_curator.stages.text.filters import FastTextLangId
-from nemo_curator.stages.text.modules import ScoreFilter
+from nemo_curator.stages.function_decorators import processing_stage
+from nemo_curator.tasks import DocumentBatch
+import pandas as pd
 
-# Detect language of ASR predictions
-pipeline.add_stage(
-    ScoreFilter(
-        FastTextLangId(model_path="/path/to/lid.176.bin", min_langid_score=0.3),
-        text_field="pred_text",
-        score_field="language",
-    )
-)
+@processing_stage(name="custom_transcription_filter")
+def filter_transcriptions(document_batch: DocumentBatch) -> DocumentBatch:
+    """Custom filtering of ASR transcriptions."""
+    
+    # Access the pandas DataFrame
+    df = document_batch.data
+    
+    # Example: Filter by transcription length
+    df = df[df['pred_text'].str.len() > 10]  # Keep transcriptions > 10 chars
+    
+    # Example: Filter by WER if available
+    if 'wer' in df.columns:
+        df = df[df['wer'] < 50.0]  # Keep WER < 50%
+    
+    return DocumentBatch(data=df)
 ```
 
-## Cross-Modal Workflows
+## Output Format
 
-### Audio-Text Paired Processing
+After conversion, your data will be in `DocumentBatch` format with a pandas DataFrame:
 
 ```python
-def create_multimodal_pipeline(audio_manifest: str) -> Pipeline:
-    """Create pipeline processing both audio and text content."""
-    
-    pipeline = Pipeline(name="multimodal_audio_text")
-    
-    # Load audio data
-    pipeline.add_stage(JsonlReader(file_paths=audio_manifest))
-    
-    # Audio processing branch
-    audio_branch = [
-        InferenceAsrNemoStage(model_name="nvidia/stt_en_fastconformer_hybrid_large_pc"),
-        GetPairwiseWerStage(),
-        GetAudioDurationStage(audio_filepath_key="audio_filepath", duration_key="duration")
-    ]
-    
-    for stage in audio_branch:
-        pipeline.add_stage(stage)
-    
-    # Convert to text processing
-    pipeline.add_stage(AudioToDocumentStage())
-    
-    # Text processing branch
-    text_branch = [
-        # Apply text filters to both ground truth and predictions
-        ScoreFilter(WordCountFilter(min_words=5), text_field="text"),
-        ScoreFilter(WordCountFilter(min_words=5), text_field="pred_text"),
-        
-        # Language consistency check
-        ScoreFilter(FastTextLangId(model_path="/path/to/lid.176.bin", min_langid_score=0.3), text_field="text", score_field="gt_language"),
-        ScoreFilter(FastTextLangId(model_path="/path/to/lid.176.bin", min_langid_score=0.3), text_field="pred_text", score_field="pred_language"),
-    ]
-    
-    for stage in text_branch:
-        pipeline.add_stage(stage)
-    
-    return pipeline
+# Example output structure
+document_batch.data  # pandas DataFrame with columns:
+# - audio_filepath: "/path/to/audio.wav"
+# - text: "ground truth transcription" 
+# - pred_text: "asr prediction"
+# - wer: 15.2
+# - duration: 3.4
+# - [any other fields from your audio processing]
 ```
 
-### Cross-Modal Quality Assessment
+## Limitations
 
-```python
-@dataclass
-class AudioTextQualityStage(LegacySpeechStage):
-    """Assess quality using both audio and text features."""
-    
-    def process_dataset_entry(self, data_entry: dict) -> list[AudioBatch]:
-        # Audio quality factors
-        duration = data_entry.get("duration", 0)
-        wer = data_entry.get("wer", 100)
-        
-        # Text quality factors
-        text = data_entry.get("text", "")
-        pred_text = data_entry.get("pred_text", "")
-        
-        # Combined quality score
-        audio_score = max(0, 100 - wer)  # Higher score for lower WER
-        
-        text_length_score = min(100, len(text.split()) * 10)  # Prefer longer texts
-        
-        duration_score = 100 if 1.0 <= duration <= 15.0 else 50  # Optimal duration range
-        
-        # Weighted combination
-        combined_quality = (
-            0.5 * audio_score +      # 50% weight on transcription accuracy
-            0.3 * text_length_score + # 30% weight on text content
-            0.2 * duration_score      # 20% weight on duration
-        )
-        
-        data_entry["multimodal_quality"] = combined_quality
-        return [AudioBatch(data=data_entry)]
-```
-
-## Advanced Integration Patterns
-
-### Conditional Text Processing
-
-```python
-def create_conditional_text_pipeline() -> Pipeline:
-    """Apply different text processing based on audio quality."""
-    
-    pipeline = Pipeline(name="conditional_text_processing")
-    
-    # Audio processing
-    pipeline.add_stage(asr_stage)
-    pipeline.add_stage(wer_stage)
-    pipeline.add_stage(AudioToDocumentStage())
-    
-    # Conditional text processing based on WER
-    @processing_stage(name="conditional_text_filter")
-    def conditional_filter(document_batch: DocumentBatch) -> DocumentBatch:
-        filtered_data = []
-        
-        for doc in document_batch.data:
-            wer = doc.get("wer", 100)
-            
-            if wer <= 20:  # High quality: minimal filtering
-                if len(doc["pred_text"].split()) >= 3:
-                    filtered_data.append(doc)
-            elif wer <= 50:  # Medium quality: strict filtering  
-                if len(doc["pred_text"].split()) >= 5:
-                    # Additional text quality checks
-                    text = doc["pred_text"]
-                    if text.count(" ") >= 2:  # At least 3 words
-                        filtered_data.append(doc)
-            # wer > 50: Skip low quality samples
-        
-        return DocumentBatch(data=filtered_data)
-    
-    pipeline.add_stage(conditional_filter)
-    return pipeline
-```
-
-## Output Formats
-
-### Integrated Manifests
-
-Combined audio-text manifests preserve both modalities:
-
-```json
-{
-    "audio_filepath": "/data/audio/sample.wav",
-    "text": "ground truth transcription",
-    "pred_text": "asr predicted transcription",
-    "wer": 15.2,
-    "duration": 3.4,
-    "word_count_score": 6,
-    "language": "en",
-    "multimodal_quality": 87.5
-}
-```
-
-### Separated Outputs
-
-Export audio and text data separately while maintaining relationships:
-
-```python
-# Export audio metadata
-audio_metadata = {
-    "audio_id": "sample_001", 
-    "audio_filepath": "/data/audio/sample.wav",
-    "duration": 3.4,
-    "wer": 15.2
-}
-
-# Export text content
-text_content = {
-    "audio_id": "sample_001",  # Link to audio
-    "text": "asr predicted transcription",
-    "word_count_score": 6,
-    "language": "en"
-}
-```
-
-## Performance Considerations
-
-### Memory Efficiency
-
-```python
-# Stream large datasets through conversion
-@processing_stage(name="streaming_audio_to_text")
-def streaming_converter(audio_batch: AudioBatch) -> DocumentBatch:
-    """Memory-efficient conversion for large datasets."""
-    
-    # Process in smaller chunks
-    chunk_size = 100
-    converted_data = []
-    
-    for i in range(0, len(audio_batch.data), chunk_size):
-        chunk = audio_batch.data[i:i + chunk_size]
-        
-        # Convert chunk to document format
-        for item in chunk:
-            converted_item = {
-                "text": item["pred_text"],
-                "metadata": {
-                    "audio_filepath": item["audio_filepath"],
-                    "wer": item.get("wer"),
-                    "duration": item.get("duration")
-                }
-            }
-            converted_data.append(converted_item)
-    
-    return DocumentBatch(data=converted_data)
-```
+:::{note}
+**Text Processing Integration**: NeMo Curator's text processing stages are designed for `DocumentBatch` inputs, but they may not be optimized for audio-derived transcriptions. You may need to implement custom processing for audio-specific workflows.
+:::
 
 ## Related Topics
 
 - **[Audio Processing Overview](../index.md)** - Complete audio processing workflow
-- **[Quality Assessment](../quality-assessment/index.md)** - Audio quality metrics
-- **[Text Curation](../../../curate-text/index.md)** - Text processing capabilities
-- **[Cross-Modal Concepts](../../../about/concepts/index.md)** - Cross-modal processing concepts
+- **[Quality Assessment](../quality-assessment/index.md)** - Audio quality metrics and filtering
+- **[ASR Inference](../asr-inference/index.md)** - Speech recognition processing
