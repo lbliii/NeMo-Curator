@@ -30,10 +30,10 @@ The duration calculation processor reads audio file headers and samples to deter
 
 ```python
 import soundfile as sf
-from nemo_curator.stages.audio import AudioDurationCalculator
+from nemo_curator.stages.audio import GetAudioDurationStage
 
 # Initialize duration calculator
-duration_calc = AudioDurationCalculator()
+duration_calc = GetAudioDurationStage()
 
 # Process AudioBatch to add duration metadata
 audio_batch_with_duration = duration_calc(audio_batch)
