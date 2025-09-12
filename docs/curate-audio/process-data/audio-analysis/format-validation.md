@@ -52,9 +52,10 @@ Example: The following code uses `AudioFormatValidator` as a conceptual class. C
 
 ```python
 # Conceptual example (not built-in)
-from nemo_curator.stages.audio import AudioFormatValidator  # example-only
+# Replace with your custom validator import, e.g.:
+# from my_project.audio import YourAudioFormatValidator
 
-format_validator = AudioFormatValidator()
+format_validator = YourAudioFormatValidator()
 validated_batch = format_validator(audio_batch)
 ```
 
