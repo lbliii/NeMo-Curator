@@ -1,112 +1,54 @@
 ---
-description: "Audio processing tutorial using the FLEURS dataset"
-categories: ["tutorials"]
-tags: ["audio-tutorials", "fleurs-dataset", "asr-inference"]
-personas: ["data-scientist-focused", "mle-focused"]
+description: "Collection of tutorials for audio curation workflows including beginner guides and advanced quality assessment techniques"
+categories: ["audio-curation"]
+tags: ["tutorial", "audio-processing", "asr-inference", "quality-assessment", "fleurs-dataset"]
+personas: ["mle-focused", "data-scientist-focused"]
 difficulty: "beginner"
 content_type: "tutorial"
 modality: "audio-only"
 ---
 
-# Audio Processing Tutorial
+(audio-tutorials)=
 
-Learn audio processing with NeMo Curator through a working example using the FLEURS multilingual speech dataset.
+# Audio Curation Tutorials
 
-## Available Tutorial
+Use the tutorials in this section to learn audio curation with NeMo Curator.
 
-### FLEURS Dataset Processing
-
-The complete working tutorial demonstrates the full audio processing workflow:
-
-**Location**: `tutorials/audio/fleurs/`
-
-**What it covers**:
-- Loading the FLEURS multilingual speech dataset
-- ASR inference using NeMo models
-- WER calculation and quality assessment
-- Duration analysis and filtering
-- Exporting processed results
-
-**Files**:
-- `pipeline.py` - Complete pipeline implementation
-- `run.py` - Command-line interface
-- `pipeline.yaml` - Configuration options
-- `README.md` - Setup and usage instructions
-
-### Running the Tutorial
-
-```bash
-cd tutorials/audio/fleurs/
-
-# Run with default settings (Armenian, dev split)
-python run.py --raw_data_dir /data/fleurs_output
-
-# Customize language and model
-python run.py \
-    --raw_data_dir /data/fleurs_output \
-    --lang ko_kr \
-    --split train \
-    --model_name nvidia/stt_ko_fastconformer_hybrid_large_pc \
-    --wer_threshold 50.0
+```{tip}
+Tutorials are organized by complexity and typically build on one another.
 ```
 
-## Tutorial Pipeline Overview
+---
 
-The FLEURS tutorial implements this processing flow:
+::::{grid} 1 1 1 1
+:gutter: 1 1 1 2
 
-1. **Data Loading**: Download and extract FLEURS dataset files
-2. **ASR Inference**: Transcribe audio using NeMo ASR models
-3. **Quality Assessment**: Calculate WER between ground truth and predictions
-4. **Duration Analysis**: Extract audio file duration
-5. **Filtering**: Keep only samples below WER threshold
-6. **Export**: Save results in JSONL format
+:::{grid-item-card} {octicon}`mortar-board;1.5em;sd-mr-1` Beginner Tutorial
+:link: audio-tutorials-beginner
+:link-type: ref
+Run your first audio processing pipeline using the FLEURS dataset, including ASR inference and basic quality filtering.
++++
+{bdg-secondary}`fleurs-dataset`
+{bdg-secondary}`asr-inference`
+{bdg-secondary}`wer-filtering`
+:::
 
-## Key Stages Used
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Advanced Quality Assessment
+:link: audio-tutorials-advanced-quality
+:link-type: ref
+Apply multi-criteria quality filtering using WER, duration, character rate, and word rate metrics for sophisticated data curation.
++++
+{bdg-secondary}`multi-criteria-filtering`
+{bdg-secondary}`quality-metrics`
+{bdg-secondary}`data-curation`
+:::
 
-```python
-# Load FLEURS dataset
-CreateInitialManifestFleursStage(lang="hy_am", split="dev", raw_data_dir="/data")
+::::
 
-# ASR inference
-InferenceAsrNemoStage(model_name="nvidia/stt_hy_fastconformer_hybrid_large_pc")
+```{toctree}
+:hidden:
+:maxdepth: 4
 
-# Quality metrics
-GetPairwiseWerStage(text_key="text", pred_text_key="pred_text", wer_key="wer")
-GetAudioDurationStage(audio_filepath_key="audio_filepath", duration_key="duration")
-
-# Filtering
-PreserveByValueStage(input_value_key="wer", target_value=75.0, operator="le")
-
-# Export
-AudioToDocumentStage()
-JsonlWriter(path="/output/results")
+Beginner Tutorial <beginner>
+Advanced Quality Assessment <advanced-quality>
 ```
-
-## Prerequisites
-
-- NeMo Curator installed
-- NVIDIA GPU (recommended for ASR inference)
-- Internet connection (for dataset download)
-- Python 3.8+
-
-## Expected Output
-
-The tutorial produces:
-- Processed audio manifest with transcriptions
-- WER scores for quality assessment
-- Filtered dataset based on quality thresholds
-- JSONL export ready for downstream use
-
-## Customization
-
-You can adapt the tutorial for your own datasets by:
-- Replacing `CreateInitialManifestFleursStage` with `JsonlReader` for custom manifests
-- Changing the ASR model for different languages
-- Adjusting quality thresholds
-- Adding custom filtering stages
-
-## Related Topics
-
-- **[Audio Processing Overview](../index.md)** - Complete audio processing capabilities
-- **[Custom Manifests](../load-data/custom-manifests.md)** - Creating manifests for your own data
-- **[ASR Inference](../process-data/asr-inference/index.md)** - ASR model configuration

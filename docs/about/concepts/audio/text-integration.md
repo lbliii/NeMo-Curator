@@ -9,37 +9,57 @@ modality: "audio-text"
 ---
 
 (about-concepts-audio-text-integration)=
+
 # Audio-Text Integration Concepts
 
-This guide covers how audio processing integrates with text curation workflows in NeMo Curator, enabling seamless multimodal data preparation and cross-modal quality assessment.
+This guide covers how audio processing integrates with text curation workflows in NeMo Curator, enabling seamless multi-modal data preparation and cross-modal quality assessment.
 
 ## Integration Architecture
 
-Audio-text integration in NeMo Curator operates on multiple levels:
+Audio-text integration in NeMo Curator operates on several levels:
 
 ### Data Structure Integration
 
 **Format Conversion**: `AudioBatch` to `DocumentBatch`
-- All fields are preserved without remapping (`text` and `pred_text` remain unchanged)
-- Audio metadata is preserved as additional fields for downstream processing
 
-**Metadata Preservation**: Audio characteristics are maintained during conversion
-- File paths are preserved for traceability and debugging
-- Quality metrics (WER, duration) are maintained for filtering operations
-- Audio-specific metadata is available for downstream processing stages
+- All fields remain intact without remapping (`text` and `pred_text` remain unchanged)
+- Audio metadata remains available as extra fields for downstream processing
+
+**Metadata Preservation**: Audio characteristics remain intact during conversion
+
+- File paths remain available for traceability and debugging
+- Quality metrics (WER, duration) remain available for filtering operations
+- Audio-specific metadata remains available for downstream processing stages
 
 ### Pipeline Integration
 
-**Sequential Processing**: Audio to Text to Multimodal
-```
-Audio Files → ASR → Transcriptions → Text Processing → Integrated Output
+**Sequential Processing**: Audio to Text to Multi-Modal
+
+```mermaid
+flowchart LR
+    A[Audio Files] --> B[InferenceAsrNemoStage] 
+    B --> C[AudioToDocumentStage]
+    C --> D[ScoreFilter<br/>Text Processing]
+    D --> E[Integrated Output]
+    
+    style A fill:#e1f5fe
+    style C fill:#ffcc02
+    style E fill:#fff3e0
 ```
 
 **Parallel Processing**: Simultaneous audio and text analysis
-```
-Audio Files → ASR ↘
-                   → Quality Assessment → Filtered Output  
-Text Data → Text Processing ↗
+
+```mermaid
+flowchart LR
+    A[Audio Files] --> B[InferenceAsrNemoStage]
+    C[Text Data] --> D[ScoreFilter<br/>Text Processing]
+    B --> E[Cross-Modal<br/>Quality Assessment]
+    D --> E
+    E --> F[Filtered Output]
+    
+    style A fill:#e1f5fe
+    style C fill:#e8f5e8
+    style F fill:#fff3e0
 ```
 
 ## Cross-Modal Quality Assessment
@@ -49,11 +69,13 @@ Text Data → Text Processing ↗
 Use audio characteristics to enhance text quality assessment:
 
 **Speech Rate Analysis**: Detect unnaturally fast or slow speech
+
 - Normal rate: 2-4 words per second
-- Very fast: > 6 words per second (potential quality issues)
-- Very slow: < 1 word per second (potential incomplete utterances)
+- Unusually fast: > 6 words per second (potential quality issues)
+- Unusually slow: < 1 word per second (potential incomplete utterances)
 
 **Duration-Text Consistency**: Ensure transcription length matches audio duration
+
 - Short audio with long text: Potential transcription errors
 - Long audio with short text: Potential missing content
 - Optimal ratio: ~3-5 characters per second of audio
@@ -63,11 +85,13 @@ Use audio characteristics to enhance text quality assessment:
 Use text characteristics to assess audio quality:
 
 **Transcription Completeness**: Detect incomplete or truncated speech
+
 - Sentence fragments without proper endings
 - Unusual punctuation patterns
 - Incomplete words or phrases
 
 **Content Coherence**: Assess semantic consistency
+
 - Logical flow and coherence in transcriptions
 - Domain-appropriate vocabulary usage
 - Language consistency throughout sample
@@ -78,60 +102,75 @@ Use text characteristics to assess audio quality:
 
 Start with audio processing, then apply text curation:
 
-```text
-# Audio-first pipeline pattern
-audio_first_workflow = [
-    # Audio processing stages
-    "Load Audio" →
-    "ASR Inference" →
-    "Audio Quality Assessment" →
-    "Audio Filtering" →
+```{mermaid}
+flowchart TD
+    A[Audio Files] --> B[InferenceAsrNemoStage<br/>ASR Transcription]
+    B --> C[GetPairwiseWerStage<br/>Calculate WER Metrics]
+    C --> D[ScoreFilter<br/>WER-based Filtering]
+    D --> E[AudioToDocumentStage<br/>Convert to DocumentBatch]
+    E --> F[ScoreFilter<br/>Text Quality Assessment]
+    F --> G[Filter<br/>Metadata-based Filtering]
+    G --> H[Text Enhancement Stages]
+    H --> I[Processed Dataset]
     
-    # Convert to text format
-    "AudioBatch → DocumentBatch" →
+    style A fill:#e1f5fe
+    style E fill:#fff3e0
+    style I fill:#e8f5e8
     
-    # Text processing stages
-    "Text Quality Assessment" →
-    "Text Filtering" →
-    "Text Enhancement"
-]
+    classDef audioStage fill:#bbdefb
+    classDef conversionStage fill:#ffcc02
+    classDef textStage fill:#c8e6c9
+    
+    class B,C,D audioStage
+    class E conversionStage
+    class F,G,H textStage
 ```
 
 **Use Cases**:
+
 - Speech dataset curation for ASR training
 - Podcast transcription and processing
 - Lecture and educational content preparation
 
 ### Text-First Workflows
 
-Start with text processing, then validate with audio:
+Start with text processing, then verify with audio:
 
-```text
-# Text-first pipeline pattern  
-text_first_workflow = [
-    # Text processing stages
-    "Load Text Corpus" →
-    "Text Quality Assessment" →
-    "Text Filtering" →
+```{mermaid}
+flowchart TD
+    A[Text Corpus] --> B[ScoreFilter<br/>Text Quality Assessment]
+    B --> C[Filter<br/>Initial Text Filtering]
+    C --> D[Audio File Matching<br/>Custom Stage]
+    D --> E[InferenceAsrNemoStage<br/>ASR Validation]
+    E --> F[GetPairwiseWerStage<br/>Cross-Modal Metrics]
+    F --> G[ScoreFilter<br/>Consistency Filtering]
+    G --> H[Validated Dataset]
     
-    # Audio validation stages
-    "Match with Audio Files" →
-    "ASR Inference" →
-    "Cross-Modal Validation" →
-    "Consistency Filtering"
-]
+    style A fill:#e8f5e8
+    style D fill:#fff3e0
+    style H fill:#e1f5fe
+    
+    classDef textStage fill:#c8e6c9
+    classDef matchingStage fill:#ffcc02
+    classDef audioStage fill:#bbdefb
+    
+    class B,C textStage
+    class D matchingStage
+    class E,F,G audioStage
 ```
 
 **Use Cases**:
+
 - Validating existing transcriptions with audio
 - Creating audio-text pairs from separate sources
-- Quality control for crowdsourced transcriptions
+- Quality control for crowd-sourced transcriptions
 
 ## Data Flow Concepts
 
 ### Conversion Mechanisms
 
 **AudioBatch to DocumentBatch**:
+
 ```python
 # Conversion preserves all metadata
 audio_data = {
@@ -152,7 +191,7 @@ document_data = {
 }
 ```
 
-**Note**: A built-in `DocumentBatch` to `AudioBatch` conversion stage is not provided. Implement a custom stage if reverse conversion is required.
+**Note**: A built-in `DocumentBatch` to `AudioBatch` conversion stage is not provided. Create a custom stage if you need reverse conversion.
 
 ### Metadata Flow
 
@@ -179,19 +218,22 @@ stage4_output = {**stage3_output, "word_count": 6, "language": "en"}
 Ensure consistency between audio and text quality:
 
 **Transcription-Audio Alignment**:
+
 - WER correlates with audio quality
 - Duration matches transcription length
 - Language detection consistency
 
 **Quality Threshold Coordination**:
+
 - Audio quality thresholds inform text filtering
-- Text quality metrics validate audio processing
+- Text quality metrics verify audio processing
 - Combined quality scores for integrated assessment
 
-### Multimodal Quality Metrics
+### Multi-Modal Quality Metrics
 
 **Composite Quality Scoring**:
 Conceptual example (not a built-in stage):
+
 ```python
 composite_quality = (
     0.4 * audio_quality_score +      # ASR accuracy, duration appropriateness
@@ -201,6 +243,7 @@ composite_quality = (
 ```
 
 **Quality Dimensions**:
+
 - **Technical Quality**: File integrity, format compliance, duration
 - **Content Quality**: Transcription accuracy, semantic coherence
 - **Consistency Quality**: Audio-text alignment, cross-modal validation
@@ -210,11 +253,13 @@ composite_quality = (
 ### Memory Considerations
 
 **AudioBatch Memory Usage**:
+
 - Metadata storage scales linearly with batch size
 - Audio files loaded on-demand, not cached in memory
 - Large batches increase processing efficiency but consume more RAM
 
 **Conversion Overhead**:
+
 - AudioBatch → DocumentBatch conversion is lightweight
 - Metadata copying has minimal performance impact
 - Batch size affects conversion performance
@@ -224,30 +269,53 @@ composite_quality = (
 **Sequential vs. Parallel Integration**:
 
 **Sequential Processing**: Audio to Text (lower memory, slower)
-```text
-# Process audio completely, then text
-audio_pipeline.run() → text_pipeline.run()
+
+```python
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.stages.audio.inference.asr_nemo import InferenceAsrNemoStage
+from nemo_curator.stages.audio.io.convert import AudioToDocumentStage
+from nemo_curator.stages.text.modules.score_filter import ScoreFilter
+
+# Process audio completely first
+audio_pipeline = Pipeline([
+    InferenceAsrNemoStage(model_name="stt_en_fastconformer_transducer_large"),
+    AudioToDocumentStage()
+])
+audio_results = audio_pipeline.run()
+
+# Then process text
+text_pipeline = Pipeline([
+    ScoreFilter(filter_obj=text_quality_filter)
+])
+final_results = text_pipeline.run(audio_results)
 ```
 
 **Parallel Processing**: Audio and Text (higher memory, faster)
+
 ```python
 # Run a single pipeline that includes both audio and text stages using an executor
 from nemo_curator.pipeline import Pipeline
 from nemo_curator.backends.xenna import XennaExecutor
 
-pipeline = Pipeline(name="audio_text")
-# ... add audio and text stages ...
+pipeline = Pipeline(name="audio_text", stages=[
+    InferenceAsrNemoStage(model_name="stt_en_fastconformer_transducer_large"),
+    GetPairwiseWerStage(),
+    AudioToDocumentStage(),
+    ScoreFilter(filter_obj=text_quality_filter)
+])
 results = pipeline.run(XennaExecutor())
 ```
 
 ### Scaling Strategies
 
 **Horizontal Scaling**: Distribute across multiple workers
+
 - Partition audio files across workers
 - Independent processing with final aggregation
 - Load balancing based on audio duration
 
 **Vertical Scaling**: Optimize single-machine performance
+
 - GPU acceleration for ASR inference
 - Batch size optimization for hardware
 - Memory management for large datasets
@@ -257,11 +325,13 @@ results = pipeline.run(XennaExecutor())
 ### Modularity
 
 **Separation of Concerns**: Audio and text processing remain independent
+
 - Audio stages focus on speech-specific operations
 - Text stages handle language processing
 - Integration stages manage cross-modal operations
 
-**Composability**: Mix and match audio and text processing stages
+**Composable Architecture**: Mix and match audio and text processing stages
+
 - Flexible pipeline construction
 - Reusable stage components
 - Configurable integration points
@@ -269,19 +339,13 @@ results = pipeline.run(XennaExecutor())
 ### Extensibility
 
 **Custom Integration Patterns**: Support for domain-specific workflows
+
 - Custom conversion logic
 - Specialized quality metrics
 - Domain-specific filtering rules
 
 **Plugin Architecture**: Easy addition of new integration methods
+
 - Custom stage implementations
 - External tool integration
 - Specialized format support
-
-## Related Topics
-
-- **[ASR Pipeline](asr-pipeline.md)** - Audio processing architecture
-- **[Quality Metrics](quality-metrics.md)** - Cross-modal quality assessment
-- **[AudioBatch Structure](audio-batch.md)** - Core data structure concepts
-- **[Text Integration Implementation](../../curate-audio/process-data/text-integration/index.md)** - Practical integration guide
-

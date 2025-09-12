@@ -102,4 +102,4 @@ pipeline.add_stage(JsonlWriter(path="/output/results"))
 
 ## Tutorials
 
-- **[FLEURS Tutorial](tutorials/fleurs/)** - Complete working example using the FLEURS dataset
+- **[FLEURS Tutorial](tutorials/beginner.md)** - Complete working example using the FLEURS dataset

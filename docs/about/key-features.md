@@ -109,7 +109,6 @@ NeMo Curator provides speech and audio curation capabilities designed for prepar
 ### Process Data
 - **ASR Inference & Transcription**
   - [NeMo ASR Model Integration](../curate-audio/process-data/asr-inference/nemo-models.md) - Leverage NeMo Framework's pretrained ASR models for transcription
-  - [Batch Processing](../curate-audio/process-data/asr-inference/batch-processing.md) - Efficient batch processing of audio files
 
 - **Quality Assessment & Filtering**
   - [Word Error Rate (WER) Filtering](../curate-audio/process-data/quality-assessment/wer-filtering.md) - Filter based on transcription accuracy
