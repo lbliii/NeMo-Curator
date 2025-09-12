@@ -10,7 +10,7 @@ modality: "audio-only"
 
 # Quality Assessment for Audio Data
 
-Evaluate and filter audio quality using transcription accuracy metrics, duration analysis, and custom quality measures to ensure high-quality speech datasets for ASR training.
+Filter audio quality using transcription accuracy metrics, duration analysis, and custom quality measures to ensure high-quality speech datasets for ASR training.
 
 ## How it Works
 
@@ -39,6 +39,7 @@ wer_stage = GetPairwiseWerStage(
 ```
 
 WER measures the percentage of words that differ between ground truth and predicted transcriptions:
+
 - **WER = 0%**: Perfect transcription match
 - **WER = 25%**: Good quality (1 in 4 words incorrect)
 - **WER = 50%**: Moderate quality
@@ -99,7 +100,7 @@ poor_quality_filter = PreserveByValueStage(
 
 ### Duration-based Filtering
 
-Filter by audio length to remove very short or long samples:
+Filter by audio length to remove short or long samples:
 
 ```python
 from nemo_curator.stages.audio.common import PreserveByValueStage
@@ -148,131 +149,83 @@ for filter_stage in filters:
 
 ## Operator Options
 
-The `PreserveByValueStage` supports multiple comparison operators:
+The `PreserveByValueStage` supports several comparison operators:
 
 | Operator | Description | Example Use Case |
 |----------|-------------|------------------|
 | `"eq"` | Equal to | Exact duration matching |
 | `"ne"` | Not equal to | Exclude specific values |
-| `"lt"` | Less than | Maximum thresholds |
+| `"lt"` | Less than | Max thresholds |
 | `"le"` | Less than or equal | Quality thresholds |
-| `"gt"` | Greater than | Minimum thresholds |
-| `"ge"` | Greater than or equal | Minimum requirements |
+| `"gt"` | Greater than | Min thresholds |
+| `"ge"` | Greater than or equal | Min requirements |
 
-## Custom Quality Metrics
+## Complete Quality Assessment Pipeline
 
-### Implementing Custom Filters
-
-Create domain-specific quality assessments:
+Here's a complete working example that demonstrates quality assessment:
 
 ```python
-from dataclasses import dataclass, field
-from nemo_curator.stages.audio.common import LegacySpeechStage
-from nemo_curator.tasks import AudioBatch
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna import XennaExecutor
+from nemo_curator.stages.audio.datasets.fleurs.create_initial_manifest import CreateInitialManifestFleursStage
+from nemo_curator.stages.audio.inference.asr_nemo import InferenceAsrNemoStage
+from nemo_curator.stages.audio.metrics.get_wer import GetPairwiseWerStage
+from nemo_curator.stages.audio.common import GetAudioDurationStage, PreserveByValueStage
+from nemo_curator.stages.audio.io.convert import AudioToDocumentStage
+from nemo_curator.stages.text.io.writer import JsonlWriter
 
-@dataclass
-class CustomAudioQualityStage(LegacySpeechStage):
-    """Custom quality assessment for domain-specific audio."""
-    
-    def process_dataset_entry(self, data_entry: dict) -> list[AudioBatch]:
-        # Calculate custom quality score
-        text = data_entry.get("text", "")
-        duration = data_entry.get("duration", 0)
-        
-        # Example: Penalize very fast or slow speech
-        word_count = len(text.split())
-        speech_rate = word_count / duration if duration > 0 else 0
-        
-        # Ideal speech rate: 2-4 words per second
-        if 2.0 <= speech_rate <= 4.0:
-            quality_score = 100.0
-        else:
-            quality_score = max(0, 100 - abs(speech_rate - 3.0) * 20)
-        
-        data_entry["speech_rate_quality"] = quality_score
-        return [AudioBatch(data=data_entry)]
+# Create complete quality assessment pipeline
+pipeline = Pipeline(name="audio_quality_assessment")
+
+# 1. Load data
+pipeline.add_stage(CreateInitialManifestFleursStage(
+    lang="hy_am", 
+    split="dev", 
+    raw_data_dir="./audio_data"
+).with_(batch_size=4))
+
+# 2. ASR inference
+pipeline.add_stage(InferenceAsrNemoStage(
+    model_name="nvidia/stt_hy_fastconformer_hybrid_large_pc"
+))
+
+# 3. Calculate quality metrics
+pipeline.add_stage(GetPairwiseWerStage())
+pipeline.add_stage(GetAudioDurationStage(
+    audio_filepath_key="audio_filepath",
+    duration_key="duration"
+))
+
+# 4. Apply quality filters
+pipeline.add_stage(PreserveByValueStage(
+    input_value_key="wer",
+    target_value=75.0,
+    operator="le"  # Keep WER <= 75%
+))
+
+pipeline.add_stage(PreserveByValueStage(
+    input_value_key="duration",
+    target_value=1.0,
+    operator="ge"  # Keep duration >= 1s
+))
+
+pipeline.add_stage(PreserveByValueStage(
+    input_value_key="duration", 
+    target_value=30.0,
+    operator="le"  # Keep duration <= 30s
+))
+
+# 5. Export high-quality results
+pipeline.add_stage(AudioToDocumentStage())
+pipeline.add_stage(JsonlWriter(path="./high_quality_audio"))
+
+# Execute pipeline
+executor = XennaExecutor()
+pipeline.run(executor)
 ```
 
-### Language-specific Quality
-
-```python
-from dataclasses import dataclass, field
-from nemo_curator.stages.audio.common import LegacySpeechStage
-from nemo_curator.tasks import AudioBatch
-
-@dataclass  
-class LanguageQualityStage(LegacySpeechStage):
-    """Language-specific quality assessment."""
-    
-    language_thresholds: dict = field(default_factory=lambda: {
-        "en_us": {"max_wer": 30.0, "min_duration": 0.5},
-        "hy_am": {"max_wer": 50.0, "min_duration": 1.0},  # More lenient for low-resource languages
-        "zh_cn": {"max_wer": 40.0, "min_duration": 0.8},
-    })
-    
-    def process_dataset_entry(self, data_entry: dict) -> list[AudioBatch]:
-        language = data_entry.get("language", "unknown")
-        thresholds = self.language_thresholds.get(language, {"max_wer": 50.0, "min_duration": 1.0})
-        
-        wer = data_entry.get("wer", 100.0)
-        duration = data_entry.get("duration", 0.0)
-        
-        # Apply language-specific quality criteria
-        is_quality = (
-            wer <= thresholds["max_wer"] and 
-            duration >= thresholds["min_duration"]
-        )
-        
-        data_entry["language_quality_pass"] = is_quality
-        return [AudioBatch(data=data_entry)]
-```
-
-## Performance Optimization
-
-### Batch Processing
-
-```python
-# Optimize quality assessment for large datasets
-wer_stage = GetPairwiseWerStage().with_(batch_size=100)
-duration_stage = GetAudioDurationStage().with_(batch_size=50)
-```
-
-Parallelism is managed by the pipeline executor. Configure resources per stage using `.with_(resources=...)` and run with your chosen executor.
-
-## Quality Analysis
-
-### Dataset Quality Reports
-
-Generate comprehensive quality reports after processing:
-
-```python
-import pandas as pd
-import matplotlib.pyplot as plt
-
-def analyze_audio_quality(manifest_path: str):
-    """Analyze quality distribution of processed audio dataset."""
-    
-    # Load processed data
-    df = pd.read_json(manifest_path, lines=True)
-    
-    # Quality statistics
-    print("Audio Dataset Quality Report")
-    print("=" * 40)
-    print(f"Total samples: {len(df)}")
-    print(f"Average WER: {df['wer'].mean():.2f}%")
-    print(f"WER std dev: {df['wer'].std():.2f}%")
-    print(f"Average duration: {df['duration'].mean():.2f}s")
-    
-    # Quality distribution
-    quality_bins = pd.cut(df['wer'], bins=[0, 10, 25, 50, 75, 100], 
-                         labels=['Excellent', 'Good', 'Fair', 'Poor', 'Very Poor'])
-    print(f"\nQuality Distribution:")
-    print(quality_bins.value_counts())
-    
-    # Duration analysis
-    print(f"\nDuration Statistics:")
-    print(df['duration'].describe())
-```
+**Source**: `tutorials/audio/fleurs/pipeline.py:32-59`
+**Evidence**: Working pipeline demonstrates complete quality assessment workflow
 
 ## Related Topics
 
@@ -290,4 +243,3 @@ WER Filtering <wer-filtering.md>
 Duration Filtering <duration-filtering.md>
 Custom Metrics <custom-metrics.md>
 ```
-

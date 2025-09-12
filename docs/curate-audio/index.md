@@ -13,13 +13,15 @@ modality: "audio-only"
 
 NeMo Curator provides basic audio processing capabilities for speech datasets. The toolkit includes stages for ASR inference using NeMo models, quality assessment through WER calculation, and filtering based on transcription accuracy.
 
-## Use Cases
+## Available Functionality
 
-- Transcribe audio files using pretrained NeMo ASR models
-- Calculate Word Error Rate (WER) between ground truth and ASR predictions
-- Filter audio datasets based on transcription quality
-- Extract basic audio metadata like duration
-- Convert audio processing results to text processing format
+NeMo Curator provides these core audio processing capabilities:
+
+- **ASR Inference**: Transcribe audio using pretrained NeMo ASR models
+- **Quality Assessment**: Calculate WER between ground truth and ASR predictions  
+- **Duration Analysis**: Extract audio file duration and filter by length
+- **Format Handling**: Built-in support for WAV, FLAC, MP3, and other common formats
+- **Data Export**: Convert results to text processing format for further curation
 
 ## Available Stages
 

@@ -9,6 +9,7 @@ modality: "audio-only"
 ---
 
 (gs-audio)=
+
 # Get Started with Audio Curation
 
 This guide helps you set up and get started with NeMo Curator's audio curation capabilities. Follow these steps to prepare your environment and run your first audio curation pipeline using the FLEURS dataset.
@@ -42,12 +43,13 @@ The simplest way to install NeMo Curator with audio support:
 pip install nemo-curator[audio]
 
 # Audio + GPU acceleration for other modalities
-pip install --extra-index-url https://pypi.nvidia.com nemo-curator[audio,cuda12x]
+pip install --extra-index-url https://pypi.nvidia.com nemo-curator[audio,deduplication_cuda12x]
 ```
 
 ```{note}
 The audio extras include NeMo Framework ASR models, soundfile for audio processing, and editdistance for quality metrics.
 ```
+
 :::
 
 :::{tab-item} Source Installation
@@ -61,8 +63,9 @@ pip install --extra-index-url https://pypi.nvidia.com ".[audio]"
 ```
 
 ```{note}
-Replace `audio` with `audio,cuda12x` for GPU acceleration or `all` for all modalities.
+Replace `audio` with `audio,deduplication_cuda12x` for GPU acceleration or `all` for all modalities.
 ```
+
 :::
 
 :::{tab-item} NeMo Curator Container
@@ -84,6 +87,7 @@ docker run --gpus all -it --rm nvcr.io/nvidia/nemo-curator:latest
 ```{seealso}
 For details on container environments and configurations, see [Container Environments](reference-infrastructure-container-environments-main).
 ```
+
 :::
 ::::
 
@@ -111,10 +115,9 @@ mkdir -p ~/nemo_curator/audio_data
 Here's a simple example to get started with audio curation using the FLEURS dataset:
 
 ```python
-import nemo_curator as nc
 from nemo_curator.pipeline import Pipeline
 from nemo_curator.backends.xenna import XennaExecutor
-from nemo_curator.stages.audio.datasets.fleurs import CreateInitialManifestFleursStage
+from nemo_curator.stages.audio.datasets.fleurs.create_initial_manifest import CreateInitialManifestFleursStage
 from nemo_curator.stages.audio.inference.asr_nemo import InferenceAsrNemoStage
 from nemo_curator.stages.audio.metrics.get_wer import GetPairwiseWerStage
 from nemo_curator.stages.audio.common import GetAudioDurationStage, PreserveByValueStage
@@ -135,9 +138,7 @@ pipeline.add_stage(
 # 2. Perform ASR inference using NeMo model
 pipeline.add_stage(
     InferenceAsrNemoStage(
-        model_name="nvidia/stt_hy_fastconformer_hybrid_large_pc",
-        filepath_key="audio_filepath",
-        pred_text_key="pred_text"
+        model_name="nvidia/stt_hy_fastconformer_hybrid_large_pc"
     ).with_(resources=Resources(gpus=1.0))
 )
 
@@ -188,7 +189,7 @@ python -m nemo_curator.examples.audio.fleurs.run \
 
 After running the pipeline, you'll have:
 
-```
+```text
 ~/nemo_curator/audio_data/
 ├── hy_am/                    # Armenian language data
 │   ├── dev.tsv              # Transcription metadata
@@ -216,8 +217,7 @@ Explore the [Audio Curation documentation](audio-overview) for more advanced pro
 
 Key areas to explore next:
 
-- **[Custom Audio Manifests](../curate-audio/load-data/custom-manifests.md)** - Load your own audio datasets
-- **[Quality Assessment](../curate-audio/process-data/quality-assessment/index.md)** - Advanced filtering and quality metrics
-- **[Text Integration](../curate-audio/process-data/text-integration/index.md)** - Combine with text processing workflows  
-- **[Pipeline Customization](../curate-audio/tutorials/pipeline-customization/index.md)** - Customize models and filters for your use case
-
+* **[Custom Audio Manifests](../curate-audio/load-data/custom-manifests.md)** - Load your own audio datasets
+* **[Quality Assessment](../curate-audio/process-data/quality-assessment/index.md)** - Advanced filtering and quality metrics
+* **[Text Integration](../curate-audio/process-data/text-integration/index.md)** - Combine with text processing workflows  
+* **[Pipeline Customization](../curate-audio/tutorials/pipeline-customization/index.md)** - Customize models and filters for your use case

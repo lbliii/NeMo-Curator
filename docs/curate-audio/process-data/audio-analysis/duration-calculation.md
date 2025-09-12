@@ -9,69 +9,74 @@ modality: "audio-only"
 ---
 
 (audio-analysis-duration-calculation)=
+
 # Duration Calculation
 
-Calculate precise audio duration using the soundfile library for quality assessment and metadata generation in audio curation pipelines.
+Calculate precise audio duration using the `soundfile` library for quality assessment and metadata generation in audio curation pipelines.
 
 ## Overview
 
-The duration calculation processor extracts precise timing information from audio files using the soundfile library. This information is essential for quality filtering, dataset analysis, and ensuring consistent audio lengths for training.
+The `GetAudioDurationStage` extracts precise timing information from audio files using the `soundfile` library. This information is essential for quality filtering, dataset analysis, and ensuring consistent audio lengths for training.
 
 ## Key Features
 
-- **High Precision**: Uses soundfile for frame-accurate duration calculation
-- **Format Support**: Works with all audio formats supported by soundfile (WAV, FLAC, OGG, etc.)
-- **Metadata Integration**: Adds duration information to AudioBatch metadata
-- **Batch Processing**: Efficiently processes large datasets with GPU acceleration
+- **High Precision**: Uses `soundfile` for frame-accurate duration calculation
+- **Format Support**: Works with all audio formats supported by `soundfile` (WAV, FLAC, OGG, and so on)
+- **Error Handling**: Returns -1.0 for corrupted or unreadable files
+- **Pipeline Integration**: Designed for use in NeMo Curator processing pipelines
 
 ## How It Works
 
-The duration calculation processor reads audio file headers and samples to determine exact duration:
+The duration calculation stage reads audio file headers and samples to determine exact duration:
 
 ```python
-import soundfile as sf
-from nemo_curator.stages.audio import GetAudioDurationStage
+from nemo_curator.stages.audio.common import GetAudioDurationStage
+from nemo_curator.tasks.audio_batch import AudioBatch
 
 # Initialize duration calculator
-duration_calc = GetAudioDurationStage()
+duration_stage = GetAudioDurationStage(
+    audio_filepath_key="audio_filepath",
+    duration_key="duration"
+)
 
-# Process AudioBatch to add duration metadata
-audio_batch_with_duration = duration_calc(audio_batch)
+# Process audio data
+audio_data = {"audio_filepath": "/path/to/audio.wav", "text": "transcription"}
+audio_batch = AudioBatch(data=[audio_data])
+result_batch = duration_stage.process(audio_batch)
+
+# Access duration information
+duration = result_batch[0].data[0]["duration"]
+print(f"Audio duration: {duration:.3f} seconds")
 ```
 
 ### Duration Calculation Process
 
-1. **File Reading**: Uses soundfile to read audio file metadata
+1. **File Reading**: Uses `soundfile` to read audio file metadata
 2. **Frame Counting**: Counts total audio frames and sample rate
-3. **Duration Calculation**: Computes duration as frames ÷ sample_rate
-4. **Metadata Addition**: Adds duration field to AudioBatch metadata
+3. **Duration Calculation**: Computes duration as `frames ÷ sample_rate`
+4. **Error Handling**: Sets duration to -1.0 for corrupted files
 
-## Configuration Options
+## Configuration
 
 ### Basic Configuration
 
 ```python
-from nemo_curator.stages.audio import AudioDurationCalculator
+from nemo_curator.stages.audio.common import GetAudioDurationStage
 
-# Default configuration
-duration_calc = AudioDurationCalculator(
-    audio_field="audio_filepath",  # Field containing audio file paths
-    duration_field="duration",     # Output field for duration values
-    precision=3                    # Decimal precision for duration
+# Configure duration calculation
+duration_stage = GetAudioDurationStage(
+    audio_filepath_key="audio_filepath",  # Field containing audio file paths
+    duration_key="duration"               # Output field for duration values
 )
 ```
 
-### Advanced Configuration
+### Custom Field Names
 
 ```python
-# Custom configuration with error handling
-duration_calc = AudioDurationCalculator(
-    audio_field="audio_filepath",
-    duration_field="duration_seconds",
-    precision=6,                   # Higher precision for research
-    handle_errors="skip",          # Skip files with errors
-    validate_files=True,           # Validate file existence
-    cache_results=True             # Cache duration calculations
+# Use custom field names for your data format
+duration_stage = GetAudioDurationStage(
+    audio_filepath_key="wav_file_path",   # Custom input field
+    duration_key="audio_length_seconds"   # Custom output field
 )
 ```
 
@@ -80,164 +85,259 @@ duration_calc = AudioDurationCalculator(
 ### Basic Duration Calculation
 
 ```python
-from nemo_curator.datasets import AudioDataset
-from nemo_curator.stages.audio import AudioDurationCalculator
+from nemo_curator.stages.audio.common import GetAudioDurationStage
+from nemo_curator.tasks.audio_batch import AudioBatch
 
-# Load audio dataset
-audio_dataset = AudioDataset.from_manifest("audio_manifest.jsonl")
-audio_batch = audio_dataset.to_batch()
+# Sample audio data
+audio_samples = [
+    {"audio_filepath": "/path/to/sample1.wav", "text": "Hello world"},
+    {"audio_filepath": "/path/to/sample2.wav", "text": "How are you"},
+    {"audio_filepath": "/path/to/sample3.wav", "text": "Good morning"}
+]
 
-# Calculate durations
-duration_calc = AudioDurationCalculator()
-audio_batch_with_duration = duration_calc(audio_batch)
-
-# Access duration information
-for sample in audio_batch_with_duration.data:
-    print(f"File: {sample['audio_filepath']}")
-    print(f"Duration: {sample['duration']:.3f} seconds")
-```
-
-### Duration-Based Filtering
-
-```python
-from nemo_curator.stages.audio import AudioDurationCalculator, AudioDurationFilter
-
-# Calculate durations first
-duration_calc = AudioDurationCalculator()
-audio_batch_with_duration = duration_calc(audio_batch)
-
-# Filter by duration range (1-30 seconds)
-duration_filter = AudioDurationFilter(
-    min_duration=1.0,
-    max_duration=30.0,
-    duration_field="duration"
+# Create duration calculation stage
+duration_stage = GetAudioDurationStage(
+    audio_filepath_key="audio_filepath",
+    duration_key="duration"
 )
 
-filtered_batch = duration_filter(audio_batch_with_duration)
-print(f"Filtered {len(filtered_batch.data)} samples by duration")
+# Process each sample
+for sample in audio_samples:
+    audio_batch = AudioBatch(data=[sample])
+    result_batch = duration_stage.process(audio_batch)
+    
+    processed_sample = result_batch[0].data[0]
+    print(f"File: {processed_sample['audio_filepath']}")
+    print(f"Duration: {processed_sample['duration']:.3f} seconds")
 ```
 
-### Batch Processing with Progress
+### Pipeline Integration
 
 ```python
-from nemo_curator.stages.audio import AudioDurationCalculator
-from tqdm import tqdm
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.stages.audio.common import GetAudioDurationStage, PreserveByValueStage
 
-# Process large dataset with progress tracking
-duration_calc = AudioDurationCalculator(show_progress=True)
+# Create audio processing pipeline
+pipeline = Pipeline(name="audio_duration_pipeline")
 
-# Process in chunks for memory efficiency
-chunk_size = 1000
-total_samples = len(audio_batch.data)
+# Add duration calculation stage
+pipeline.add_stage(GetAudioDurationStage(
+    audio_filepath_key="audio_filepath",
+    duration_key="duration"
+))
 
-processed_chunks = []
-for i in tqdm(range(0, total_samples, chunk_size)):
-    chunk = audio_batch.slice(i, i + chunk_size)
-    processed_chunk = duration_calc(chunk)
-    processed_chunks.append(processed_chunk)
+# Add duration-based filtering (1-30 seconds)
+pipeline.add_stage(PreserveByValueStage(
+    input_value_key="duration",
+    target_value=1.0,
+    operator="ge"  # greater than or equal
+))
 
-# Combine processed chunks
-final_batch = AudioBatch.concat(processed_chunks)
+pipeline.add_stage(PreserveByValueStage(
+    input_value_key="duration",
+    target_value=30.0,
+    operator="le"  # less than or equal
+))
+```
+
+### Batch Processing
+
+```python
+from nemo_curator.stages.audio.common import GetAudioDurationStage
+from nemo_curator.tasks.audio_batch import AudioBatch
+
+# Process multiple samples in a batch
+audio_data_list = [
+    {"audio_filepath": "/path/to/file1.wav", "text": "Sample 1"},
+    {"audio_filepath": "/path/to/file2.wav", "text": "Sample 2"},
+    {"audio_filepath": "/path/to/file3.wav", "text": "Sample 3"}
+]
+
+# Create batch
+audio_batch = AudioBatch(data=audio_data_list)
+
+# Process entire batch
+duration_stage = GetAudioDurationStage(
+    audio_filepath_key="audio_filepath",
+    duration_key="duration"
+)
+
+# Process returns list of AudioBatch objects
+result_batches = duration_stage.process(audio_batch)
+
+# Extract processed data
+for batch in result_batches:
+    for sample in batch.data:
+        print(f"File: {sample['audio_filepath']}")
+        print(f"Duration: {sample['duration']:.3f} seconds")
 ```
 
 ## Output Format
 
-The processor adds duration information to each audio sample's metadata:
+The stage adds duration information to each audio sample's metadata:
 
 ```json
 {
   "audio_filepath": "/path/to/audio.wav",
   "text": "Sample transcription text",
-  "duration": 12.345,
-  "sample_rate": 16000,
-  "channels": 1
+  "duration": 12.345
 }
 ```
 
-## Performance Considerations
+For corrupted or unreadable files:
 
-### Memory Optimization
-
-```python
-# For large datasets, use streaming processing
-duration_calc = AudioDurationCalculator(
-    stream_processing=True,    # Process files one at a time
-    cache_size=1000,          # Cache recently calculated durations
-    parallel_workers=4        # Use multiple workers for I/O
-)
+```json
+{
+  "audio_filepath": "/path/to/corrupted.wav",
+  "text": "Sample transcription text", 
+  "duration": -1.0
+}
 ```
 
-### Error Handling
+## Error Handling
+
+The stage handles various error conditions:
+
+### File Not Found
 
 ```python
-# Robust error handling for production pipelines
-duration_calc = AudioDurationCalculator(
-    handle_errors="log",       # Log errors but continue processing
-    fallback_duration=0.0,     # Default duration for failed files
-    validate_range=(0.1, 3600) # Valid duration range (0.1s to 1 hour)
+# Non-existent files result in duration = -1.0
+sample = {"audio_filepath": "/nonexistent/file.wav", "text": "test"}
+audio_batch = AudioBatch(data=[sample])
+result = duration_stage.process(audio_batch)
+# result[0].data[0]["duration"] == -1.0
+```
+
+### Corrupted Audio Files
+
+```python
+# Corrupted files are logged and marked with duration = -1.0
+# Check logs for specific error messages
+import logging
+logging.basicConfig(level=logging.WARNING)
+
+# Process will continue with other files
+result = duration_stage.process(audio_batch)
+```
+
+### Filtering Error Files
+
+```python
+from nemo_curator.stages.audio.common import PreserveByValueStage
+
+# Filter out files with calculation errors
+error_filter = PreserveByValueStage(
+    input_value_key="duration",
+    target_value=0.0,
+    operator="gt"  # greater than (excludes -1.0 error values)
 )
 ```
 
 ## Integration with Quality Assessment
 
-Duration calculation is often the first step in quality assessment workflows:
+Duration calculation is typically the first step in quality assessment workflows:
 
 ```python
-from nemo_curator.stages.audio import (
-    AudioDurationCalculator,
-    AudioDurationFilter,
-    AudioQualityAssessment
-)
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.stages.audio.common import GetAudioDurationStage, PreserveByValueStage
 
-# Complete quality assessment pipeline
-pipeline = [
-    AudioDurationCalculator(),                    # Calculate durations
-    AudioDurationFilter(min_duration=1.0),       # Filter by minimum duration
-    AudioQualityAssessment(),                     # Calculate other quality metrics
-]
+# Create comprehensive quality pipeline
+pipeline = Pipeline(name="audio_quality_assessment")
 
-# Process audio batch through pipeline
-processed_batch = audio_batch
-for stage in pipeline:
-    processed_batch = stage(processed_batch)
+# Step 1: Calculate durations
+pipeline.add_stage(GetAudioDurationStage(
+    audio_filepath_key="audio_filepath",
+    duration_key="duration"
+))
+
+# Step 2: Filter by duration range (optimal for ASR training)
+pipeline.add_stage(PreserveByValueStage(
+    input_value_key="duration",
+    target_value=1.0,      # Minimum 1 second
+    operator="ge"
+))
+
+pipeline.add_stage(PreserveByValueStage(
+    input_value_key="duration", 
+    target_value=15.0,     # Maximum 15 seconds
+    operator="le"
+))
+
+# Step 3: Remove error files
+pipeline.add_stage(PreserveByValueStage(
+    input_value_key="duration",
+    target_value=0.0,      # Exclude -1.0 error values
+    operator="gt"
+))
+```
+
+## Performance Considerations
+
+### Memory Usage
+
+- The stage loads audio file headers, not full audio data
+- Memory usage scales with the number of files processed simultaneously
+- Process large datasets in smaller batches when memory constraints exist
+
+### Processing Speed
+
+- Duration calculation is I/O bound (file system access)
+- Network-mounted files may be slower than local storage
+- Consider parallel processing for large datasets using Ray
+
+### File System Optimization
+
+```python
+# For better performance with large datasets:
+# 1. Use local storage when possible
+# 2. Ensure sufficient I/O bandwidth
+# 3. Consider file system caching
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
-**File Not Found Errors**
+#### Import Errors
+
 ```python
-# Validate file paths before processing
-duration_calc = AudioDurationCalculator(validate_files=True)
+# Correct import path
+from nemo_curator.stages.audio.common import GetAudioDurationStage
+# Not: from nemo_curator.stages.audio import GetAudioDurationStage
 ```
 
-**Unsupported Audio Formats**
+#### Unsupported Audio Formats
+
 ```python
 # Check supported formats
 import soundfile as sf
 print("Supported formats:", sf.available_formats())
 
-# Use format validation first
-from nemo_curator.stages.audio import AudioFormatValidator
-format_validator = AudioFormatValidator()
-validated_batch = format_validator(audio_batch)
-duration_calc = AudioDurationCalculator()
-processed_batch = duration_calc(validated_batch)
+# Common supported formats: WAV, FLAC, OGG, AIFF
+# Not supported: MP3 (requires additional libraries)
 ```
 
-**Memory Issues with Large Files**
+#### File Permission Issues
+
 ```python
-# Use streaming for large files
-duration_calc = AudioDurationCalculator(
-    stream_processing=True,
-    max_file_size_mb=100  # Skip files larger than 100MB
-)
+# Ensure read permissions on audio files
+import os
+audio_file = "/path/to/audio.wav"
+if not os.access(audio_file, os.R_OK):
+    print(f"Cannot read file: {audio_file}")
+```
+
+#### Large File Handling
+
+```python
+# For very large audio files, `soundfile` efficiently reads headers
+# without loading the entire file into memory
+# Duration calculation remains fast regardless of file size
 ```
 
 ## Related Topics
 
-- **[Format Validation](format-validation.md)** - Validate audio files before duration calculation
-- **[Quality Assessment](../quality-assessment/index.md)** - Use duration in quality filtering workflows
+- **[Format Validation](format-validation.md)** - Check audio files before duration calculation
+- **[Quality Assessment](../quality-assessment/index.md)** - Use duration in quality filtering workflows  
 - **[Audio Analysis Overview](index.md)** - Complete audio analysis capabilities
-- **[ASR Inference](../asr-inference/index.md)** - Transcription processing workflows
+- **[Duration Filtering](../quality-assessment/duration-filtering.md)** - Filter datasets by duration ranges
