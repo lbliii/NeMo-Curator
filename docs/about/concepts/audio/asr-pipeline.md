@@ -210,19 +210,6 @@ asr_stage = InferenceAsrNemoStage(
 
 ## Error Handling and Recovery
 
-### Model Loading Failures
-
-```python
-try:
-    asr_stage.setup()
-except RuntimeError as e:
-    logger.error(f"ASR model loading failed: {e}")
-    # Fallback strategies:
-    # 1. Try smaller model
-    # 2. Use CPU processing
-    # 3. Check network connectivity
-```
-
 ### Audio Processing Errors
 
 ```python
@@ -251,28 +238,3 @@ audio_to_text = [
     # Continue with text processing stages...
 ]
 ```
-
-### Multi-Modal Integration
-
-Support for audio-visual and audio-text multi-modal workflows:
-
-```python
-# Audio and video processing
-multimodal_pipeline = Pipeline(name="audio_video")
-
-# Process audio track
-multimodal_pipeline.add_stage(audio_asr_stage)
-
-# Process video frames (separate branch)
-multimodal_pipeline.add_stage(video_processing_stage)
-
-# Combine modalities
-multimodal_pipeline.add_stage(multimodal_fusion_stage)
-```
-
-## Related Concepts
-
-- **[Quality Metrics](quality-metrics.md)** - Understanding WER, CER, and custom metrics
-- **[AudioBatch Structure](audio-batch.md)** - Core data structures for audio processing
-- **[Text Integration](text-integration.md)** - Combining audio and text workflows
-- **[Infrastructure Components](../../reference/infrastructure/index.md)** - Distributed processing foundations

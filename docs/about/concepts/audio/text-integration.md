@@ -127,30 +127,6 @@ text_first_workflow = [
 - Creating audio-text pairs from separate sources
 - Quality control for crowdsourced transcriptions
 
-### Parallel Workflows
-
-Process audio and text simultaneously:
-
-```text
-# Parallel processing pattern
-parallel_workflow = {
-    "audio_branch": [
-        "Load Audio" → "ASR Inference" → "Audio Metrics"
-    ],
-    "text_branch": [
-        "Load Text" → "Text Processing" → "Text Metrics"  
-    ],
-    "integration": [
-        "Merge Branches" → "Cross-Modal Assessment" → "Final Filtering"
-    ]
-}
-```
-
-**Use Cases**:
-- Large-scale multimodal dataset creation
-- Independent quality assessment of audio and text
-- Parallel processing for performance optimization
-
 ## Data Flow Concepts
 
 ### Conversion Mechanisms

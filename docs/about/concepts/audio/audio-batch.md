@@ -357,34 +357,3 @@ pipeline_flow = [
     "Export Stage"
 ]
 ```
-
-## Best Practices
-
-### Batch Creation
-
-1. **Validate Early**: Check file existence during batch creation
-2. **Consistent Metadata**: Ensure all samples have required fields
-3. **Reasonable Sizes**: Use batch sizes appropriate for your hardware
-4. **Error Logging**: Track and log validation failures
-
-### Data Organization
-
-1. **Absolute Paths**: Use absolute file paths for reliability
-2. **Consistent Schema**: Maintain consistent field names across batches
-3. **Metadata Preservation**: Keep important metadata throughout processing
-4. **Version Tracking**: Track data transformations for reproducibility
-
-### Performance Optimization
-
-1. **Batch Size Tuning**: Experiment with different batch sizes
-2. **Memory Monitoring**: Watch memory usage during processing
-3. **Parallel Processing**: Use multiple workers for large datasets
-4. **Checkpointing**: Save intermediate results for long-running pipelines
-
-## Related Topics
-
-- **[ASR Pipeline](asr-pipeline.md)** - Overall pipeline architecture using AudioBatch
-- **[Quality Metrics](quality-metrics.md)** - Metrics stored in AudioBatch
-- **[Text Integration](text-integration.md)** - Converting AudioBatch to text formats
-- **[Audio Processing](../../curate-audio/process-data/index.md)** - Practical AudioBatch usage
-

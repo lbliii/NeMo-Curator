@@ -71,10 +71,3 @@ graph TD
 2. Extract audio characteristics (duration, format, sample rate)
 3. Apply basic quality filters
 4. Export validated audio dataset
-
-## Related Concepts
-
-- {ref}`about-concepts-audio-asr-pipeline`
-- {ref}`about-concepts-audio-quality-metrics`
-- {ref}`about-concepts-audio-audio-batch`
-- {ref}`about-concepts-audio-text-integration`

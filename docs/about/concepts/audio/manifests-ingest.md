@@ -139,9 +139,3 @@ print(f"Batch validation: {is_valid}")
 - Standardize field names across different data sources
 - Ensure consistent audio file formats and sample rates
 - Validate encoding and accessibility of all audio files
-
-## Related Concepts
-
-- {ref}`about-concepts-audio-curation-pipeline`
-- {ref}`about-concepts-audio-audio-batch`
-- {ref}`about-concepts-audio-asr-pipeline`

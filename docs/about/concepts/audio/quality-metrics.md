@@ -40,8 +40,6 @@ WER = (Substitutions + Deletions + Insertions) / Total_Words × 100
 # WER = 1/3 × 100 = 33.33% (1 substitution out of 3 words)
 ```
 
-Implementation reference: `nemo_curator/stages/audio/metrics/get_wer.py:23-29` (utility) and `nemo_curator/stages/audio/metrics/get_wer.py:48-72` (stage)
-
 ```{note}
 WER and CER utilities depend on the `editdistance` package.
 ```
@@ -69,21 +67,15 @@ CER = (Character_Substitutions + Character_Deletions + Character_Insertions) / T
 # CER = 1/5 × 100 = 20% (1 deletion out of 5 characters)
 ```
 
-Implementation reference: `nemo_curator/stages/audio/metrics/get_wer.py:32-35`
-
 ## Audio Characteristic Metrics
 
 ### Duration Analysis
 
 **Audio Duration**: Precise measurement of audio file length in seconds.
 
-Implementation reference: `nemo_curator/stages/audio/common.py:43-68` (`GetAudioDurationStage` reads audio using `soundfile` and sets seconds as frames ÷ sample rate; sets -1.0 on error)
-
 **Speech Rate Metrics**:
 - **Words per Second**: `word_count / duration`
 - **Characters per Second**: `character_count / duration`
-
-Implementation reference: `nemo_curator/stages/audio/metrics/get_wer.py:38-45` (`get_wordrate`, `get_charrate`)
 
 **Quality Indicators**:
 - **Optimal Speech Rate**: 2-4 words per second for most languages

@@ -131,49 +131,6 @@ else:
     print("Some audio files are missing")
 ```
 
-## Best Practices
-
-### File Paths
-
-Use absolute paths for reliability:
-
-```json
-{"audio_filepath": "/absolute/path/to/audio/sample.wav", "text": "transcription"}
-```
-
-Or ensure relative paths are consistent with your working directory:
-
-```json
-{"audio_filepath": "data/audio/sample.wav", "text": "transcription"}
-```
-
-### Text Normalization
-
-Normalize transcriptions for consistency:
-
-```python
-# Example normalization
-text = "Hello, World!"
-normalized_text = text.lower().strip()  # "hello, world!"
-```
-
-### File Validation
-
-Ensure your audio files are accessible before creating manifests:
-
-```python
-import os
-
-def validate_audio_file(filepath):
-    """Check if audio file exists and is accessible."""
-    return os.path.exists(filepath) and os.access(filepath, os.R_OK)
-
-# Use in your manifest creation process
-if validate_audio_file("/path/to/audio.wav"):
-    # Add to manifest
-    pass
-```
-
 ## Example: Complete Workflow
 
 ```python
