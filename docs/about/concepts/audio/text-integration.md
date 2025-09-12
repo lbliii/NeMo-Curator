@@ -11,7 +11,7 @@ modality: "audio-text"
 (about-concepts-audio-text-integration)=
 # Audio-Text Integration Concepts
 
-Understanding how audio processing integrates with text curation workflows in NeMo Curator, enabling seamless multimodal data preparation and cross-modal quality assessment.
+This guide covers how audio processing integrates with text curation workflows in NeMo Curator, enabling seamless multimodal data preparation and cross-modal quality assessment.
 
 ## Integration Architecture
 
@@ -19,18 +19,18 @@ Audio-text integration in NeMo Curator operates on multiple levels:
 
 ### Data Structure Integration
 
-**Format Conversion**: `AudioBatch` → `DocumentBatch`
-- Fields are preserved without remapping (`text` and `pred_text` remain unchanged)
-- Audio metadata preserved as additional fields
+**Format Conversion**: `AudioBatch` to `DocumentBatch`
+- All fields are preserved without remapping (`text` and `pred_text` remain unchanged)
+- Audio metadata is preserved as additional fields for downstream processing
 
-**Metadata Preservation**: Audio characteristics maintained during conversion
-- File paths for traceability
-- Quality metrics (WER, duration) for filtering
-- Audio-specific metadata for downstream use
+**Metadata Preservation**: Audio characteristics are maintained during conversion
+- File paths are preserved for traceability and debugging
+- Quality metrics (WER, duration) are maintained for filtering operations
+- Audio-specific metadata is available for downstream processing stages
 
 ### Pipeline Integration
 
-**Sequential Processing**: Audio → Text → Multimodal
+**Sequential Processing**: Audio to Text to Multimodal
 ```
 Audio Files → ASR → Transcriptions → Text Processing → Integrated Output
 ```
@@ -176,11 +176,11 @@ document_data = {
 }
 ```
 
-Note: A built-in `DocumentBatch` → `AudioBatch` conversion stage is not provided. Implement a custom stage if reverse conversion is required.
+**Note**: A built-in `DocumentBatch` to `AudioBatch` conversion stage is not provided. Implement a custom stage if reverse conversion is required.
 
 ### Metadata Flow
 
-**Additive Processing**: Stages commonly add metadata without removing existing fields
+**Additive Processing**: Processing stages typically add metadata without removing existing fields
 
 ```python
 # Stage 1: Initial loading
@@ -247,13 +247,13 @@ composite_quality = (
 
 **Sequential vs. Parallel Integration**:
 
-**Sequential**: Audio → Text (lower memory, slower)
+**Sequential Processing**: Audio to Text (lower memory, slower)
 ```text
 # Process audio completely, then text
 audio_pipeline.run() → text_pipeline.run()
 ```
 
-**Parallel**: Audio ∥ Text (higher memory, faster)
+**Parallel Processing**: Audio and Text (higher memory, faster)
 ```python
 # Run a single pipeline that includes both audio and text stages using an executor
 from nemo_curator.pipeline import Pipeline

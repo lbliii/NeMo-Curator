@@ -11,16 +11,16 @@ modality: "audio-only"
 (about-concepts-audio-audio-batch)=
 # AudioBatch Data Structure
 
-Understanding the `AudioBatch` data structure, which serves as the core container for audio data throughout NeMo Curator's audio processing pipeline.
+This guide covers the `AudioBatch` data structure, which serves as the core container for audio data throughout NeMo Curator's audio processing pipeline.
 
 ## Overview
 
-`AudioBatch` is a specialized data structure that extends NeMo Curator's base `Task` class to handle audio-specific requirements:
+`AudioBatch` is a specialized data structure that extends NeMo Curator's base `Task` class to handle audio-specific processing requirements:
 
-- **File Path Management**: Validates audio file existence and accessibility
-- **Batch Processing**: Groups multiple audio samples for efficient processing
-- **Metadata Handling**: Preserves audio characteristics and processing results
-- **Warning Logging**: Logs validation warnings during file existence checks
+- **File Path Management**: Automatically validates audio file existence and accessibility
+- **Batch Processing**: Groups multiple audio samples for efficient parallel processing
+- **Metadata Handling**: Preserves audio characteristics and processing results throughout pipeline stages
+- **Warning Logging**: Provides detailed logging for validation warnings during file existence checks
 
 ## Structure and Components
 
@@ -98,11 +98,11 @@ for i, item in enumerate(audio_batch.data):
 
 ### Validation Behavior
 
-The validation process checks:
+The validation process performs these checks:
 
-1. **File Existence**: Verifies audio files exist at specified paths when `filepath_key` is provided
+1. **File Existence**: Verifies that audio files exist at specified paths when `filepath_key` is provided
 
-Note: Validation is invoked during task construction and logs warnings for missing files. It does not enforce required metadata fields (such as `text`) and does not abort processing.
+**Validation Behavior**: Validation runs automatically during task construction and logs warnings for missing files. It does not enforce required metadata fields (such as `text`) and does not abort processing for missing files.
 
 **Warning Handling**: Invalid files generate warnings but don't stop processing:
 
@@ -191,8 +191,9 @@ audio_sample = {
 }
 ```
 
-:::{note} Character error rate (CER) is available as a utility function and typically requires a custom stage to compute and store it.
-:::
+```{note}
+Character error rate (CER) is available as a utility function and typically requires a custom stage to compute and store it.
+```
 
 ### Metadata Evolution
 
@@ -289,32 +290,31 @@ def robust_audiobatch_creation(raw_data: list) -> AudioBatch:
 
 ### Memory Usage
 
-AudioBatch memory footprint depends on:
+AudioBatch memory footprint depends on these factors:
 
-- **Number of samples**: Linear scaling with batch size
-- **Metadata complexity**: Additional fields increase memory usage
-- **File path lengths**: Longer paths consume more memory
-- **Audio file loading**: Files are loaded on-demand, not cached in batch
+- **Number of samples**: Memory usage scales linearly with batch size
+- **Metadata complexity**: Additional metadata fields increase memory consumption
+- **File path lengths**: Longer file paths consume more memory
+- **Audio file loading**: Audio files are loaded on-demand and not cached in the batch
 
 ### Processing Efficiency
 
 **Batch Size Impact**:
-```python
-# Small batches (1-4 samples)
-# - Lower memory usage
-# - Higher overhead per sample
-# - Better for memory-constrained environments
 
-# Medium batches (8-16 samples)  
-# - Balanced memory and performance
-# - Good for most use cases
-# - Optimal for CPU processing
+**Small batches (1-4 samples)**:
+- Lower memory usage
+- Higher overhead per sample
+- Better for memory-constrained environments
 
-# Large batches (32+ samples)
-# - Higher memory usage
-# - Better GPU utilization
-# - Optimal for GPU processing with sufficient VRAM
-```
+**Medium batches (8-16 samples)**:
+- Balanced memory and performance
+- Good for most use cases
+- Optimal for CPU processing
+
+**Large batches (32+ samples)**:
+- Higher memory usage
+- Better GPU utilization
+- Optimal for GPU processing with sufficient VRAM
 
 ## Integration with Processing Stages
 

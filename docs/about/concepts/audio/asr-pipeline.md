@@ -12,7 +12,7 @@ modality: "audio-only"
 
 # ASR Pipeline Architecture
 
-This guide provides a comprehensive overview of NeMo Curator's automatic speech recognition (ASR) pipeline architecture, from audio input through transcription and quality assessment.
+This guide provides a comprehensive overview of NeMo Curator's automatic speech recognition (ASR) pipeline architecture, covering audio input processing through transcription generation and quality assessment.
 
 ## Pipeline Overview
 
@@ -50,40 +50,40 @@ graph TD
 
 **AudioBatch Structure**: The foundation for audio processing
 
-- Contains audio file paths and metadata
-- Validates file existence and accessibility
-- Supports batch processing for efficiency
+- Contains audio file paths and associated metadata
+- Validates file existence and accessibility automatically
+- Supports efficient batch processing for scalability
 
-**Input Validation**: Ensures audio quality before processing
+**Input Validation**: Ensures data integrity before processing
 
-- Path existence checks using `AudioBatch.validate()` and `validate_item()`
-- Optional metadata checks added by downstream stages (for example, duration, format)
+- File path existence checks using `AudioBatch.validate()` and `validate_item()`
+- Optional metadata validation added by downstream stages (such as duration and format checks)
 
 ### 2. ASR Model Integration
 
 **NeMo Framework Integration**: Leverages state-of-the-art ASR models
 
-- Automatic model downloading and caching
-- GPU-accelerated inference when available
-- Support for multilingual and domain-specific models
+- Automatic model downloading and caching for convenience
+- GPU-accelerated inference when hardware is available
+- Support for multilingual and domain-specific model variants
 
-**Model Management**: Efficient resource use
+**Model Management**: Efficient resource utilization
 
-- Lazy loading of models to conserve memory
-- GPU/CPU device selection based on configured resources
-- Model-level batching behavior handled inside NeMo models
+- Lazy loading of models to conserve system memory
+- Automatic GPU or CPU device selection based on available resources
+- Optimized model-level batching handled within NeMo framework
 
 ### 3. Inference Processing
 
-**Batch Processing**: Optimized for throughput
+**Batch Processing**: Optimized for high throughput
 
-- Vectorized transcription over a list of files passed to the model
-- The NeMo ASR model handles batching; this stage does not expose a batch size control
+- Vectorized transcription processing over multiple audio files
+- Configurable batch size and resource allocation using `.with_(batch_size=..., resources=Resources(...))`
 
 **Output Generation**: Structured transcription results
 
-- Predicted text extraction from NeMo outputs
-- Metadata preservation throughout processing
+- Clean predicted text extraction from NeMo model outputs
+- Complete metadata preservation throughout the processing pipeline
 
 ## Processing Stages
 
@@ -175,14 +175,14 @@ duration_stage = GetAudioDurationStage(
 
 **Model Selection Impact**:
 
-- Larger models can provide better accuracy but may be slower
-- Some NeMo models support streaming; this stage performs offline transcription
-- Language-specific models improve accuracy for target languages
+- Larger models provide better accuracy but require more processing time
+- NeMo models support streaming capabilities, though this stage performs offline transcription
+- Language-specific models significantly improve accuracy for target languages
 
-**Hardware Use**:
+**Hardware Utilization**:
 
-- GPU acceleration typically outperforms CPU for larger workloads
-- Memory requirements scale with model size and input lengths
+- GPU acceleration typically outperforms CPU processing for larger workloads
+- Memory requirements scale proportionally with model size and audio input lengths
 
 ### Optimization Strategies
 
@@ -235,7 +235,7 @@ valid_samples = [item for item in audio_batch.data if audio_batch.validate_item(
 
 ### Pipeline Recovery
 
-For guidance on resumable processing and recovery at the executor/backends level, refer to [Resumable Processing](../../../reference/infrastructure/resumable-processing.md).
+For guidance on resumable processing and recovery at the executor and backend level, refer to [Resumable Processing](../../../reference/infrastructure/resumable-processing.md).
 
 ## Integration Points
 
@@ -257,7 +257,7 @@ audio_to_text = [
 Support for audio-visual and audio-text multi-modal workflows:
 
 ```python
-# Audio + Video processing
+# Audio and video processing
 multimodal_pipeline = Pipeline(name="audio_video")
 
 # Process audio track

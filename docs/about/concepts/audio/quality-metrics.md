@@ -11,7 +11,7 @@ modality: "audio-only"
 (about-concepts-audio-quality-metrics)=
 # Audio Quality Metrics
 
-Understanding the quality metrics used in NeMo Curator for evaluating speech transcription accuracy, audio characteristics, and overall dataset quality.
+This guide covers the quality metrics used in NeMo Curator for evaluating speech transcription accuracy, audio characteristics, and overall dataset quality.
 
 ## Transcription Accuracy Metrics
 
@@ -42,9 +42,9 @@ WER = (Substitutions + Deletions + Insertions) / Total_Words × 100
 
 Implementation reference: `nemo_curator/stages/audio/metrics/get_wer.py:23-29` (utility) and `nemo_curator/stages/audio/metrics/get_wer.py:48-72` (stage)
 
-::::{note}
+```{note}
 WER and CER utilities depend on the `editdistance` package.
-::::
+```
 
 ### Character Error Rate (CER)
 
@@ -91,9 +91,9 @@ Implementation reference: `nemo_curator/stages/audio/metrics/get_wer.py:38-45` (
 - **Very Short Audio** (< 0.5s): Often incomplete utterances
 - **Very Long Audio** (> 60s): May contain multiple speakers or topics
 
-::::{note}
+```{note}
 These ranges are guidelines for dataset curation, not enforced defaults. To enforce thresholds in a pipeline, use `PreserveByValueStage`.
-::::
+```
 
 ### Format and Technical Metrics
 
@@ -197,9 +197,9 @@ def calculate_composite_quality(wer: float, duration: float, text: str) -> float
     return round(composite_score, 2)
 ```
 
-::::{note}
+```{note}
 This function is an example-only snippet to illustrate a possible scoring approach. It is not a built-in utility. To use it in a pipeline, implement a custom stage that writes a `composite_quality` field. For end-to-end examples, refer to the custom metrics guidance.
-::::
+```
 
 ### Domain-Specific Scoring
 
@@ -253,9 +253,9 @@ def analyze_quality_distribution(manifest_data: list) -> dict:
     }
 ```
 
-::::{note}
-This distribution function is a documentation example, not part of the shipped API. It requires `numpy` (for example, `import numpy as np`). Consider integrating it in analysis notebooks or a custom stage.
-::::
+```{note}
+This distribution function is a documentation example, not part of the shipped API. It requires `numpy` (such as `import numpy as np`). Consider integrating it in analysis notebooks or a custom stage.
+```
 
 ## Best Practices
 
