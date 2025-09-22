@@ -104,24 +104,45 @@ Training fastText classifiers requires using CLI commands. The trained models ca
 
 First, you need to prepare training data by sampling from high-quality and low-quality datasets using the CLI command.
 
-:::{note}
-The `prepare_fasttext_training_data` functionality is available as part of the NeMo Curator package. The exact command interface may vary depending on your installation method.
-:::
+You can prepare training data using Python scripts:
 
-```bash
-# Sample from low-quality (e.g., raw Common Crawl) dataset
-prepare_fasttext_training_data \
-  --input-data-dir=/path/to/common-crawl \
-  --output-num-samples=10000 \
-  --label='__label__cc' \
-  --output-train-file=./cc_samples.txt
+```python
+from nemo_curator.stages.text.io.reader import JsonlReader
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna.executor import XennaExecutor
+import random
 
-# Sample from high-quality (e.g., Wikipedia) dataset
-prepare_fasttext_training_data \
-  --input-data-dir=/path/to/wikipedia \
-  --output-num-samples=10000 \
-  --label='__label__hq' \
-  --output-train-file=./hq_samples.txt
+# Sample from low-quality dataset (e.g., raw Common Crawl)
+def sample_documents(input_path, output_path, num_samples, label):
+    pipeline = Pipeline(name="sample_data")
+    reader = JsonlReader(file_paths=input_path, fields=["text"])
+    pipeline.add_stage(reader)
+    
+    # Execute pipeline to load data
+    executor = XennaExecutor()
+    results = pipeline.run(executor)
+    
+    # Sample and save with labels for fastText format
+    with open(output_path, 'w') as f:
+        for result in results:
+            data = result.to_pandas()
+            sampled = data.sample(min(num_samples, len(data)))
+            for _, row in sampled.iterrows():
+                f.write(f"{label} {row['text'].replace(chr(10), ' ')}\n")
+
+# Create training samples
+sample_documents(
+    "/path/to/common-crawl/*.jsonl", 
+    "./cc_samples.txt", 
+    10000, 
+    "__label__cc"
+)
+sample_documents(
+    "/path/to/wikipedia/*.jsonl", 
+    "./hq_samples.txt", 
+    10000, 
+    "__label__hq"
+)
 ```
 
 #### Command Parameters
@@ -135,32 +156,50 @@ prepare_fasttext_training_data \
 
 ### 2. Train a Classifier
 
-Next, train a fastText classifier using the prepared samples:
+Next, train a fastText classifier using the prepared samples. You can use the fastText library directly:
 
-:::{note}
-The `train_fasttext` functionality is also available with NeMo Curator and handles model training and validation automatically. The exact command interface may vary depending on your installation method.
-:::
+```python
+import fasttext
 
-```bash
-train_fasttext \
-  --fasttext-files-dir=./ \
-  --output-train-file=./fasttext_samples.train \
-  --output-validation-file=./fasttext_samples.valid \
-  --output-model=./quality_classifier.bin \
-  --output-predictions=./predictions.jsonl
+# Combine training samples into a single file
+with open('./fasttext_samples.train', 'w') as outfile:
+    with open('./cc_samples.txt', 'r') as infile:
+        outfile.write(infile.read())
+    with open('./hq_samples.txt', 'r') as infile:
+        outfile.write(infile.read())
+
+# Train the fastText model
+model = fasttext.train_supervised(
+    input='./fasttext_samples.train',
+    epoch=25,
+    lr=0.1,
+    wordNgrams=2,
+    dim=100,
+    loss='softmax'
+)
+
+# Save the trained model
+model.save_model('./quality_classifier.bin')
+
+# Evaluate the model
+print("Model validation results:")
+result = model.test('./fasttext_samples.train')
+print(f"Number of examples: {result[0]}")
+print(f"Precision: {result[1]:.4f}")
+print(f"Recall: {result[2]:.4f}")
 ```
 
 #### Training Parameters
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `--fasttext-files-dir` | Directory containing sample files | Current directory |
-| `--output-train-file` | Combined training file output | `fasttext_samples.train` |
-| `--output-validation-file` | Validation split output | `fasttext_samples.valid` |
-| `--output-model` | Trained model file | `quality_classifier.bin` |
-| `--output-predictions` | Validation predictions | `predictions.jsonl` |
+| `epoch` | Number of training epochs | 25 |
+| `lr` | Learning rate | 0.1 |
+| `wordNgrams` | Max length of word ngram | 2 |
+| `dim` | Size of word vectors | 100 |
+| `loss` | Loss function (softmax, ns, hs) | softmax |
 
-The training script will output validation metrics including accuracy, precision, recall, F1 score, and confusion matrix.
+The training will output validation metrics including precision and recall scores.
 
 ### 3. Apply the Classifier for Filtering
 
@@ -198,42 +237,50 @@ pipeline.add_stage(read_stage)
 pipeline.add_stage(filter_stage)
 pipeline.add_stage(write_stage)
 
-# Run the pipeline (uses XennaExecutor by default)
+# Execute pipeline (uses XennaExecutor by default)
 results = pipeline.run()
 
-# Or explicitly specify an executor:
-from nemo_curator.backends.xenna import XennaExecutor
-from nemo_curator.backends.experimental.ray_data import RayDataExecutor
+# Optional: Use a custom executor configuration
+from nemo_curator.backends.xenna.executor import XennaExecutor
 
-executor = XennaExecutor()  # Default, recommended for most workloads
-# executor = RayDataExecutor()  # Experimental Ray-based option
-results = pipeline.run(executor)
+custom_executor = XennaExecutor(config={
+    "execution_mode": "streaming",
+    "cpu_allocation_percentage": 0.9
+})
+results = pipeline.run(executor=custom_executor)
 ```
 
 :::
 
-:::{tab-item} CLI
+:::{tab-item} Configuration
 
-```bash
-filter_documents \
-  --input-data-dir=/path/to/input/data \
-  --filter-config-file=./config/fasttext_quality_filter.yaml \
-  --output-retained-document-dir=/path/to/output/high_quality \
-  --output-removed-document-dir=/path/to/output/low_quality \
-  --log-dir=/path/to/logs/fasttext_classifier
-```
+You can configure FastText filters with different parameters:
 
-Where the YAML configuration file looks like:
+```python
+from nemo_curator.stages.text.filters import FastTextQualityFilter
 
-```yaml
-input_field: text
-filters:
-  - name: nemo_curator.filters.FastTextQualityFilter
-    params:
-      model_path: /path/to/quality_classifier.bin
-      alpha: 3
-      label: "__label__hq"
-      seed: 42
+# Basic quality filter
+basic_filter = FastTextQualityFilter(
+    model_path="./quality_classifier.bin",
+    label="__label__hq",  # High quality label
+    alpha=3,              # Pareto distribution alpha parameter
+    seed=42               # Random seed for reproducibility
+)
+
+# More selective filter (higher alpha = more selective)
+selective_filter = FastTextQualityFilter(
+    model_path="./quality_classifier.bin",
+    label="__label__hq",
+    alpha=5,              # Higher alpha for stricter filtering
+    seed=42
+)
+
+# Language identification filter
+lang_filter = FastTextLangId(
+    model_path="./lid.176.bin",  # fastText language ID model
+    language="en",               # Target language
+    score_threshold=0.8          # Minimum confidence score
+)
 ```
 
 :::

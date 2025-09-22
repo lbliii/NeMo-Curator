@@ -58,7 +58,7 @@ All classifiers require `backend="cudf"` for GPU acceleration. CPU-only processi
 
 ## Usage
 
-NVIDIA NeMo Curator provides a base class `DistributedDataClassifier` that can be extended to fit your specific model. The only requirement is that the model can fit on a single GPU. This module operates on the GPU, so the Dask cluster must be started as a GPU cluster, and `DocumentDataset` requires `backend="cudf"`.
+NVIDIA NeMo Curator provides a base class `DistributedDataClassifier` that can be extended to fit your specific model. The only requirement is that the model can fit on a single GPU. This module operates on the GPU and works within the pipeline framework using DocumentBatch processing.
 
 ### Classifier Comparison
 
@@ -80,18 +80,31 @@ NVIDIA NeMo Curator provides a base class `DistributedDataClassifier` that can b
 The Domain Classifier categorizes English text documents into specific domains or subject areas.
 
 ```python
-from nemo_curator.classifiers import DomainClassifier
-from nemo_curator.datasets import DocumentDataset
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.stages.text.io.reader import JsonlReader
+from nemo_curator.stages.text.io.writer import JsonlWriter
+from nemo_curator.stages.text.classifiers import DomainClassifier
 
-# Load your dataset with cuDF backend
-input_dataset = DocumentDataset.read_json("books_dataset/*.jsonl", backend="cudf")
+# Create pipeline
+pipeline = Pipeline(name="domain_classification")
+
+# Load dataset
+reader = JsonlReader(
+    file_paths="books_dataset/*.jsonl",
+    fields=["text", "id"]
+)
+pipeline.add_stage(reader)
 
 # Apply the classifier, filtering for specific domains
 domain_classifier = DomainClassifier(filter_by=["Games", "Sports"])
-result_dataset = domain_classifier(dataset=input_dataset)
+pipeline.add_stage(domain_classifier)
 
 # Save the results
-result_dataset.to_json("games_and_sports/")
+writer = JsonlWriter(path="games_and_sports/")
+pipeline.add_stage(writer)
+
+# Execute pipeline
+results = pipeline.run()  # Uses XennaExecutor by default
 ```
 
 ### Multilingual Domain Classifier
@@ -99,11 +112,17 @@ result_dataset.to_json("games_and_sports/")
 Functionally similar to the Domain Classifier, but supports 52 languages.
 
 ```python
-from nemo_curator.classifiers import MultilingualDomainClassifier
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.stages.text.io.reader import JsonlReader
+from nemo_curator.stages.text.io.writer import JsonlWriter
+from nemo_curator.stages.text.classifiers import MultilingualDomainClassifier
 
-input_dataset = DocumentDataset.read_json("multilingual_dataset/*.jsonl", backend="cudf")
-classifier = MultilingualDomainClassifier(filter_by=["Games", "Sports"])
-result_dataset = classifier(dataset=input_dataset)
+pipeline = Pipeline(name="multilingual_domain_classification")
+pipeline.add_stage(JsonlReader(file_paths="multilingual_dataset/*.jsonl", fields=["text", "id"]))
+pipeline.add_stage(MultilingualDomainClassifier(filter_by=["Games", "Sports"]))
+pipeline.add_stage(JsonlWriter(path="classified_output/"))
+
+results = pipeline.run()  # Uses XennaExecutor by default
 ```
 
 ### Quality Classifier
@@ -111,11 +130,17 @@ result_dataset = classifier(dataset=input_dataset)
 The Quality Classifier assesses document quality using the NVIDIA Quality Classifier DeBERTa model.
 
 ```python
-from nemo_curator.classifiers import QualityClassifier
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.stages.text.io.reader import JsonlReader
+from nemo_curator.stages.text.io.writer import JsonlWriter
+from nemo_curator.stages.text.classifiers import QualityClassifier
 
-input_dataset = DocumentDataset.read_json("web_documents/*.jsonl", backend="cudf")
-quality_classifier = QualityClassifier()
-result_dataset = quality_classifier(dataset=input_dataset)
+pipeline = Pipeline(name="quality_classification")
+pipeline.add_stage(JsonlReader(file_paths="web_documents/*.jsonl", fields=["text", "id"]))
+pipeline.add_stage(QualityClassifier())
+pipeline.add_stage(JsonlWriter(path="quality_classified/"))
+
+results = pipeline.run()  # Uses XennaExecutor by default
 ```
 
 :::{note}
