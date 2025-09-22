@@ -445,7 +445,21 @@ def create_integrated_quality_duration_pipeline() -> Pipeline:
         audio_filepath_key="audio_filepath",
         duration_key="duration"
     ))
-    pipeline.add_stage(SpeechRateAnalysisStage())
+    # Example: compute speech-rate metrics using utilities in a custom stage
+    from nemo_curator.stages.function_decorators import processing_stage
+    from nemo_curator.stages.audio.metrics.get_wer import get_wordrate, get_charrate
+
+    @processing_stage(name="speech_rate_analysis")
+    def compute_speech_rate(audio_batch: AudioBatch) -> AudioBatch:
+        for item in audio_batch.data:
+            duration = float(item.get("duration", 0) or 0)
+            text = item.get("text", "") or ""
+            if duration > 0 and text:
+                item["word_rate"] = get_wordrate(text, duration)
+                item["char_rate"] = get_charrate(text, duration)
+        return audio_batch
+
+    pipeline.add_stage(compute_speech_rate)
     pipeline.add_stage(GetPairwiseWerStage())
     
     # Step 2: Apply comprehensive filtering
@@ -456,7 +470,7 @@ def create_integrated_quality_duration_pipeline() -> Pipeline:
         for item in audio_batch.data:
             duration = item.get("duration", 0)
             wer = item.get("wer", 100)
-            word_rate = item.get("words_per_second", 0)
+            word_rate = item.get("word_rate", 0)
             
             # Multi-criteria filtering
             duration_ok = 1.0 <= duration <= 20.0

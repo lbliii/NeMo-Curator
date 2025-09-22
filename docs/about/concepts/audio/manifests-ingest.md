@@ -33,8 +33,8 @@ Audio manifests in NeMo Curator follow a standardized format for consistent data
 **Creation Methods**:
 
 - **Programmatic Generation**: Use dataset-specific stages like `CreateInitialManifestFleursStage`
-- **Custom Scripts**: Generate JSONL or TSV files with consistent field naming
-- **Manual Creation**: Create manifests for small datasets or specialized use cases
+- **Custom Scripts**: Generate JSONL files with consistent field naming
+- **Manual Creation**: Create JSONL manifests for small datasets or specialized use cases
 
 ## Data Ingestion and Validation
 

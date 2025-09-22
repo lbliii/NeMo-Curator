@@ -32,7 +32,7 @@ graph TD
 
 - `AudioBatch` file existence checks using `validate()` and `validate_item()`
 - Manifest format validation and metadata consistency
-- Support for JSONL and TSV manifest formats
+- Recommended JSONL manifest format
 
 **Optional ASR Inference**:
 

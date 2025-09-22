@@ -225,9 +225,6 @@ executor = XennaExecutor()
 pipeline.run(executor)
 ```
 
-**Source**: `tutorials/audio/fleurs/pipeline.py:32-59`
-**Evidence**: Working pipeline demonstrates complete quality assessment workflow
-
 ## Related Topics
 
 - **[WER Filtering](wer-filtering.md)** - Detailed guide to Word Error Rate filtering

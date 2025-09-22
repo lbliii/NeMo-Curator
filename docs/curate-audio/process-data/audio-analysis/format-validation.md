@@ -21,9 +21,10 @@ Audio stages support formats compatible with the `soundfile` library (backed by 
 - **WAV**: Uncompressed audio (recommended for high quality)
 - **FLAC**: Lossless compression with metadata support
 - **OGG**: Open-source compressed format
-- **MP3**: Compressed format (requires system dependencies)
-- **M4A**: Apple compressed format
+- **MP3**: Compressed format (availability depends on your system's `libsndfile` build)
 - **AIFF**: Apple uncompressed format
+
+Note: AAC/M4A is not supported by default by `soundfile`/`libsndfile`. Prefer WAV or FLAC for consistent cross-platform behavior.
 
 ## Built-in Error Handling
 

@@ -31,7 +31,7 @@ The duration calculation stage reads audio file headers and samples to determine
 
 ```python
 from nemo_curator.stages.audio.common import GetAudioDurationStage
-from nemo_curator.tasks.audio_batch import AudioBatch
+from nemo_curator.tasks import AudioBatch
 
 # Initialize duration calculator
 duration_stage = GetAudioDurationStage(
@@ -86,7 +86,7 @@ duration_stage = GetAudioDurationStage(
 
 ```python
 from nemo_curator.stages.audio.common import GetAudioDurationStage
-from nemo_curator.tasks.audio_batch import AudioBatch
+from nemo_curator.tasks import AudioBatch
 
 # Sample audio data
 audio_samples = [
@@ -144,7 +144,7 @@ pipeline.add_stage(PreserveByValueStage(
 
 ```python
 from nemo_curator.stages.audio.common import GetAudioDurationStage
-from nemo_curator.tasks.audio_batch import AudioBatch
+from nemo_curator.tasks import AudioBatch
 
 # Process multiple samples in a batch
 audio_data_list = [

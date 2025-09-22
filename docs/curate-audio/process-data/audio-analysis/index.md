@@ -71,7 +71,7 @@ Refer to [Duration Filtering](../quality-assessment/duration-filtering.md) for e
 
 ## Format Validation
 
-NeMo Curator's built-in stages handle audio format validation automatically. See [Format Validation](format-validation.md) for details on error handling and supported formats.
+NeMo Curator infers basic format validity during duration extraction using `soundfile.read`. If a file cannot be read by `soundfile`/`libsndfile`, `GetAudioDurationStage` sets `duration = -1.0`, which you can filter out. Refer to [Format Validation](format-validation.md) for behavior and supported formats.
 
 ### Basic Format Check
 
@@ -122,6 +122,3 @@ pipeline.add_stage(InferenceAsrNemoStage(
     model_name="nvidia/stt_en_fastconformer_hybrid_large_pc"
 ))
 ```
-
-**Source**: `tutorials/audio/fleurs/pipeline.py:47-48`
-**Evidence**: Working pipeline demonstrates audio analysis with duration calculation and filtering

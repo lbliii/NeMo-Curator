@@ -127,12 +127,12 @@ After processing, your directory structure will look like:
 
 ```text
 /data/fleurs/en_us/
-├── dev.tsv              # Transcription metadata
+├── dev.tsv              # Transcription metadata (used internally by the stage)
 ├── dev.tar.gz          # Compressed audio files
 ├── dev/                # Extracted audio files
 │   ├── audio_001.wav
 │   ├── audio_002.wav
 │   └── ...
-└── result/             # Processed manifests (if using full pipeline)
+└── result/             # Processed JSONL manifests (if using full pipeline)
     └── *.jsonl
 ```

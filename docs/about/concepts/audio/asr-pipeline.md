@@ -152,7 +152,7 @@ duration_stage = GetAudioDurationStage(
 ### Input Data Flow
 
 1. **Audio Files** → File system or cloud storage
-2. **Manifest Files** → JSONL or TSV format with metadata
+2. **Manifest Files** → JSONL format with metadata
 3. **AudioBatch Objects** → Validated, structured data containers
 
 ### Processing Data Flow
