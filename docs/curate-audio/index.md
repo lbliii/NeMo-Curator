@@ -83,7 +83,7 @@ Create and load custom audio dataset manifests with metadata
 :::
 
 :::{grid-item-card} {octicon}`download;1.5em;sd-mr-1` FLEURS Dataset
-:link: audio-load-data-fleurs-dataset
+:link: audio-load-data-fleurs
 :link-type: ref
 Load and process the multilingual FLEURS speech dataset
 +++
@@ -179,16 +179,6 @@ Learn the basics of audio loading, ASR inference, and quality filtering
 {bdg-secondary}`asr-inference`
 {bdg-secondary}`quality-filtering`
 {bdg-secondary}`basic-workflow`
-:::
-
-:::{grid-item-card} {octicon}`mortar-board;1.5em;sd-mr-1` Advanced Quality Assessment
-:link: audio-tutorials-advanced-quality
-:link-type: ref
-Build sophisticated quality metrics and custom filtering strategies
-+++
-{bdg-secondary}`custom-metrics`
-{bdg-secondary}`advanced-filtering`
-{bdg-secondary}`optimization`
 :::
 
 ::::
