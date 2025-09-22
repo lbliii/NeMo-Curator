@@ -9,11 +9,49 @@ modality: "image-only"
 ---
 
 (image-overview)=
+
 # About Image Curation
+
+Learn how to curate high-quality image datasets using NeMo Curator's powerful image processing pipeline. NeMo Curator enables you to efficiently process large-scale image-text datasets, applying quality filtering, content classification, and semantic deduplication at scale.
 
 ## Use Cases
 
+- Prepare high-quality image datasets for training generative AI models such as LLMs, VLMs, and WFMs
+- Curate datasets for text-to-image model training and fine-tuning
+- Process large-scale image collections for multimodal foundation model pretraining
+- Apply quality control and content filtering to remove inappropriate or low-quality images
+- Generate embeddings and semantic features for image search and retrieval applications
+- Remove duplicate images from large datasets using semantic deduplication
+
 ## Architecture
+
+NeMo Curator's image curation follows a modular pipeline architecture where data flows through configurable stages. Each stage performs a specific operation and passes processed data to the next stage in the pipeline.
+
+```{mermaid}
+flowchart LR
+    A[WebDataset Input] --> B[File Partitioning]
+    B --> C[Image Reader<br/>DALI GPU-accelerated]
+    C --> D[CLIP Embeddings<br/>ViT-L/14]
+    D --> E[Aesthetic Classification<br/>Quality scoring]
+    E --> F[NSFW Classification<br/>Content filtering]
+    F --> G[Duplicate Removal<br/>Semantic deduplication]
+    G --> H[Export & Resharding<br/>WebDataset output]
+    
+    classDef input fill:#e1f5fe,stroke:#0277bd,color:#000
+    classDef processing fill:#f3e5f5,stroke:#7b1fa2,color:#000
+    classDef output fill:#e8f5e8,stroke:#2e7d32,color:#000
+    
+    class A input
+    class B,C,D,E,F,G processing
+    class H output
+```
+
+This pipeline architecture provides:
+
+- **Modularity**: Add, remove, or reorder stages based on your workflow needs
+- **Scalability**: Distributed processing across multiple GPUs and nodes using Ray
+- **Flexibility**: Configure parameters for each stage independently
+- **Efficiency**: GPU-accelerated processing with DALI and CLIP models
 
 ## Introduction
 
@@ -48,13 +86,15 @@ Learn prerequisites, setup instructions, and initial configuration for image cur
 
 ### Load Data
 
+Load and process large-scale image datasets from local storage or cloud sources using the WebDataset format with GPU-accelerated DALI for efficient distributed processing.
+
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2
 
 :::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` WebDataset
 :link: image-load-data-webdataset
 :link-type: ref
-Load and process sharded image-text datasets in the WebDataset format for scalable distributed curation.
+Load and process sharded image-text datasets in WebDataset format
 +++
 {bdg-secondary}`webdataset`
 {bdg-secondary}`sharded`
@@ -74,7 +114,7 @@ Transform and enhance your image data through classification, embeddings, and fi
 :link: image-process-data-classifiers
 :link-type: ref
 
-Apply built-in classifiers such as Aesthetic and NSFW to score, filter, and curate large image datasets. These models help you assess image quality and remove or flag explicit content for downstream tasks like generative model training and quality control.
+Apply built-in classifiers for aesthetic quality and NSFW content filtering.
 +++
 {bdg-secondary}`Aesthetic` {bdg-secondary}`NSFW` {bdg-secondary}`quality filtering`
 
@@ -84,7 +124,7 @@ Apply built-in classifiers such as Aesthetic and NSFW to score, filter, and cura
 :link: image-process-data-embeddings
 :link-type: ref
 
-Generate image embeddings for your dataset using state-of-the-art models from the timm library or custom embedders. Embeddings enable downstream tasks such as classification, filtering, duplicate removal, and similarity search.
+Generate image embeddings using CLIP models or custom embedders.
 +++
 {bdg-secondary}`timm` {bdg-secondary}`custom` {bdg-secondary}`embeddings`
 
@@ -103,7 +143,7 @@ Optimize and manage your image curation pipelines with advanced execution backen
 :link: reference-execution-backends
 :link-type: ref
 
-Choose the optimal execution backend for your image curation workload. Ray-based executors provide automatic resource cleanup, actor pool management, and distributed processing for large-scale image datasets.
+Configure Ray-based executors for distributed processing and resource management.
 +++
 {bdg-secondary}`ray` {bdg-secondary}`distributed` {bdg-secondary}`resource-management`
 
@@ -113,7 +153,7 @@ Choose the optimal execution backend for your image curation workload. Ray-based
 :link: image-load-data-webdataset
 :link-type: ref
 
-Maximize throughput with DALI GPU acceleration, optimal batch sizing, and efficient resource allocation. Learn how to configure pipelines for different hardware setups and dataset sizes.
+Optimize performance with DALI GPU acceleration and efficient resource allocation.
 +++
 {bdg-secondary}`dali` {bdg-secondary}`gpu-acceleration` {bdg-secondary}`performance`
 
@@ -123,6 +163,8 @@ Maximize throughput with DALI GPU acceleration, optimal batch sizing, and effici
 
 ### Save & Export
 
+Export your curated image datasets with metadata preservation, custom resharding options, and support for downstream training pipelines.
+
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2
 
@@ -130,7 +172,7 @@ Maximize throughput with DALI GPU acceleration, optimal batch sizing, and effici
 :link: image-save-export
 :link-type: ref
 
-Save metadata to Parquet, export filtered datasets, and reshard WebDatasets for downstream use. Learn how to efficiently store and prepare your curated image data for training or analysis.
+Save metadata to Parquet and export filtered datasets with custom resharding.
 +++
 {bdg-secondary}`parquet` {bdg-secondary}`webdataset` {bdg-secondary}`resharding`
 
