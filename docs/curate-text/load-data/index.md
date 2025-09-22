@@ -28,7 +28,6 @@ Data sources provide composite stages that combine these steps into complete dow
 
 ```python
 from nemo_curator.pipeline import Pipeline
-from nemo_curator.backends.xenna.executor import XennaExecutor
 from nemo_curator.stages.text.download import CommonCrawlDownloadExtractStage
 from nemo_curator.stages.io.writer import JsonlWriter
 

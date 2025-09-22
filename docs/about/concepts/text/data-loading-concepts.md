@@ -47,7 +47,6 @@ NeMo Curator uses a **pipeline-based architecture** for handling large-scale tex
 ```python
 # Pipeline-based data loading with reader stages
 from nemo_curator.pipeline import Pipeline
-from nemo_curator.backends.xenna.executor import XennaExecutor
 from nemo_curator.stages.text.io.reader import JsonlReader, ParquetReader
 
 # Create pipeline with JSONL reader
@@ -73,16 +72,14 @@ parquet_reader = ParquetReader(
 )
 
 # Execute pipeline
-executor = XennaExecutor()
-results = pipeline.run(executor)
+results = pipeline.run()
 
 # Access results as DocumentBatch tasks
 for task in results:
     df = task.to_pandas()  # Convert to pandas
     print(f"Processed {task.num_items} documents")
 
-executor = XennaExecutor()
-results = pipeline.run(executor)
+results = pipeline.run()
 ```
 
 :::

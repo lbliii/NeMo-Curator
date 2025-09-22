@@ -23,7 +23,6 @@ Use Curator's `JsonlReader` and `ParquetReader` to read existing datasets into a
 
 ```python
 from nemo_curator.pipeline import Pipeline
-from nemo_curator.backends.xenna.executor import XennaExecutor
 from nemo_curator.stages.text.io.reader import JsonlReader
 from nemo_curator.stages.text.modules import ScoreFilter
 from nemo_curator.stages.text.filters import WordCountFilter
@@ -47,8 +46,7 @@ word_filter = ScoreFilter(
 pipeline.add_stage(word_filter)
 
 # Execute pipeline
-executor = XennaExecutor()
-results = pipeline.run(executor)
+results = pipeline.run()
 ```
 
 :::
@@ -60,7 +58,6 @@ results = pipeline.run(executor)
 
 ```python
 from nemo_curator.pipeline import Pipeline
-from nemo_curator.backends.xenna.executor import XennaExecutor
 from nemo_curator.stages.text.io.reader import ParquetReader
 from nemo_curator.stages.text.modules import ScoreFilter
 from nemo_curator.stages.text.filters import WordCountFilter
@@ -88,8 +85,7 @@ word_filter = ScoreFilter(
 pipeline.add_stage(word_filter)
 
 # Execute pipeline
-executor = XennaExecutor()
-results = pipeline.run(executor)
+results = pipeline.run()
 ```
 
 :::

@@ -243,7 +243,6 @@ pipeline.add_stage(ScoreFilter(score_fn=RepeatingTopNGramsFilter(), text_field="
 :::{tab-item} Performance Tuning
 ```python
 # Optimize filter performance with proper configuration
-from nemo_curator.backends.xenna.executor import XennaExecutor
 
 # Configure executor for better performance
 executor_config = {
@@ -356,7 +355,6 @@ For large datasets, consider these performance optimizations:
 :::{tab-item} Memory Efficient Processing
 ```python
 # Process large datasets efficiently using pipeline streaming
-from nemo_curator.backends.xenna.executor import XennaExecutor
 
 # Configure for streaming processing
 executor_config = {
@@ -377,7 +375,6 @@ results = pipeline.run(executor)
 :::{tab-item} Distributed Processing
 ```python
 # Scale processing across multiple workers
-from nemo_curator.backends.xenna.executor import XennaExecutor
 
 # Configure for distributed processing
 executor_config = {

@@ -50,7 +50,6 @@ Here's how to create and run a Common Crawl processing pipeline:
 
 ```python
 from nemo_curator.pipeline import Pipeline
-from nemo_curator.backends.xenna.executor import XennaExecutor
 from nemo_curator.stages.text.download import CommonCrawlDownloadExtractStage
 from nemo_curator.stages.io.writer import JsonlWriter
 
@@ -269,8 +268,6 @@ cc_stage = CommonCrawlDownloadExtractStage(
 Curator supports several execution backends:
 
 ```python
-from nemo_curator.backends.xenna import XennaExecutor
-executor = XennaExecutor()
 
 # Experimental Ray Data executor (optional)
 from nemo_curator.backends.experimental.ray_data.executor import RayDataExecutor

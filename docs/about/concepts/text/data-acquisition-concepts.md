@@ -197,7 +197,6 @@ The data acquisition process seamlessly integrates with NeMo Curator's pipeline-
 
 ```python
 from nemo_curator.pipeline import Pipeline
-from nemo_curator.backends.xenna.executor import XennaExecutor
 from nemo_curator.stages.text.download.base import DocumentDownloadExtractStage
 
 # Define acquisition pipeline
@@ -214,8 +213,7 @@ download_extract_stage = DocumentDownloadExtractStage(
 pipeline.add_stage(download_extract_stage)
 
 # Execute acquisition pipeline
-executor = XennaExecutor()
-results = pipeline.run(executor)
+results = pipeline.run()
 
 # Results are DocumentBatch tasks ready for further processing
 print(f"Acquired {len(results)} document batches")

@@ -97,7 +97,6 @@ This is the most common starting workflow, used in 90% of production pipelines:
 
 ```python
 from nemo_curator.pipeline import Pipeline
-from nemo_curator.backends.xenna.executor import XennaExecutor
 from nemo_curator.stages.text.io.reader import JsonlReader
 from nemo_curator.stages.text.io.writer import JsonlWriter
 from nemo_curator.stages.text.modules import ScoreFilter
@@ -172,7 +171,6 @@ Basic text normalization:
 
 ```python
 from nemo_curator.pipeline import Pipeline
-from nemo_curator.backends.xenna.executor import XennaExecutor
 from nemo_curator.stages.text.io.reader import JsonlReader
 from nemo_curator.stages.text.io.writer import JsonlWriter
 from nemo_curator.stages.text.modules import Modify
@@ -285,7 +283,6 @@ Most users combine these steps into a comprehensive workflow:
 
 ```python
 from nemo_curator.pipeline import Pipeline
-from nemo_curator.backends.xenna.executor import XennaExecutor
 
 # Complete production pipeline (most common pattern)
 def build_production_pipeline():

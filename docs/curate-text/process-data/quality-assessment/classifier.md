@@ -109,7 +109,6 @@ You can prepare training data using Python scripts:
 ```python
 from nemo_curator.stages.text.io.reader import JsonlReader
 from nemo_curator.pipeline import Pipeline
-from nemo_curator.backends.xenna.executor import XennaExecutor
 import random
 
 # Sample from low-quality dataset (e.g., raw Common Crawl)
@@ -240,7 +239,6 @@ pipeline.add_stage(write_stage)
 results = pipeline.run()
 
 # Optional: Use a custom executor configuration
-from nemo_curator.backends.xenna.executor import XennaExecutor
 
 custom_executor = XennaExecutor(config={
     "execution_mode": "streaming",

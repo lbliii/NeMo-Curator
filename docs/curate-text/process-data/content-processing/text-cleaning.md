@@ -55,9 +55,8 @@ def main():
         ]
     )
 
-    # Execute pipeline with appropriate executor
-    from nemo_curator.backends.xenna import XennaExecutor
-    executor = XennaExecutor()
+    # Execute pipeline
+    results = pipeline.run()
     
 if __name__ == "__main__":
     main()

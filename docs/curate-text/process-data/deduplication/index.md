@@ -129,7 +129,6 @@ fuzzy_workflow.run()
 # Option 3: Semantic deduplication (requires GPU)
 # For text with embedding generation
 from nemo_curator.stages.text.deduplication.semantic import TextSemanticDeduplicationWorkflow
-from nemo_curator.backends.xenna import XennaExecutor
 
 text_sem_workflow = TextSemanticDeduplicationWorkflow(
     input_path="/path/to/input/data",
@@ -140,8 +139,8 @@ text_sem_workflow = TextSemanticDeduplicationWorkflow(
     n_clusters=100,
     perform_removal=False  # Set to True to remove duplicates, False to only identify
 )
-# Requires executor for all stages
-text_sem_workflow.run(XennaExecutor())
+# Uses XennaExecutor by default for all stages
+text_sem_workflow.run()
 
 # Alternative: For pre-computed embeddings
 from nemo_curator.stages.deduplication.semantic.workflow import SemanticDeduplicationWorkflow
@@ -154,7 +153,7 @@ sem_workflow = SemanticDeduplicationWorkflow(
     embedding_field="embeddings"
 )
 # Requires executor for pairwise stage
-sem_workflow.run(pairwise_executor=XennaExecutor())
+sem_workflow.run()  # Uses XennaExecutor by default
 ```
 
 ## Performance Considerations

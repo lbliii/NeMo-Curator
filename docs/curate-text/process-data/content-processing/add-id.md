@@ -240,7 +240,6 @@ add_id = AddId(id_field="doc_id", overwrite=True)
 ### Complete Pipeline Example
 
 ```python
-from nemo_curator.backends.xenna import XennaExecutor
 from nemo_curator.pipeline import Pipeline
 from nemo_curator.stages.text.io.reader import JsonlReader
 from nemo_curator.stages.text.modules import AddId
@@ -280,9 +279,8 @@ def create_id_pipeline(input_path: str, output_path: str) -> Pipeline:
     return pipeline
 
 # Execute pipeline
-executor = XennaExecutor()
 pipeline = create_id_pipeline("./input/*.jsonl", "./output/")
-result = executor.run(pipeline)
+result = pipeline.run()
 ```
 
 ### Batch Processing Example
