@@ -16,10 +16,7 @@ Filter audio samples by duration ranges, speech rate metrics, and temporal chara
 
 ### Why Duration Matters
 
-**Training Efficiency**: Optimal duration ranges improve ASR training:
-- **Too Short** (< 0.5s): Incomplete utterances, insufficient context
-- **Too Long** (> 60s): Multiple speakers, topic changes, memory constraints
-- **Optimal Range** (1-15s): Complete utterances, manageable memory usage
+**Training Efficiency**: Duration filtering can improve ASR training by removing samples that may be problematic for training
 
 **Processing Performance**: Duration affects computational requirements:
 - Memory usage scales with audio length
@@ -402,7 +399,6 @@ def visualize_duration_distribution(audio_data: list[dict], output_path: str = N
 from nemo_curator.stages.audio.common import PreserveByValueStage
 
 # Filter by word rate (assumes word_rate field exists in your data)
-# Normal speech: 1.5-5.0 words per second
 word_rate_min_filter = PreserveByValueStage(
     input_value_key="word_rate",
     target_value=1.5,
@@ -416,7 +412,6 @@ word_rate_max_filter = PreserveByValueStage(
 )
 
 # Filter by character rate (assumes char_rate field exists in your data)
-# Normal speech: 8-30 characters per second
 char_rate_min_filter = PreserveByValueStage(
     input_value_key="char_rate",
     target_value=8.0,
@@ -434,39 +429,6 @@ char_rate_max_filter = PreserveByValueStage(
 These examples assume you have pre-calculated speech rate metrics in your audio data. Use the `get_wordrate()` and `get_charrate()` utility functions to calculate these values in a custom processing stage.
 :::
 
-### Language-Specific Speech Rates
-
-```python
-# Speech rate norms by language
-language_speech_rates = {
-    "en": {"min_wps": 1.8, "max_wps": 4.5, "typical": (2.5, 3.5)},
-    "es": {"min_wps": 2.0, "max_wps": 5.0, "typical": (3.0, 4.0)},  # Spanish tends faster
-    "de": {"min_wps": 1.5, "max_wps": 4.0, "typical": (2.0, 3.0)},  # German compound words
-    "fr": {"min_wps": 2.0, "max_wps": 4.8, "typical": (2.8, 3.8)},
-    "zh": {"min_wps": 1.0, "max_wps": 3.5, "typical": (1.5, 2.5)}   # Character-based measurement
-}
-
-# Example: Apply language-specific filtering (assumes language and word_rate fields exist)
-from nemo_curator.stages.audio.common import PreserveByValueStage
-
-# For English audio samples
-en_word_rate_filter = PreserveByValueStage(
-    input_value_key="word_rate",
-    target_value=1.8,  # English minimum
-    operator="ge"
-)
-
-# For Spanish audio samples  
-es_word_rate_filter = PreserveByValueStage(
-    input_value_key="word_rate",
-    target_value=2.0,  # Spanish minimum
-    operator="ge"
-)
-```
-
-:::{note}
-This shows reference speech rate values for different languages. To implement language-aware filtering, you would need to create custom logic that selects appropriate thresholds based on your data language field.
-:::
 
 ## Combined Duration and Quality Filtering
 

@@ -68,11 +68,7 @@ flowchart LR
 
 Use audio characteristics to enhance text quality assessment:
 
-**Speech Rate Analysis**: Detect unnaturally fast or slow speech
-
-- Normal rate: 2-4 words per second
-- Unusually fast: > 6 words per second (potential quality issues)
-- Unusually slow: < 1 word per second (potential incomplete utterances)
+**Speech Rate Analysis**: Detect unnaturally fast or slow speech patterns using the `get_wordrate()` function
 
 **Duration-Text Consistency**: Ensure transcription length matches audio duration
 

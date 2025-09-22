@@ -100,7 +100,7 @@ class ConversationalQualityStage(CustomAudioQualityStage):
         if word_count > 0 and duration > 0:
             speech_rate = word_count / duration
             
-            # Optimal conversational rate: 2-4 words per second
+            # Example thresholds for speech rate scoring
             if 2.0 <= speech_rate <= 4.0:
                 continuity_score = 1.0
             elif 1.5 <= speech_rate < 2.0 or 4.0 < speech_rate <= 5.0:

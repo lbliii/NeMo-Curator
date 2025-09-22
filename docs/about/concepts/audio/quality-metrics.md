@@ -77,14 +77,8 @@ CER = (Character_Substitutions + Character_Deletions + Character_Insertions) / T
 - **Words per Second**: `word_count / duration`
 - **Characters per Second**: `character_count / duration`
 
-**Quality Indicators**:
-- **Optimal Speech Rate**: 2-4 words per second for most languages
-- **Duration Range**: 1-30 seconds optimal for ASR training
-- **Very Short Audio** (< 0.5s): Often incomplete utterances
-- **Very Long Audio** (> 60s): May contain multiple speakers or topics
-
 ```{note}
-These ranges are guidelines for dataset curation, not enforced defaults. To enforce thresholds in a pipeline, use `PreserveByValueStage`.
+To enforce duration thresholds in a pipeline, use `PreserveByValueStage`.
 ```
 
 ### Format and Technical Metrics
