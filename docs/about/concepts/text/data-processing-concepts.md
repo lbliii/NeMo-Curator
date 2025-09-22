@@ -118,7 +118,7 @@ pipeline.add_stage(reader)
 # Standard quality filtering pipeline (most common)
 # Remove too short/long documents (essential)
 word_count_filter = ScoreFilter(
-    score_fn=WordCountFilter(min_words=50, max_words=10000),
+    score_fn=WordCountFilter(min_words=50, max_words=100000),
     text_field="text",
     score_field="word_count"
 )
@@ -300,7 +300,7 @@ def build_production_pipeline():
     
     # 2. Quality filtering
     word_filter = ScoreFilter(
-        score_fn=WordCountFilter(min_words=50, max_words=10000),
+        score_fn=WordCountFilter(min_words=50, max_words=100000),
         text_field="text"
     )
     pipeline.add_stage(word_filter)

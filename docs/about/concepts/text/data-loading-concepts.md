@@ -9,6 +9,7 @@ modality: "text-only"
 ---
 
 (about-concepts-text-data-loading)=
+
 # Data Loading Concepts
 
 This guide covers the core concepts for loading and managing text data from local files in NVIDIA NeMo Curator.
@@ -78,16 +79,15 @@ results = pipeline.run()
 for task in results:
     df = task.to_pandas()  # Convert to pandas
     print(f"Processed {task.num_items} documents")
-
-results = pipeline.run()
 ```
 
 :::
 
 (data-loading-file-formats)=
+
 ## Supported File Formats
 
-NeMo Curator's pipeline architecture supports multiple file formats for loading text data from local files:
+NeMo Curator's pipeline architecture supports various file formats for loading text data from local files:
 
 ::::{tab-set}
 
@@ -153,38 +153,29 @@ reader = ParquetReader(
 
 :::
 
-:::{tab-item} Pickle
-:sync: pickle
-
-**Python serialization** - For preserving complex data structures.
-
-```python
-# Note: Pickle reading requires custom implementation
-# Use JsonlReader or ParquetReader for standard workflows
-from nemo_curator.stages.text.io.reader import JsonlReader
-
-# Convert pickle to JSONL first, then use JsonlReader
-reader = JsonlReader(file_paths="converted_data.jsonl")
-```
-
-{bdg-secondary}`python-native` {bdg-secondary}`object-preservation`
-
-:::
-
 :::{tab-item} Custom
 :sync: custom
 
 **Custom formats** - Extensible framework for specialized file readers.
 
 ```python
-# Custom file format via custom download/iteration stages
-# See custom data loading guide for full implementation
-from your_custom_module import CustomDataStage
+# Create custom reader by subclassing BaseReader
+from nemo_curator.stages.text.io.reader.base import BaseReader
+import pandas as pd
 
-custom_stage = CustomDataStage(
-    file_paths="custom_data.ext",
-    custom_params="configuration"
-)
+class CustomFormatReader(BaseReader):
+    def read_data(self, file_paths, read_kwargs, fields):
+        # Implement custom reading logic
+        # Must return pandas DataFrame
+        data = []
+        for path in file_paths:
+            # Your custom file reading logic here
+            file_data = your_custom_read_function(path)
+            data.append(file_data)
+        return pd.concat(data, ignore_index=True)
+
+# Use in pipeline
+reader = CustomFormatReader(file_paths="data.custom")
 ```
 
 {bdg-secondary}`extensible` {bdg-secondary}`specialized`
@@ -214,7 +205,7 @@ writer = JsonlWriter(path="output_directory/")
 pipeline.add_stage(writer)
 
 # Execute pipeline to write results
-results = pipeline.run(executor)
+results = pipeline.run()
 ```
 
 {bdg-secondary}`human-readable` {bdg-secondary}`debugging-friendly`
@@ -236,7 +227,7 @@ writer = ParquetWriter(path="output_directory/")
 pipeline.add_stage(writer)
 
 # Execute pipeline to write results
-results = pipeline.run(executor)
+results = pipeline.run()
 ```
 
 {bdg-secondary}`high-performance` {bdg-secondary}`production-ready`
@@ -252,19 +243,19 @@ results = pipeline.run(executor)
 :::{tab-item} Multiple Sources
 :sync: multiple-sources
 
-**Loading from multiple sources** - Combine data from different locations and formats.
+**Loading from various sources** - Combine data from different locations and formats.
 
 ```python
 from nemo_curator.stages.text.io.reader import JsonlReader, ParquetReader
 
-# Combine multiple directories in a single reader
+# Combine several directories in a single reader
 reader = JsonlReader(file_paths=[
     "dataset_v1/",
     "dataset_v2/",
     "additional_data/"
 ])
 
-# For mixed file types, use separate pipelines
+# For different file types, use separate pipelines
 # Pipeline 1: JSONL data
 jsonl_pipeline = Pipeline(name="jsonl_processing")
 jsonl_pipeline.add_stage(JsonlReader(file_paths="text_data.jsonl"))
@@ -273,7 +264,7 @@ jsonl_pipeline.add_stage(JsonlReader(file_paths="text_data.jsonl"))
 parquet_pipeline = Pipeline(name="parquet_processing")
 parquet_pipeline.add_stage(ParquetReader(file_paths="structured_data.parquet"))
 
-# Execute pipelines separately, then combine results if needed
+# Execute pipelines separately, then combine results as needed
 ```
 
 {bdg-secondary}`data-aggregation` {bdg-secondary}`multi-source`
@@ -336,10 +327,8 @@ pipeline.add_stage(reader)
 from nemo_curator.stages.text.modules import ScoreFilter
 pipeline.add_stage(ScoreFilter(...))
 
-# Execute with appropriate executor for scale
-from nemo_curator.backends.ray.executor import RayExecutor
-executor = RayExecutor()
-results = pipeline.run(executor)
+# Execute with default executor
+results = pipeline.run()
 ```
 
 {bdg-secondary}`scalable` {bdg-secondary}`memory-conscious`
@@ -357,4 +346,4 @@ For users who need to download and process data from remote sources, NeMo Curato
 - **Integration patterns** with DocumentDataset
 - **Configuration and scaling** strategies
 
-The data acquisition process produces `DocumentBatch` tasks that integrate seamlessly with the pipeline-based processing concepts covered on this page.
+The data acquisition process produces `DocumentBatch` tasks that integrate seamlessly with the pipeline-based processing concepts on this page.
