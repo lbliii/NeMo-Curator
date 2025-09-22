@@ -25,6 +25,35 @@ The distributed data classification in NeMo Curator works by:
 
 The `DistributedDataClassifier` is designed to run on GPU clusters with minimal code changes regardless of which specific classifier you're using. All classifiers support filtering based on classification results and storing prediction scores as metadata.
 
+## Hardware Requirements
+
+Distributed data classification requires GPU acceleration for optimal performance:
+
+### Minimum Requirements
+
+- **GPU Memory**: 8GB+ VRAM per GPU (varies by model)
+- **System Memory**: 32GB+ RAM recommended
+- **Storage**: Fast SSD storage for large datasets
+
+### Recommended Configuration
+
+- **Multi-GPU**: 2+ GPUs for improved throughput
+- **GPU Memory**: 16GB+ VRAM per GPU for larger models
+- **Network**: High-bandwidth interconnect for multi-node setups
+
+### Model-Specific Requirements
+
+| Classifier | GPU Memory | Notes |
+|------------|------------|-------|
+| QualityClassifier | 4GB+ | DeBERTa-based, moderate memory usage |
+| DomainClassifier | 4GB+ | DeBERTa-based, moderate memory usage |
+| AegisClassifier | 8GB+ | Llama Guard-based, higher memory usage |
+| FineWebEduClassifier | 6GB+ | Transformer-based, variable batch sizes |
+
+:::{note}
+All classifiers require `backend="cudf"` for GPU acceleration. CPU-only processing is not supported for distributed classification.
+:::
+
 ---
 
 ## Usage
@@ -79,15 +108,19 @@ result_dataset = classifier(dataset=input_dataset)
 
 ### Quality Classifier
 
-The Quality Classifier assesses document quality on a scale from Low to High.
+The Quality Classifier assesses document quality using the NVIDIA Quality Classifier DeBERTa model.
 
 ```python
 from nemo_curator.classifiers import QualityClassifier
 
 input_dataset = DocumentDataset.read_json("web_documents/*.jsonl", backend="cudf")
-quality_classifier = QualityClassifier(filter_by=["High", "Medium"])
+quality_classifier = QualityClassifier()
 result_dataset = quality_classifier(dataset=input_dataset)
 ```
+
+:::{note}
+The exact label categories returned by the Quality Classifier depend on the model configuration. Check the prediction column in your results to see the available labels for filtering with the `filter_by` parameter.
+:::
 
 ### AEGIS Safety Model
 
@@ -139,6 +172,16 @@ The output includes two columns: a float score `instruction_data_guard_poisoning
 
 Scores documents on educational value from 0–5. This helps prioritize content for knowledge-intensive tasks.
 
+#### Score Ranges and Meanings
+
+| Score | Label | Description | Example Content |
+|-------|-------|-------------|-----------------|
+| 0-1 | Very Low | No educational value | Spam, advertisements, broken content |
+| 2 | Low | Minimal educational content | Simple lists, basic product descriptions |
+| 3 | Moderate | Some educational value | News articles, basic how-to guides |
+| 4 | High | Good educational content | Detailed tutorials, academic discussions |
+| 5 | Very High | Excellent educational material | Comprehensive guides, scholarly articles |
+
 ```python
 from nemo_curator.classifiers import FineWebEduClassifier
 
@@ -162,6 +205,13 @@ Similar to the FineWeb Edu Classifier but trained with different annotation sour
 - **FineWebNemotronEduClassifier**: Uses annotations from Nemotron-4-340B-Instruct
 
 Both provide a quality label column marking scores above 2.5 as "high_quality":
+
+#### Quality Label Mapping
+
+| Score Range | Quality Label | Description |
+|-------------|---------------|-------------|
+| 0.0 - 2.5 | `low_quality` | Below average educational value |
+| 2.5 - 5.0 | `high_quality` | Above average educational value |
 
 ```python
 from nemo_curator.classifiers import FineWebMixtralEduClassifier  # or FineWebNemotronEduClassifier

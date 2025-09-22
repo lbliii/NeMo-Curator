@@ -102,7 +102,11 @@ Training fastText classifiers requires using CLI commands. The trained models ca
 
 ### 1. Prepare Training Data
 
-First, you need to prepare training data by sampling from high-quality and low-quality datasets using the CLI command:
+First, you need to prepare training data by sampling from high-quality and low-quality datasets using the CLI command.
+
+:::{note}
+The `prepare_fasttext_training_data` functionality is available as part of the NeMo Curator package. The exact command interface may vary depending on your installation method.
+:::
 
 ```bash
 # Sample from low-quality (e.g., raw Common Crawl) dataset
@@ -120,9 +124,22 @@ prepare_fasttext_training_data \
   --output-train-file=./hq_samples.txt
 ```
 
+#### Command Parameters
+
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `--input-data-dir` | Directory containing JSONL files to sample from | `/data/common_crawl/` |
+| `--output-num-samples` | Number of documents to sample | `10000` |
+| `--label` | FastText label prefix for the category | `__label__hq` or `__label__cc` |
+| `--output-train-file` | Output file for training samples | `./samples.txt` |
+
 ### 2. Train a Classifier
 
 Next, train a fastText classifier using the prepared samples:
+
+:::{note}
+The `train_fasttext` functionality is also available with NeMo Curator and handles model training and validation automatically. The exact command interface may vary depending on your installation method.
+:::
 
 ```bash
 train_fasttext \
@@ -132,6 +149,16 @@ train_fasttext \
   --output-model=./quality_classifier.bin \
   --output-predictions=./predictions.jsonl
 ```
+
+#### Training Parameters
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--fasttext-files-dir` | Directory containing sample files | Current directory |
+| `--output-train-file` | Combined training file output | `fasttext_samples.train` |
+| `--output-validation-file` | Validation split output | `fasttext_samples.valid` |
+| `--output-model` | Trained model file | `quality_classifier.bin` |
+| `--output-predictions` | Validation predictions | `predictions.jsonl` |
 
 The training script will output validation metrics including accuracy, precision, recall, F1 score, and confusion matrix.
 
