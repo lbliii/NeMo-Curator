@@ -84,9 +84,9 @@ for task in results:
 
 :::
 
-## ParallelDataset
+## Parallel Text Processing
 
-`ParallelDataset` extends `DocumentDataset` to handle parallel text data, particularly for machine translation and cross-lingual tasks.
+NeMo Curator supports parallel text data processing for machine translation and cross-lingual tasks through specialized pipeline stages.
 
 ```{list-table}
 :header-rows: 1
@@ -94,62 +94,62 @@ for task in results:
 * - Feature
   - Description
 * - Parallel Text Processing
-  - - Line-aligned file handling
-    - Language pair management
-    - Document ID tracking
-    - Format conversion
-    - Built-in length ratio filtering
+  - - Line-aligned file handling through custom reader stages
+    - Language pair management via metadata
+    - Document ID tracking through pipeline tasks
+    - Format conversion via processing stages
+    - Built-in length ratio filtering stages
 * - Quality Filters
-  - - Length ratio validation
-    - Language identification
-    - Parallel text scoring
-    - Custom bitext filters
+  - - Length ratio validation filters
+    - Language identification stages
+    - Parallel text scoring modules
+    - Custom bitext filter implementations
 * - Output Formats
-  - - Aligned text files
-    - JSONL/Parquet export
-    - Distributed writing support
-    - Language-specific file naming
+  - - Aligned text files via writer stages
+    - JSONL/Parquet export through standard writers
+    - Distributed writing support via pipeline execution
+    - Language-specific file naming through metadata
 ```
 
 :::{dropdown} Usage Examples
 :icon: code-square
 
 ```python
-# Loading parallel text files (single pair)
-from nemo_curator.datasets import ParallelDataset
+# Pipeline-based parallel text processing
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna.executor import XennaExecutor
+from nemo_curator.stages.text.io.reader import JsonlReader
+from nemo_curator.stages.text.modules import ScoreFilter
+from nemo_curator.stages.text.filters import LengthRatioFilter
 
-dataset = ParallelDataset.read_simple_bitext(
-    src_input_files="data.en",
-    tgt_input_files="data.de",
-    src_lang="en",
-    tgt_lang="de"
+# Create pipeline for parallel text processing
+pipeline = Pipeline(name="parallel_text_processing")
+
+# Read parallel text data
+reader = JsonlReader(
+    file_paths="parallel_data.jsonl",
+    fields=["src_text", "tgt_text", "src_lang", "tgt_lang"]
 )
+pipeline.add_stage(reader)
 
-# Multiple file pairs
-dataset = ParallelDataset.read_simple_bitext(
-    src_input_files=["train.en", "dev.en"],
-    tgt_input_files=["train.de", "dev.de"],
-    src_lang="en",
-    tgt_lang="de"
+# Apply length ratio filtering
+length_filter = ScoreFilter(
+    score_fn=LengthRatioFilter(max_ratio=3.0),
+    text_field="src_text",
+    score_field="length_ratio"
 )
+pipeline.add_stage(length_filter)
 
-# Apply length ratio filter
-from nemo_curator.filters import LengthRatioFilter
-length_filter = LengthRatioFilter(max_ratio=3.0)
-filtered_dataset = length_filter(dataset)
-
-# Export processed data
-dataset.to_bitext(
-    output_file_dir="processed_data/",
-    write_to_filename=True
-)
+# Execute pipeline
+executor = XennaExecutor()
+results = pipeline.run(executor)
 ```
 :::
 
 (data-loading-file-formats)=
 ## Supported File Formats
 
-DocumentDataset supports multiple file formats for loading text data from local files:
+NeMo Curator's pipeline architecture supports multiple file formats for loading text data from local files:
 
 ::::{tab-set}
 

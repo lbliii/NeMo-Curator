@@ -189,46 +189,63 @@ Extensible framework for implementing custom data loaders through abstract base 
 
 ::::
 
-## Integration with DocumentDataset
+## Integration with Pipeline Architecture
 
-The data acquisition process seamlessly integrates with NeMo Curator's core data structures:
+The data acquisition process seamlessly integrates with NeMo Curator's pipeline-based architecture:
 
 ### Acquisition Workflow
 
 ```python
-from nemo_curator.download import download_and_extract
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna.executor import XennaExecutor
+from nemo_curator.stages.text.download.base import DocumentDownloadExtractStage
 
-# Define acquisition components
-downloader = CustomDownloader(download_dir)
-iterator = CustomIterator()
-extractor = CustomExtractor()
+# Define acquisition pipeline
+pipeline = Pipeline(name="data_acquisition")
 
-# Acquire data and create DocumentDataset
-dataset = download_and_extract(
+# Create download and extract stage with custom components
+download_extract_stage = DocumentDownloadExtractStage(
     urls=data_urls,
     output_paths=output_paths,
-    downloader=downloader,
-    iterator=iterator,
-    extractor=extractor,
-    output_format={"text": str, "language": str, "url": str}
+    downloader=CustomDownloader(download_dir),
+    iterator=CustomIterator(),
+    extractor=CustomExtractor()
 )
+pipeline.add_stage(download_extract_stage)
 
-# Result is a standard DocumentDataset ready for processing
-print(f"Acquired {len(dataset)} documents")
+# Execute acquisition pipeline
+executor = XennaExecutor()
+results = pipeline.run(executor)
+
+# Results are DocumentBatch tasks ready for further processing
+print(f"Acquired {len(results)} document batches")
 ```
 
 ### Batch Processing
 
-For large-scale data acquisition, use the batch processing capabilities:
+For large-scale data acquisition, use pipeline stages with appropriate partitioning:
 
 ```python
-from nemo_curator.download import batch_download
+from nemo_curator.stages.file_partitioning import FilePartitioningStage
 
-# Download multiple sources in parallel
-downloaded_files = batch_download(urls, downloader)
+# Create pipeline with file partitioning for parallel processing
+pipeline = Pipeline(name="batch_acquisition")
 
-# Process downloaded files through iteration and extraction
-# ... (custom processing logic)
+# Add file partitioning stage for parallel downloads
+partitioning_stage = FilePartitioningStage(
+    file_paths=url_list,
+    files_per_partition=4,  # Process 4 URLs per batch
+    limit=None  # Process all URLs
+)
+pipeline.add_stage(partitioning_stage)
+
+# Add download and extract stage
+download_stage = DocumentDownloadExtractStage(
+    downloader=downloader,
+    iterator=iterator,
+    extractor=extractor
+)
+pipeline.add_stage(download_stage)
 ```
 
 ## Configuration and Customization
@@ -307,19 +324,28 @@ Data acquisition includes basic content-level deduplication during extraction (e
 ```
 
 ```python
-# Acquisition produces DocumentDataset
-acquired_dataset = download_and_extract(...)
+# Acquisition produces DocumentBatch tasks through pipeline
+acquisition_pipeline = Pipeline(name="data_acquisition")
+# ... add acquisition stages ...
+acquired_results = acquisition_pipeline.run(executor)
 
-# Save in standard format for loading
-acquired_dataset.to_parquet("acquired_data/")
+# Save results using writer stages
+from nemo_curator.stages.text.io.writer import ParquetWriter
+
+# Create pipeline for saving acquired data
+save_pipeline = Pipeline(name="save_acquired_data")
+writer = ParquetWriter(path="acquired_data/")
+save_pipeline.add_stage(writer)
+
+# Execute save pipeline with acquired results
+save_pipeline.run(executor, initial_tasks=acquired_results)
 
 # Later: Load using pipeline-based data loading
-from nemo_curator.pipeline import Pipeline
 from nemo_curator.stages.text.io.reader import ParquetReader
 
-pipeline = Pipeline(name="load_acquired_data")
+load_pipeline = Pipeline(name="load_acquired_data")
 reader = ParquetReader(file_paths="acquired_data/")
-pipeline.add_stage(reader)
+load_pipeline.add_stage(reader)
 ```
 
 This enables you to:

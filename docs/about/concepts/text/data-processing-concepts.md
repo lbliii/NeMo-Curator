@@ -68,21 +68,21 @@ NeMo Curator uses these fundamental building blocks that users combine into pipe
 * - Component
   - Purpose  
   - Usage Pattern
-* - **`DocumentDataset`**
-  - Load, process, and save text data
+* - **`Pipeline`**
+  - Orchestrate processing stages
   - Every workflow starts here
-* - **`get_client()`**
-  - Initialize distributed processing
-  - Required for all workflows
 * - **`ScoreFilter`**
   - Apply filters with optional scoring
   - Chain multiple quality filters
-* - **`Sequential`**
-  - Combine processing steps
-  - Build multi-stage pipelines  
 * - **`Modify`**
   - Transform document content
   - Clean and normalize text
+* - **Reader/Writer Stages**
+  - Load and save text data
+  - Input/output for pipelines
+* - **Processing Stages**
+  - Transform DocumentBatch tasks
+  - Core processing components
 ```
 
 ## Implementation Examples
@@ -92,56 +92,70 @@ NeMo Curator uses these fundamental building blocks that users combine into pipe
 This is the most common starting workflow, used in 90% of production pipelines:
 
 ```python
-import nemo_curator as nc
-from nemo_curator.datasets import DocumentDataset
-from nemo_curator.filters import (
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna.executor import XennaExecutor
+from nemo_curator.stages.text.io.reader import JsonlReader
+from nemo_curator.stages.text.io.writer import JsonlWriter
+from nemo_curator.stages.text.modules import ScoreFilter
+from nemo_curator.stages.text.filters import (
     WordCountFilter,
     NonAlphaNumericFilter,
     RepeatedLinesFilter,
     PunctuationFilter,
     BoilerPlateStringFilter
 )
-from nemo_curator.utils.distributed_utils import get_client
 
-# Initialize distributed processing (required for all workflows)
-client = get_client()  # Defaults to CPU cluster - use cluster_type="gpu" for acceleration
+# Create processing pipeline
+pipeline = Pipeline(name="quality_filtering")
 
 # Load dataset - the starting point for all workflows
-dataset = DocumentDataset.read_json("data/*.jsonl")
+reader = JsonlReader(file_paths="data/*.jsonl")
+pipeline.add_stage(reader)
 
 # Standard quality filtering pipeline (most common)
-quality_filters = nc.Sequential([
-    # Remove too short/long documents (essential)
-    nc.ScoreFilter(
-        WordCountFilter(min_words=50, max_words=10000),
-        text_field="text",
-        score_field="word_count"
-    ),
-    # Remove symbol-heavy content
-    nc.ScoreFilter(
-        NonAlphaNumericFilter(max_non_alpha_numeric_to_text_ratio=0.25),
-        text_field="text"
-    ),
-    # Remove repetitive content
-    nc.ScoreFilter(
-        RepeatedLinesFilter(max_repeated_line_fraction=0.7),
-        text_field="text"
-    ),
-    # Ensure proper sentence structure
-    nc.ScoreFilter(
-        PunctuationFilter(max_num_sentences_without_endmark_ratio=0.85),
-        text_field="text"
-    ),
-    # Remove template/boilerplate text
-    nc.ScoreFilter(
-        BoilerPlateStringFilter(),
-        text_field="text"
-    )
-])
+# Remove too short/long documents (essential)
+word_count_filter = ScoreFilter(
+    score_fn=WordCountFilter(min_words=50, max_words=10000),
+    text_field="text",
+    score_field="word_count"
+)
+pipeline.add_stage(word_count_filter)
 
-# Apply filtering
-filtered_dataset = quality_filters(dataset)
-filtered_dataset.to_json("filtered_data/")
+# Remove symbol-heavy content
+alpha_numeric_filter = ScoreFilter(
+    score_fn=NonAlphaNumericFilter(max_non_alpha_numeric_to_text_ratio=0.25),
+    text_field="text"
+)
+pipeline.add_stage(alpha_numeric_filter)
+
+# Remove repetitive content
+repeated_lines_filter = ScoreFilter(
+    score_fn=RepeatedLinesFilter(max_repeated_line_fraction=0.7),
+    text_field="text"
+)
+pipeline.add_stage(repeated_lines_filter)
+
+# Ensure proper sentence structure
+punctuation_filter = ScoreFilter(
+    score_fn=PunctuationFilter(max_num_sentences_without_endmark_ratio=0.85),
+    text_field="text"
+)
+pipeline.add_stage(punctuation_filter)
+
+# Remove template/boilerplate text
+boilerplate_filter = ScoreFilter(
+    score_fn=BoilerPlateStringFilter(),
+    text_field="text"
+)
+pipeline.add_stage(boilerplate_filter)
+
+# Add writer stage
+writer = JsonlWriter(path="filtered_data/")
+pipeline.add_stage(writer)
+
+# Execute pipeline
+executor = XennaExecutor()
+results = pipeline.run(executor)
 ```
 
 ### Content Cleaning Pipeline
@@ -149,25 +163,45 @@ filtered_dataset.to_json("filtered_data/")
 Basic text normalization:
 
 ```python
-from nemo_curator.stages.text.modifiers import UnicodeReformatter
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna.executor import XennaExecutor
+from nemo_curator.stages.text.io.reader import JsonlReader
+from nemo_curator.stages.text.io.writer import JsonlWriter
 from nemo_curator.stages.text.modules import Modify
-from nemo_curator.utils.distributed_utils import get_client
+from nemo_curator.stages.text.modifiers import UnicodeReformatter, PiiModifier
 
-# Initialize distributed processing
-client = get_client()  # Use cluster_type="gpu" for faster processing when available
+# Create cleaning pipeline
+pipeline = Pipeline(name="content_cleaning")
+
+# Read input data
+reader = JsonlReader(file_paths="input_data/*.jsonl")
+pipeline.add_stage(reader)
 
 # Essential cleaning steps
-cleaning_pipeline = nc.Sequential([
-    # Normalize unicode characters (very common)
-    nc.Modify(UnicodeReformatter()),
-    # Remove/redact PII (important for production)
-    nc.Modify(PiiModifier(
+# Normalize unicode characters (very common)
+unicode_modifier = Modify(
+    modifier=UnicodeReformatter(),
+    text_field="text"
+)
+pipeline.add_stage(unicode_modifier)
+
+# Remove/redact PII (important for production)
+pii_modifier = Modify(
+    modifier=PiiModifier(
         supported_entities=["PERSON", "EMAIL", "PHONE_NUMBER"],
         anonymize_action="replace"
-    ))
-])
+    ),
+    text_field="text"
+)
+pipeline.add_stage(pii_modifier)
 
-cleaned_dataset = cleaning_pipeline(dataset)
+# Write cleaned data
+writer = JsonlWriter(path="cleaned_data/")
+pipeline.add_stage(writer)
+
+# Execute pipeline
+executor = XennaExecutor()
+results = pipeline.run(executor)
 ```
 
 ### Large-Scale Fuzzy Deduplication
@@ -235,52 +269,80 @@ ray.shutdown()
 Most users combine these steps into a comprehensive workflow:
 
 ```python
-from nemo_curator.utils.distributed_utils import get_client
-
-# Initialize distributed processing
-client = get_client()  # Defaults to CPU - add cluster_type="gpu" for acceleration
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna.executor import XennaExecutor
 
 # Complete production pipeline (most common pattern)
 def build_production_pipeline():
-    return nc.Sequential([
-        # 1. Content cleaning first
-        nc.Modify(UnicodeReformatter()),
-        nc.Modify(PiiModifier(supported_entities=["PERSON"], anonymize_action="replace")),
-        
-        # 2. Quality filtering
-        nc.ScoreFilter(WordCountFilter(min_words=50, max_words=10000), text_field="text"),
-        nc.ScoreFilter(NonAlphaNumericFilter(max_non_alpha_numeric_to_text_ratio=0.25), text_field="text"),
-        nc.ScoreFilter(RepeatedLinesFilter(max_repeated_line_fraction=0.7), text_field="text"),
-        nc.ScoreFilter(BoilerPlateStringFilter(), text_field="text"),
-        
-        # 3. Deduplication (fuzzy or exact depending on scale)
-    ])
+    pipeline = Pipeline(name="production_processing")
+    
+    # 1. Content cleaning first
+    unicode_modifier = Modify(
+        modifier=UnicodeReformatter(),
+        text_field="text"
+    )
+    pipeline.add_stage(unicode_modifier)
+    
+    pii_modifier = Modify(
+        modifier=PiiModifier(supported_entities=["PERSON"], anonymize_action="replace"),
+        text_field="text"
+    )
+    pipeline.add_stage(pii_modifier)
+    
+    # 2. Quality filtering
+    word_filter = ScoreFilter(
+        score_fn=WordCountFilter(min_words=50, max_words=10000),
+        text_field="text"
+    )
+    pipeline.add_stage(word_filter)
+    
+    alpha_filter = ScoreFilter(
+        score_fn=NonAlphaNumericFilter(max_non_alpha_numeric_to_text_ratio=0.25),
+        text_field="text"
+    )
+    pipeline.add_stage(alpha_filter)
+    
+    repeated_filter = ScoreFilter(
+        score_fn=RepeatedLinesFilter(max_repeated_line_fraction=0.7),
+        text_field="text"
+    )
+    pipeline.add_stage(repeated_filter)
+    
+    boilerplate_filter = ScoreFilter(
+        score_fn=BoilerPlateStringFilter(),
+        text_field="text"
+    )
+    pipeline.add_stage(boilerplate_filter)
+    
+    return pipeline
 
 # Apply the complete pipeline
 complete_pipeline = build_production_pipeline()
-processed_dataset = complete_pipeline(dataset)
+executor = XennaExecutor()
+processed_results = complete_pipeline.run(executor)
 
 # Then apply deduplication separately for large datasets
-if len(dataset) > 1_000_000:  # Large dataset - use fuzzy deduplication
-    import ray
-    ray.init(num_gpus=4)
-    fuzzy_workflow = FuzzyDeduplicationWorkflow(
-        input_path="/path/to/processed/data",
-        cache_path="./cache",
-        output_path="./output",
-        text_field="text"
-    )
-    fuzzy_workflow.run()
-    ray.shutdown()
-else:  # Smaller dataset - use exact deduplication
-    exact_workflow = ExactDeduplicationWorkflow(
-        input_path="/path/to/processed/data",
-        output_path="./output",
-        text_field="text",
-        assign_id=True
-    )
-    exact_workflow.run()
-    ray.shutdown()
+# For large datasets - use fuzzy deduplication
+import ray
+ray.init(num_gpus=4)
+fuzzy_workflow = FuzzyDeduplicationWorkflow(
+    input_path="/path/to/processed/data",
+    cache_path="./cache",
+    output_path="./output",
+    text_field="text"
+)
+fuzzy_workflow.run()
+ray.shutdown()
+
+# For smaller datasets - use exact deduplication
+exact_workflow = ExactDeduplicationWorkflow(
+    input_path="/path/to/processed/data",
+    output_path="./output",
+    text_field="text",
+    assign_id=True
+)
+exact_workflow.run()
+ray.shutdown()
 ```
 
 ## Advanced Usage Patterns
@@ -290,20 +352,30 @@ else:  # Smaller dataset - use exact deduplication
 For faster processing when GPUs are available (some operations require GPU):
 
 ```python
-from nemo_curator.utils.distributed_utils import get_client
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.ray.executor import RayExecutor
+from nemo_curator.stages.text.io.reader import JsonlReader
 
-# Initialize GPU cluster for acceleration
-client = get_client(
-    cluster_type="gpu",
+# Create pipeline with GPU-accelerated executor
+pipeline = Pipeline(name="gpu_processing")
+
+# Read data with GPU backend support
+reader = JsonlReader(
+    file_paths="data/*.jsonl",
+    read_kwargs={"engine": "pyarrow", "dtype_backend": "pyarrow"}
+)
+pipeline.add_stage(reader)
+
+# Add processing stages (same as before)
+# ... add your processing stages ...
+
+# Execute with Ray GPU executor for acceleration
+executor = RayExecutor(
+    num_gpus=4,
     rmm_pool_size="4GB",
     enable_spilling=True
 )
-
-# Process dataset with GPU acceleration
-dataset = DocumentDataset.read_json("data/*.jsonl", backend="cudf")
-
-# Apply processing with GPU acceleration
-processed_dataset = complete_pipeline(dataset)
+processed_results = pipeline.run(executor)
 ```
 
 **GPU acceleration benefits**:
@@ -360,31 +432,82 @@ ray.shutdown()
 Common patterns for specialized content:
 
 ```python
-from nemo_curator.utils.distributed_utils import get_client
-
-# Initialize distributed processing
-client = get_client()  # Add cluster_type="gpu" for acceleration when available
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna.executor import XennaExecutor
 
 # Web crawl data processing (very common)
-web_pipeline = nc.Sequential([
-    nc.ScoreFilter(WordCountFilter(min_words=100)),          # Web pages are longer
-    nc.ScoreFilter(NonAlphaNumericFilter(max_ratio=0.3)),    # More lenient for web
-    nc.ScoreFilter(BoilerPlateStringFilter()),               # Remove navigation/footers
-    nc.ScoreFilter(UrlsFilter(max_url_ratio=0.2)),          # Limit URL-heavy content
-])
+def build_web_pipeline():
+    pipeline = Pipeline(name="web_processing")
+    
+    # Web pages are longer
+    word_filter = ScoreFilter(
+        score_fn=WordCountFilter(min_words=100),
+        text_field="text"
+    )
+    pipeline.add_stage(word_filter)
+    
+    # More lenient for web content
+    alpha_filter = ScoreFilter(
+        score_fn=NonAlphaNumericFilter(max_non_alpha_numeric_to_text_ratio=0.3),
+        text_field="text"
+    )
+    pipeline.add_stage(alpha_filter)
+    
+    # Remove navigation/footers
+    boilerplate_filter = ScoreFilter(
+        score_fn=BoilerPlateStringFilter(),
+        text_field="text"
+    )
+    pipeline.add_stage(boilerplate_filter)
+    
+    # Limit URL-heavy content
+    url_filter = ScoreFilter(
+        score_fn=UrlsFilter(max_url_to_text_ratio=0.2),
+        text_field="text"
+    )
+    pipeline.add_stage(url_filter)
+    
+    return pipeline
 
 # Code dataset processing
-code_pipeline = nc.Sequential([
-    nc.ScoreFilter(AlphaFilter(min_alpha_ratio=0.25)),       # Code has symbols
-    nc.ScoreFilter(TokenCountFilter(min_tokens=20)),         # Reasonable file sizes
-    nc.ScoreFilter(PythonCommentToCodeFilter()),             # Code quality metrics
-])
+def build_code_pipeline():
+    pipeline = Pipeline(name="code_processing")
+    
+    # Code has symbols
+    alpha_filter = ScoreFilter(
+        score_fn=AlphaFilter(min_alpha_ratio=0.25),
+        text_field="text"
+    )
+    pipeline.add_stage(alpha_filter)
+    
+    # Reasonable file sizes
+    token_filter = ScoreFilter(
+        score_fn=TokenCountFilter(min_tokens=20),
+        text_field="text"
+    )
+    pipeline.add_stage(token_filter)
+    
+    return pipeline
 
 # Academic/research content
-academic_pipeline = nc.Sequential([
-    nc.ScoreFilter(WordCountFilter(min_words=500)),          # Academic papers are longer
-    nc.ScoreFilter(FastTextQualityFilter(model="academic")), # Domain-specific quality
-])
+def build_academic_pipeline():
+    pipeline = Pipeline(name="academic_processing")
+    
+    # Academic papers are longer
+    word_filter = ScoreFilter(
+        score_fn=WordCountFilter(min_words=500),
+        text_field="text"
+    )
+    pipeline.add_stage(word_filter)
+    
+    # Domain-specific quality
+    quality_filter = ScoreFilter(
+        score_fn=FastTextQualityFilter(model="academic"),
+        text_field="text"
+    )
+    pipeline.add_stage(quality_filter)
+    
+    return pipeline
 ```
 
 ### Configuration-Driven Processing
@@ -392,21 +515,34 @@ academic_pipeline = nc.Sequential([
 For reproducible production pipelines:
 
 ```python
-from nemo_curator.utils.distributed_utils import get_client
-
-# Initialize distributed processing
-client = get_client()  # Add cluster_type="gpu" for acceleration when available
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna.executor import XennaExecutor
 
 # Most production users define pipelines in configuration
 def build_config_pipeline(config_file):
     """Build pipeline from YAML configuration"""
     # Load and parse configuration
-    filter_pipeline = build_filter(config_file)
-    return filter_pipeline
+    pipeline = Pipeline(name="config_driven")
+    
+    # Add reader stage
+    reader = JsonlReader(file_paths="input_data/*.jsonl")
+    pipeline.add_stage(reader)
+    
+    # Load and parse configuration to add filter stages
+    filter_stages = build_filter_stages_from_config(config_file)
+    for stage in filter_stages:
+        pipeline.add_stage(stage)
+    
+    # Add writer stage
+    writer = JsonlWriter(path="output_data/")
+    pipeline.add_stage(writer)
+    
+    return pipeline
 
 # Use configuration for consistent processing
 config_pipeline = build_config_pipeline("production_filters.yaml")
-processed_data = config_pipeline(dataset)
+executor = XennaExecutor()
+processed_results = config_pipeline.run(executor)
 ```
 
 ## Performance Best Practices
@@ -452,30 +588,53 @@ processed_data = config_pipeline(dataset)
 ### Production Optimization Guidelines
 
 ```python
-from nemo_curator.utils.distributed_utils import get_client
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna.executor import XennaExecutor
 
-# Initialize distributed processing (choose based on operations needed)
-client = get_client()  # CPU default - reliable for all basic operations
+# Create optimized production pipeline
+pipeline = Pipeline(name="optimized_production")
+
+# Add reader stage
+reader = JsonlReader(file_paths="data/*.jsonl")
+pipeline.add_stage(reader)
 
 # 1. Order operations by computational cost (most important optimization)
-production_pipeline = nc.Sequential([
-    # Cheapest operations first (filter out bad data early)
-    nc.ScoreFilter(WordCountFilter(min_words=10)),        # Very fast
-    nc.ScoreFilter(NonAlphaNumericFilter()),              # Fast
-    nc.ScoreFilter(RepeatedLinesFilter()),                # Medium cost
-    
-    # More expensive operations on remaining data
-    nc.ScoreFilter(FastTextQualityFilter()),              # Benefits from GPU acceleration
-    # Deduplication separate and last (most expensive)
-])
+# Cheapest operations first (filter out bad data early)
+word_filter = ScoreFilter(
+    score_fn=WordCountFilter(min_words=10),  # Very fast
+    text_field="text"
+)
+pipeline.add_stage(word_filter)
 
-# 2. Use appropriate backend for your operations
-dataset = DocumentDataset.read_json("data/*.jsonl")  # pandas backend (CPU)
-# For GPU operations, convert: dataset.df.to_backend("cudf")
+alpha_filter = ScoreFilter(
+    score_fn=NonAlphaNumericFilter(),  # Fast
+    text_field="text"
+)
+pipeline.add_stage(alpha_filter)
+
+repeated_filter = ScoreFilter(
+    score_fn=RepeatedLinesFilter(),  # Medium cost
+    text_field="text"
+)
+pipeline.add_stage(repeated_filter)
+
+# More expensive operations on remaining data
+quality_filter = ScoreFilter(
+    score_fn=FastTextQualityFilter(),  # Benefits from GPU acceleration
+    text_field="text"
+)
+pipeline.add_stage(quality_filter)
 
 # 3. Batch processing for memory efficiency
-processed = production_pipeline(dataset)
-processed.to_json("output/", files_per_partition=1)  # Control output partitioning
+writer = JsonlWriter(
+    path="output/",
+    write_kwargs={"files_per_partition": 1}  # Control output partitioning
+)
+pipeline.add_stage(writer)
+
+# Execute pipeline
+executor = XennaExecutor()
+processed_results = pipeline.run(executor)
 ```
 
 ### Advanced Client Configuration
@@ -484,21 +643,20 @@ For specialized use cases, configure the client with specific parameters:
 
 ```python
 # GPU acceleration for operations that support or require it
-client = get_client(
-    cluster_type="gpu",
+gpu_executor = RayExecutor(
+    num_gpus=4,
     rmm_pool_size="8GB",
     enable_spilling=True,
     set_torch_to_use_rmm=True
 )
 
 # Multi-node production cluster
-client = get_client(
+distributed_executor = RayExecutor(
     scheduler_address="tcp://scheduler-node:8786"
 )
 
 # Custom CPU cluster configuration
-client = get_client(
-    cluster_type="cpu",
+cpu_executor = XennaExecutor(
     n_workers=16,
     threads_per_worker=2,
     memory_limit="8GB"
