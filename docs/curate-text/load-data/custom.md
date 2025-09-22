@@ -197,7 +197,6 @@ class CustomDataStage(DocumentDownloadExtractStage):
 
 ```python
 from nemo_curator.pipeline import Pipeline
-from nemo_curator.backends.xenna import XennaExecutor
 from your_data_source.stage import CustomDataStage
 
 def main():
@@ -215,12 +214,9 @@ def main():
     )
     pipeline.add_stage(data_stage)
 
-    # Create executor
-    executor = XennaExecutor()
-
     # Run pipeline
     print("Starting pipeline...")
-    results = pipeline.run(executor)
+    results = pipeline.run()
 
     # Process results
     if results:

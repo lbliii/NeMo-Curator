@@ -109,8 +109,7 @@ writer = JsonlWriter(path="processed_output/")
 processing_pipeline.add_stage(writer)
 
 # Execute pipeline
-executor = XennaExecutor()
-results = processing_pipeline.run(executor)
+results = processing_pipeline.run()
 ```
 
 ## Common Processing Tasks

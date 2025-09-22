@@ -54,8 +54,7 @@ pipeline.add_stage(writer)
 
 # Build and execute pipeline
 pipeline.build()
-executor = XennaExecutor()
-results = pipeline.run(executor)
+results = pipeline.run()
 ```
 
 :::

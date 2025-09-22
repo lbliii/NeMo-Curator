@@ -160,8 +160,7 @@ pipeline.add_stage(
 )
 
 # Execute the pipeline
-executor = XennaExecutor()  # Uses Cosmos-Xenna for distributed processing
-results = pipeline.run(executor)
+results = pipeline.run()  # Uses XennaExecutor by default for distributed processing
 
 print(f"Pipeline completed successfully! Processed {len(results) if results else 0} tasks.")
 ```

@@ -292,7 +292,7 @@ pipeline.add_stage(write_stage)
 
 # Run with Ray Data executor
 executor = RayDataExecutor()
-results = pipeline.run(executor)
+results = pipeline.run()
 ```
 
 ### Ray Actor Pool Executor
@@ -307,7 +307,7 @@ executor = RayActorPoolExecutor(
         "reserved_gpus": 0.0,    # Reserved GPU resources
     }
 )
-results = pipeline.run(executor)
+results = pipeline.run()
 ```
 
 **Note**: Ray executors are particularly beneficial for large-scale classification tasks and are actively used in NVIDIA NeMo Curator's deduplication workflows.

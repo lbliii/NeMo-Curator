@@ -77,9 +77,8 @@ def main():
     writer = JsonlWriter(output_dir="./cc_output")
     pipeline.add_stage(writer)
 
-    # Create executor and run pipeline
-    executor = XennaExecutor()
-    results = pipeline.run(executor)
+    # Run pipeline
+    results = pipeline.run()
 
     print(f"Pipeline completed. Results: {len(results) if results else 0} output files")
 

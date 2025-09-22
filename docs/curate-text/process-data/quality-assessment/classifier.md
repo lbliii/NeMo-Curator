@@ -119,8 +119,7 @@ def sample_documents(input_path, output_path, num_samples, label):
     pipeline.add_stage(reader)
     
     # Execute pipeline to load data
-    executor = XennaExecutor()
-    results = pipeline.run(executor)
+    results = pipeline.run()
     
     # Sample and save with labels for fastText format
     with open(output_path, 'w') as f:

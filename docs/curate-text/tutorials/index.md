@@ -1,7 +1,7 @@
 ---
-description: "Hands-on tutorials for text curation workflows including bitext cleaning and quality assessment with NeMo Curator"
+description: "Hands-on tutorials for text curation workflows including quality assessment with NeMo Curator"
 categories: ["tutorials"]
-tags: ["tutorials", "text-curation", "bitext", "hands-on", "examples"]
+tags: ["tutorials", "text-curation", "hands-on", "examples"]
 personas: ["data-scientist-focused", "mle-focused"]
 difficulty: "beginner"
 content_type: "tutorial"

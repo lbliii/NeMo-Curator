@@ -24,12 +24,12 @@ Most users start with basic quality filtering using heuristic filters to remove 
 **Essential Quality Filters:**
 
 - `WordCountFilter` - Remove too short/long documents
-- `NonAlphaNumericFilter` - Remove symbol-heavy content  
+- `NonAlphaNumericFilter` - Remove symbol-heavy content
 - `RepeatedLinesFilter` - Remove repetitive content
 - `PunctuationFilter` - Ensure proper sentence structure
 - `BoilerPlateStringFilter` - Remove template/boilerplate text
 
-### 2. Fuzzy Deduplication 
+### 2. Fuzzy Deduplication
 
 For production datasets, fuzzy deduplication is essential to remove near-duplicate content across sources:
 
@@ -39,7 +39,7 @@ For production datasets, fuzzy deduplication is essential to remove near-duplica
 - Ray distributed computing framework for scalability
 - Connected components clustering for duplicate identification
 
-### 3. Content Cleaning 
+### 3. Content Cleaning
 
 Basic text normalization and cleaning operations:
 
@@ -50,11 +50,12 @@ Basic text normalization and cleaning operations:
 - `NewlineNormalizer` - Standardize line breaks
 - Basic HTML/markup removal
 
-### 4. Exact Deduplication 
+### 4. Exact Deduplication
 
 Remove identical documents, especially useful for smaller datasets:
 
 **Implementation:**
+
 - `ExactDuplicates` - Hash-based exact matching
 - MD5 or SHA-256 hashing for document identification
 
@@ -90,6 +91,9 @@ NeMo Curator uses these fundamental building blocks that users combine into pipe
 ### Complete Quality Filtering Pipeline
 
 This is the most common starting workflow, used in 90% of production pipelines:
+
+:::{dropdown} Quality Filtering Pipeline Code Example
+:icon: code-square
 
 ```python
 from nemo_curator.pipeline import Pipeline
@@ -154,13 +158,17 @@ writer = JsonlWriter(path="filtered_data/")
 pipeline.add_stage(writer)
 
 # Execute pipeline
-executor = XennaExecutor()
-results = pipeline.run(executor)
+results = pipeline.run()
 ```
+
+:::
 
 ### Content Cleaning Pipeline
 
 Basic text normalization:
+
+:::{dropdown} Content Cleaning Pipeline Code Example
+:icon: code-square
 
 ```python
 from nemo_curator.pipeline import Pipeline
@@ -200,13 +208,17 @@ writer = JsonlWriter(path="cleaned_data/")
 pipeline.add_stage(writer)
 
 # Execute pipeline
-executor = XennaExecutor()
-results = pipeline.run(executor)
+results = pipeline.run()
 ```
+
+:::
 
 ### Large-Scale Fuzzy Deduplication
 
 Critical for production datasets (requires Ray + GPU):
+
+:::{dropdown} Fuzzy Deduplication Code Example
+:icon: code-square
 
 ```python
 import ray
@@ -236,9 +248,14 @@ fuzzy_workflow.run()
 ray.shutdown()
 ```
 
+:::
+
 ### Exact Deduplication (All dataset sizes)
 
 Quick deduplication for any dataset size (requires Ray + GPU):
+
+:::{dropdown} Exact Deduplication Code Example
+:icon: code-square
 
 ```python
 import ray
@@ -264,9 +281,14 @@ exact_workflow.run()
 ray.shutdown()
 ```
 
+:::
+
 ### Complete End-to-End Pipeline
 
 Most users combine these steps into a comprehensive workflow:
+
+:::{dropdown} Complete End-to-End Pipeline Code Example
+:icon: code-square
 
 ```python
 from nemo_curator.pipeline import Pipeline
@@ -318,8 +340,7 @@ def build_production_pipeline():
 
 # Apply the complete pipeline
 complete_pipeline = build_production_pipeline()
-executor = XennaExecutor()
-processed_results = complete_pipeline.run(executor)
+processed_results = complete_pipeline.run()
 
 # Then apply deduplication separately for large datasets
 # For large datasets - use fuzzy deduplication
@@ -345,11 +366,16 @@ exact_workflow.run()
 ray.shutdown()
 ```
 
+:::
+
 ## Advanced Usage Patterns
 
 ### GPU-Accelerated Processing
 
 For faster processing when GPUs are available (some operations require GPU):
+
+:::{dropdown} GPU-Accelerated Processing Code Example
+:icon: code-square
 
 ```python
 from nemo_curator.pipeline import Pipeline
@@ -375,10 +401,13 @@ executor = RayExecutor(
     rmm_pool_size="4GB",
     enable_spilling=True
 )
-processed_results = pipeline.run(executor)
+processed_results = pipeline.run()
 ```
 
+:::
+
 **GPU acceleration benefits**:
+
 - **Required** for fuzzy deduplication operations
 - Faster processing for classification and embedding operations
 - More efficient memory usage with RMM for large datasets
@@ -387,6 +416,9 @@ processed_results = pipeline.run(executor)
 ### Multi-Node Distributed Processing
 
 For production-scale data processing across multiple machines:
+
+:::{dropdown} Multi-Node Distributed Processing Code Example
+:icon: code-square
 
 ```python
 import ray
@@ -427,9 +459,14 @@ text_sem_workflow.run(XennaExecutor())
 ray.shutdown()
 ```
 
+:::
+
 ### Domain-Specific Processing
 
 Common patterns for specialized content:
+
+:::{dropdown} Domain-Specific Processing Code Examples
+:icon: code-square
 
 ```python
 from nemo_curator.pipeline import Pipeline
@@ -510,9 +547,14 @@ def build_academic_pipeline():
     return pipeline
 ```
 
+:::
+
 ### Configuration-Driven Processing
 
 For reproducible production pipelines:
+
+:::{dropdown} Configuration-Driven Processing Code Example
+:icon: code-square
 
 ```python
 from nemo_curator.pipeline import Pipeline
@@ -541,9 +583,10 @@ def build_config_pipeline(config_file):
 
 # Use configuration for consistent processing
 config_pipeline = build_config_pipeline("production_filters.yaml")
-executor = XennaExecutor()
-processed_results = config_pipeline.run(executor)
+processed_results = config_pipeline.run()
 ```
+
+:::
 
 ## Performance Best Practices
 
@@ -586,6 +629,9 @@ processed_results = config_pipeline.run(executor)
 ```
 
 ### Production Optimization Guidelines
+
+:::{dropdown} Production Optimization Code Example
+:icon: code-square
 
 ```python
 from nemo_curator.pipeline import Pipeline
@@ -634,12 +680,17 @@ pipeline.add_stage(writer)
 
 # Execute pipeline
 executor = XennaExecutor()
-processed_results = pipeline.run(executor)
+processed_results = pipeline.run()
 ```
+
+:::
 
 ### Advanced Client Configuration
 
 For specialized use cases, configure the client with specific parameters:
+
+:::{dropdown} Advanced Client Configuration Code Example
+:icon: code-square
 
 ```python
 # GPU acceleration for operations that support or require it
@@ -662,6 +713,8 @@ cpu_executor = XennaExecutor(
     memory_limit="8GB"
 )
 ```
+
+:::
 
 ## Command Line Usage
 

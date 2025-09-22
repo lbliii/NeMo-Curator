@@ -42,7 +42,6 @@ Multiple filtering stages ensure data quality:
 - **Heuristic Quality Filtering**: Rule-based filters for basic quality checks
 - **Model-based Quality Filtering**: AI-powered content assessment
 - **PII Removal**: Privacy-preserving data cleaning
-- **Task Decontamination**: Remove potential test set contamination
 
 ### 4. Deduplication
 Remove duplicate and near-duplicate content:

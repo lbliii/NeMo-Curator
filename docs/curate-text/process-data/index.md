@@ -22,7 +22,7 @@ NeMo Curator's text processing capabilities are organized into five main categor
 2. **Deduplication**: Remove duplicate and near-duplicate documents efficiently
 3. **Content Processing & Cleaning**: Clean, normalize, and transform text content
 4. **Language Management**: Handle multilingual content and language-specific processing
-5. **Specialized Processing**: Domain-specific processing for code, bitext, and synthetic data
+5. **Specialized Processing**: Domain-specific processing for code and advanced curation tasks
 
 Each category provides specific implementations optimized for different curation needs. The result is a cleaned and filtered dataset ready for model training.
 
@@ -166,7 +166,7 @@ Manage high-frequency words to enhance text extraction and content detection
 
 ## Specialized Processing
 
-Domain-specific processing for code, bitext, synthetic data, and advanced curation tasks.
+Domain-specific processing for code and advanced curation tasks.
 
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2
@@ -179,36 +179,6 @@ Specialized filters for programming content and source code
 {bdg-secondary}`programming`
 {bdg-secondary}`syntax`
 {bdg-secondary}`comments`
-:::
-
-:::{grid-item-card} {octicon}`repo-forked;1.5em;sd-mr-1` Parallel Text (Bitext)
-:link: specialized-processing/bitext
-:link-type: doc
-Filter parallel text for translation quality and alignment
-+++
-{bdg-secondary}`translation`
-{bdg-secondary}`bilingual`
-{bdg-secondary}`quality-estimation`
-:::
-
-:::{grid-item-card} {octicon}`sync;1.5em;sd-mr-1` Synthetic Data Detection
-:link: specialized-processing/synthetic
-:link-type: doc
-Identify AI-generated or synthetic content in datasets
-+++
-{bdg-secondary}`ai-detection`
-{bdg-secondary}`synthetic`
-{bdg-secondary}`embeddings`
-:::
-
-:::{grid-item-card} {octicon}`shield-check;1.5em;sd-mr-1` Task Decontamination
-:link: specialized-processing/task-decontamination
-:link-type: doc
-Remove downstream task data from training datasets
-+++
-{bdg-secondary}`benchmarks`
-{bdg-secondary}`contamination`
-{bdg-secondary}`evaluation`
 :::
 
 ::::

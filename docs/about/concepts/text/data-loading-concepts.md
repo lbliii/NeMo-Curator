@@ -80,70 +80,11 @@ results = pipeline.run(executor)
 for task in results:
     df = task.to_pandas()  # Convert to pandas
     print(f"Processed {task.num_items} documents")
-```
 
-:::
-
-## Parallel Text Processing
-
-NeMo Curator supports parallel text data processing for machine translation and cross-lingual tasks through specialized pipeline stages.
-
-```{list-table}
-:header-rows: 1
-
-* - Feature
-  - Description
-* - Parallel Text Processing
-  - - Line-aligned file handling through custom reader stages
-    - Language pair management via metadata
-    - Document ID tracking through pipeline tasks
-    - Format conversion via processing stages
-    - Built-in length ratio filtering stages
-* - Quality Filters
-  - - Length ratio validation filters
-    - Language identification stages
-    - Parallel text scoring modules
-    - Custom bitext filter implementations
-* - Output Formats
-  - - Aligned text files via writer stages
-    - JSONL/Parquet export through standard writers
-    - Distributed writing support via pipeline execution
-    - Language-specific file naming through metadata
-```
-
-:::{dropdown} Usage Examples
-:icon: code-square
-
-```python
-# Pipeline-based parallel text processing
-from nemo_curator.pipeline import Pipeline
-from nemo_curator.backends.xenna.executor import XennaExecutor
-from nemo_curator.stages.text.io.reader import JsonlReader
-from nemo_curator.stages.text.modules import ScoreFilter
-from nemo_curator.stages.text.filters import LengthRatioFilter
-
-# Create pipeline for parallel text processing
-pipeline = Pipeline(name="parallel_text_processing")
-
-# Read parallel text data
-reader = JsonlReader(
-    file_paths="parallel_data.jsonl",
-    fields=["src_text", "tgt_text", "src_lang", "tgt_lang"]
-)
-pipeline.add_stage(reader)
-
-# Apply length ratio filtering
-length_filter = ScoreFilter(
-    score_fn=LengthRatioFilter(max_ratio=3.0),
-    text_field="src_text",
-    score_field="length_ratio"
-)
-pipeline.add_stage(length_filter)
-
-# Execute pipeline
 executor = XennaExecutor()
 results = pipeline.run(executor)
 ```
+
 :::
 
 (data-loading-file-formats)=

@@ -159,10 +159,9 @@ Handle multilingual content and language-specific processing
 :::{grid-item-card} {octicon}`tools;1.5em;sd-mr-1` Specialized Processing
 :link: process-data/specialized-processing/index
 :link-type: doc
-Domain-specific processing for code, bitext, and synthetic data
+Domain-specific processing for code and synthetic data
 +++
 {bdg-secondary}`code-processing`
-{bdg-secondary}`bitext`
 {bdg-secondary}`synthetic-data`
 :::
 
