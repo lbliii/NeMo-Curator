@@ -29,15 +29,6 @@ Get started with basic text data processing using NeMo Curator. Learn how to loa
 {bdg-secondary}`data-preparation`
 :::
 
-:::{grid-item-card} {octicon}`mortar-board;1.5em;sd-mr-1` Data Generation Series
-:link: text-tutorials-generate-data
-:link-type: ref
-Learn how to generate synthetic data using OpenAI API compatible services and your own deployed LLM.
-+++
-{bdg-secondary}`synthetic-data`
-{bdg-secondary}`openai-api`
-{bdg-secondary}`reward-models`
-:::
 
 :::{grid-item-card} {octicon}`git-merge;1.5em;sd-mr-1` Parallel Text Cleaning
 :link: text-tutorials-bitext
@@ -58,6 +49,5 @@ Learn how to clean and filter parallel text data using length ratio filtering, l
 
 
 Beginner Tutorial <beginner>
-Data Generation Tutorials <generate-data/index>
 Parallel Text Cleaning <bitext-cleaning>
 ``` -->

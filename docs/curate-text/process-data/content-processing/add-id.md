@@ -306,12 +306,3 @@ for input_path, prefix in datasets:
     
     executor.run(pipeline)
 ```
-
----
-
-## Related Topics
-
-- {ref}`text-process-data-deduplication-exact` - Exact duplicate removal requiring document IDs
-- {ref}`text-process-data-deduplication-semantic` - Semantic duplicate removal workflows
-- {ref}`text-process-data-quality-heuristic` - Quality filtering that benefits from document tracking
-- {ref}`about-concepts-text-document-batch` - Understanding DocumentBatch data structures
