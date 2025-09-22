@@ -13,7 +13,7 @@ modality: "text-only"
 
 Remove duplicate and near-duplicate documents efficiently from your text datasets using NeMo Curator's GPU-accelerated and semantic deduplication modules.
 
-Removing duplicates improves language model training by preventing overrepresentation of repeated content. NeMo Curator provides multiple approaches to deduplication, from exact hash-based matching to semantic similarity detection using embeddings.
+Removing duplicates improves language model training by preventing overrepresentation of repeated content. NeMo Curator provides multiple approaches to deduplication, from exact hash-based matching to semantic similarity detection using embeddings. These workflows are part of the comprehensive {ref}`data processing pipeline <about-concepts-text-data-processing>`.
 
 ## How It Works
 

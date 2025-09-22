@@ -1,7 +1,7 @@
 ---
-description: "Comprehensive text curation capabilities for preparing high-quality data for large language model training with loading, filtering, and synthetic data generation"
+description: "Comprehensive text curation capabilities for preparing high-quality data for large language model training with loading, filtering, and quality assessment"
 categories: ["workflows"]
-tags: ["text-curation", "data-loading", "synthetic-data", "filtering", "deduplication", "gpu-accelerated"]
+tags: ["text-curation", "data-loading", "filtering", "deduplication", "gpu-accelerated"]
 personas: ["data-scientist-focused", "mle-focused"]
 difficulty: "beginner"
 content_type: "workflow"
@@ -11,7 +11,7 @@ modality: "text-only"
 (text-overview)=
 # About Text Curation
 
-NeMo Curator provides comprehensive text curation capabilities to prepare high-quality data for large language model (LLM) training. The toolkit includes a collection of processors for loading, filtering, formatting, and analyzing text data from various sources.
+NeMo Curator provides comprehensive text curation capabilities to prepare high-quality data for large language model (LLM) training. The toolkit includes a collection of processors for loading, filtering, formatting, and analyzing text data from various sources using a {ref}`pipeline-based architecture <about-concepts-text-data-curation-pipeline>`.
 
 ## Use Cases
 
@@ -39,7 +39,7 @@ Master the fundamentals of NeMo Curator and set up your text processing environm
 :::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Concepts
 :link: about-concepts-text
 :link-type: ref
-Learn about DocumentDataset and other core data structures for efficient text curation
+Learn about pipeline architecture and core processing stages for efficient text curation
 +++
 {bdg-secondary}`data-structures`
 {bdg-secondary}`distributed`

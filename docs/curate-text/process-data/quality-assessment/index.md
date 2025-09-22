@@ -17,7 +17,7 @@ Large datasets often contain many documents considered to be "low quality." In t
 
 ## How It Works
 
-NeMo Curator's filtering framework is built around several key components:
+NeMo Curator's filtering framework is built around several key components that work within the {ref}`data processing architecture <about-concepts-text-data-processing>`:
 
 ::::{tab-set}
 
@@ -26,27 +26,38 @@ NeMo Curator's filtering framework is built around several key components:
 The `ScoreFilter` is at the center of filtering in NeMo Curator. It applies a filter to a document and optionally saves the score as metadata:
 
 ```python
-import nemo_curator as nc
-from nemo_curator.datasets import DocumentDataset
-from nemo_curator.utils.file_utils import get_all_files_paths_under
-from nemo_curator.filters import WordCountFilter
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends.xenna.executor import XennaExecutor
+from nemo_curator.stages.text.io.reader import JsonlReader
+from nemo_curator.stages.text.io.writer import JsonlWriter
+from nemo_curator.stages.text.modules import ScoreFilter
+from nemo_curator.stages.text.filters import WordCountFilter
+
+# Create pipeline
+pipeline = Pipeline(name="quality_filtering")
 
 # Load dataset
-files = get_all_files_paths_under("books_dataset/", keep_extensions="jsonl")
-books = DocumentDataset.read_json(files, add_filename=True)
+reader = JsonlReader(
+    file_paths="books_dataset/*.jsonl",
+    fields=["text", "id"]
+)
+pipeline.add_stage(reader)
 
 # Create and apply filter
-filter_step = nc.ScoreFilter(
-    WordCountFilter(min_words=80),
+filter_stage = ScoreFilter(
+    score_fn=WordCountFilter(min_words=80),
     text_field="text",
     score_field="word_count",
 )
-
-# Get filtered dataset
-long_books = filter_step(books)
+pipeline.add_stage(filter_stage)
 
 # Save filtered dataset
-long_books.to_json("long_books/", write_to_filename=True)
+writer = JsonlWriter(path="long_books/")
+pipeline.add_stage(writer)
+
+# Execute pipeline
+executor = XennaExecutor()
+results = pipeline.run(executor)
 ```
 
 The filter object implements two key methods:

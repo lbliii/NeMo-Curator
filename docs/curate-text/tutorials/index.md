@@ -1,7 +1,7 @@
 ---
-description: "Hands-on tutorials for text curation workflows including bitext cleaning and synthetic data generation with NeMo Curator"
+description: "Hands-on tutorials for text curation workflows including bitext cleaning and quality assessment with NeMo Curator"
 categories: ["tutorials"]
-tags: ["tutorials", "text-curation", "bitext", "synthetic-data", "hands-on", "examples"]
+tags: ["tutorials", "text-curation", "bitext", "hands-on", "examples"]
 personas: ["data-scientist-focused", "mle-focused"]
 difficulty: "beginner"
 content_type: "tutorial"
@@ -20,10 +20,10 @@ Before diving into the tutorials, familiarize yourself with these essential NeMo
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2
 
-:::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` DocumentDataset
+:::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Pipeline Architecture
 :link: about-concepts-text
 :link-type: ref
-Core data structure for text curation workflows
+Core processing stages and pipeline concepts for text curation workflows
 +++
 {bdg-secondary}`data-structures`
 {bdg-secondary}`distributed`

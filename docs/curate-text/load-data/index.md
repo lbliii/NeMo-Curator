@@ -18,14 +18,14 @@ Curator provides a task-centric pipeline for downloading and processing large-sc
 
 ## How it Works
 
-Curator pipelines use a **4-step pattern** where data flows through stages as tasks:
+Curator pipelines use a **4-step pattern** where data flows through stages as tasks (see {ref}`Data Acquisition Concepts <about-concepts-text-data-acquisition>` for detailed architecture):
 
 1. **URL Generation**: Generate URLs from configuration (`URLGenerationStage`)
 2. **Download**: Retrieve files from URLs to local storage (`DocumentDownloadStage`)
 3. **Iteration**: Parse downloaded files to extract raw records (`DocumentIterateStage`)
 4. **Extraction**: Extract and clean structured content from raw records (`DocumentExtractStage`)
 
-Each step uses a `ProcessingStage` that transforms tasks. The pipeline flow is:
+Each step uses a `ProcessingStage` that transforms tasks. The {ref}`pipeline-based architecture <about-concepts-text-data-loading>` flow is:
 
 ```text
 Start → FileGroupTask(URLs) → FileGroupTask(Files) → DocumentBatch → DocumentBatch

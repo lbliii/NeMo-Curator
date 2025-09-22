@@ -1,7 +1,7 @@
 ---
-description: "Domain-specific processing for code, bitext, synthetic data, and advanced curation tasks with specialized modules"
+description: "Domain-specific processing for code, bitext, and advanced curation tasks with specialized modules"
 categories: ["workflows"]
-tags: ["specialized-processing", "code", "bitext", "synthetic-data", "task-decontamination", "advanced"]
+tags: ["specialized-processing", "code", "bitext", "task-decontamination", "advanced"]
 personas: ["data-scientist-focused", "mle-focused"]
 difficulty: "advanced"
 content_type: "workflow"
@@ -11,9 +11,9 @@ modality: "text-only"
 (text-process-data-specialized)=
 # Specialized Processing
 
-Domain-specific processing for code, bitext, synthetic data, and advanced curation tasks using NeMo Curator's specialized modules.
+Domain-specific processing for code, bitext, and advanced curation tasks using NeMo Curator's specialized modules.
 
-This section covers advanced processing techniques for specific data types and use cases that require specialized handling beyond general text processing. These tools are designed for specific domains like programming content, parallel text, AI-generated content, and benchmark contamination.
+This section covers advanced processing techniques for specific data types and use cases that require specialized handling beyond general text processing. These tools are designed for specific domains like programming content, parallel text, and benchmark contamination.
 
 ## How it Works
 
@@ -24,7 +24,7 @@ Specialized processing modules in NeMo Curator are designed for specific data ty
 - **Synthetic Data Detection**: Identifies AI-generated or synthetic content
 - **Task Decontamination**: Removes benchmark data from training sets
 
-Each specialized processor understands the unique characteristics of its target domain and applies appropriate metrics and thresholds.
+Each specialized processor understands the unique characteristics of its target domain and applies appropriate metrics and thresholds within the broader {ref}`data processing framework <about-concepts-text-data-processing>`.
 
 ---
 

@@ -73,35 +73,44 @@ Here's an example of a typical content processing pipeline:
 
 ```python
 from nemo_curator.pipeline import Pipeline
-from nemo_curator.datasets import DocumentDataset
+from nemo_curator.backends.xenna.executor import XennaExecutor
+from nemo_curator.stages.text.io.reader import JsonlReader
+from nemo_curator.stages.text.io.writer import JsonlWriter
 from nemo_curator.stages.text.modifiers import UnicodeReformatter, UrlRemover, NewlineNormalizer
 from nemo_curator.stages.text.modules import Modify
-# Load your dataset
-dataset = DocumentDataset.read_json("input_data/*.jsonl")
 
 # Create a comprehensive cleaning pipeline
 processing_pipeline = Pipeline(
     name="content_processing_pipeline",
-    description="Comprehensive text cleaning and processing",
-    stages=[
-        # Fix Unicode encoding issues
-        Modify(UnicodeReformatter()),
-        
-        # Standardize newlines
-        Modify(NewlineNormalizer()),
-        
-        # Remove URLs
-        Modify(UrlRemover()),
-
-    ]
+    description="Comprehensive text cleaning and processing"
 )
 
-# Execute pipeline with appropriate executor
-from nemo_curator.backends.xenna import XennaExecutor
-executor = XennaExecutor()
+# Load dataset
+reader = JsonlReader(file_paths="input_data/*.jsonl")
+processing_pipeline.add_stage(reader)
+
+# Fix Unicode encoding issues
+processing_pipeline.add_stage(
+    Modify(modifier=UnicodeReformatter(), text_field="text")
+)
+
+# Standardize newlines
+processing_pipeline.add_stage(
+    Modify(modifier=NewlineNormalizer(), text_field="text")
+)
+
+# Remove URLs
+processing_pipeline.add_stage(
+    Modify(modifier=UrlRemover(), text_field="text")
+)
 
 # Save the processed dataset
-cleaned_dataset.to_json("processed_output/", write_to_filename=True)
+writer = JsonlWriter(path="processed_output/")
+processing_pipeline.add_stage(writer)
+
+# Execute pipeline
+executor = XennaExecutor()
+results = processing_pipeline.run(executor)
 ```
 
 ## Common Processing Tasks

@@ -95,13 +95,6 @@ Components for downloading and extracting data from remote sources
 Concepts for filtering, deduplication, and classification
 :::
 
-:::{grid-item-card} {octicon}`beaker;1.5em;sd-mr-1` Data Generation
-:link: about-concepts-text-data-gen
-:link-type: ref
-
-Concepts for generating high-quality synthetic text
-:::
-
 ::::
 
 ## Processing Modes

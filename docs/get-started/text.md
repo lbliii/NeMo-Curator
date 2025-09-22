@@ -140,7 +140,7 @@ pipeline.add_stage(
 # Add quality filtering stages
 pipeline.add_stage(
     ScoreFilter(
-        filter_obj=WordCountFilter(min_words=50, max_words=100000),
+        score_fn=WordCountFilter(min_words=50, max_words=100000),
         text_field="text",
         score_field="word_count"  # Optional: save scores for analysis
     )
@@ -148,7 +148,7 @@ pipeline.add_stage(
 
 pipeline.add_stage(
     ScoreFilter(
-        filter_obj=NonAlphaNumericFilter(max_non_alpha_numeric_to_text_ratio=0.25),
+        score_fn=NonAlphaNumericFilter(max_non_alpha_numeric_to_text_ratio=0.25),
         text_field="text",
         score_field="non_alpha_score"  # Optional: save scores for analysis
     )
