@@ -57,31 +57,47 @@ pipeline.add_stage(
 
 For more details on using `AddId`, refer to the {ref}`text-process-data-add-id` documentation.
 
-## SemDedup Interface
+## TextSemanticDeduplicationWorkflow Interface
 
-The `SemDedup` class provides a flexible interface similar to other deduplication modules in NeMo Curator:
+The `TextSemanticDeduplicationWorkflow` class provides a comprehensive end-to-end interface for semantic deduplication in NeMo Curator:
 
-### Constructor Parameters
-- `config`: SemDedupConfig object containing embedding and clustering settings
-- `input_column`: Column name containing text data (default: "text")
-- `id_column`: Column name containing document IDs (default: "id")
-- `perform_removal`: Boolean flag controlling return behavior (default: False)
-- `logger`: Logger instance or path to log directory
+### Key Parameters
+- `input_path`: Path(s) to input files containing text data
+- `output_path`: Directory to write deduplicated output
+- `cache_path`: Directory to cache intermediate results (embeddings, kmeans, pairwise, etc.)
+- `perform_removal`: Whether to perform duplicate removal (True) or just identify duplicates (False)
+- `text_field`: Name of the text field in input data (default: "text")
+- `id_field`: Name of the ID field in the data
+- `model_identifier`: HuggingFace model identifier for embeddings
+- `n_clusters`: Number of clusters for K-means
+- `eps`: Epsilon value for duplicate identification
 
 ### Usage Modes
 
 **Mode 1: Two-step process (`perform_removal=False`)**
 ```python
-# Step 1: Identify duplicates
-duplicates = sem_dedup(dataset)
-# Step 2: Remove duplicates manually
-deduplicated_dataset = sem_dedup.remove(dataset, duplicates)
+# Step 1: Identify duplicates only
+workflow = TextSemanticDeduplicationWorkflow(
+    input_path="input_data/",
+    output_path="results/",
+    perform_removal=False,  # Only identify duplicates
+    eps=0.01
+)
+results = workflow.run(executor)
+# Duplicates are saved to output_path/duplicates/
 ```
 
 **Mode 2: One-step process (`perform_removal=True`)**
 ```python
 # Returns deduplicated dataset directly
-deduplicated_dataset = sem_dedup(dataset)
+workflow = TextSemanticDeduplicationWorkflow(
+    input_path="input_data/",
+    output_path="results/",
+    perform_removal=True,  # Complete deduplication
+    eps=0.01
+)
+results = workflow.run(executor)
+# Clean dataset saved to output_path/deduplicated/
 ```
 
 ---
@@ -90,80 +106,91 @@ deduplicated_dataset = sem_dedup(dataset)
 
 ```python
 from nemo_curator.stages.text.deduplication.semantic import TextSemanticDeduplicationWorkflow
-from nemo_curator.datasets import DocumentDataset
-
-# Load your dataset (requires cudf backend for GPU acceleration)
-dataset = DocumentDataset.read_json("input_data/*.jsonl", backend="cudf")
-
-# Configure semantic deduplication
-config = SemDedupConfig(
-    cache_dir="./sem_cache",
-    embedding_model_name_or_path="sentence-transformers/all-MiniLM-L6-v2",
-    n_clusters=10000,
-    eps_to_extract=0.07  # Similarity threshold
-)
+from nemo_curator.backends import RayDataExecutor
 
 # Option 1: Two-step process (more control)
-sem_dedup = SemDedup(
-    config=config,
-    id_column="doc_id",
-    perform_removal=False  # Returns duplicate IDs
+workflow = TextSemanticDeduplicationWorkflow(
+    input_path="input_data/*.jsonl",
+    output_path="./results",
+    cache_path="./sem_cache",
+    model_identifier="sentence-transformers/all-MiniLM-L6-v2",
+    n_clusters=100,
+    eps=0.07,  # Similarity threshold
+    id_field="doc_id",
+    perform_removal=False  # Only identify duplicates
 )
-duplicates = sem_dedup(dataset)
-deduplicated_dataset = sem_dedup.remove(dataset, duplicates)
+
+# Run workflow
+executor = RayDataExecutor()
+results = workflow.run(executor)
+# Duplicate IDs saved to ./results/duplicates/
 
 # Option 2: One-step process (simpler)
-sem_dedup_simple = SemDedup(
-    config=config,
-    id_column="doc_id", 
-    perform_removal=True  # Returns deduplicated dataset directly
+workflow_simple = TextSemanticDeduplicationWorkflow(
+    input_path="input_data/*.jsonl",
+    output_path="./results", 
+    cache_path="./sem_cache",
+    model_identifier="sentence-transformers/all-MiniLM-L6-v2",
+    n_clusters=100,
+    eps=0.07,
+    id_field="doc_id",
+    perform_removal=True  # Complete deduplication
 )
-deduplicated_dataset = sem_dedup_simple(dataset)
+
+results = workflow_simple.run(executor)
+# Clean dataset saved to ./results/deduplicated/
 ```
 
 ---
 
 ## Configuration
 
-Semantic deduplication in NeMo Curator can be configured using a YAML file. Here's an example `sem_dedup_config.yaml`:
+Semantic deduplication in NeMo Curator is configured through the `TextSemanticDeduplicationWorkflow` dataclass parameters. Here's how to configure the workflow:
 
-```yaml
-# Configuration file for semantic dedup
-cache_dir: "semdedup_cache"
-num_files: -1
-profile_dir: null  # Optional directory for Dask profiling
+```python
+from nemo_curator.stages.text.deduplication.semantic import TextSemanticDeduplicationWorkflow
 
-# Embeddings configuration
-embedding_model_name_or_path: "sentence-transformers/all-MiniLM-L6-v2"
-embedding_batch_size: 128
-embeddings_save_loc: "embeddings"
-embedding_max_mem_gb: null  # Auto-detected: GPU memory - 4GB
-embedding_pooling_strategy: "mean_pooling"
-embedding_column: "embeddings"
-write_embeddings_to_disk: true
-write_to_filename: false
-
-# Clustering configuration
-max_iter: 100
-n_clusters: 1000
-clustering_save_loc: "clustering_results"
-random_state: 1234
-sim_metric: "cosine"
-which_to_keep: "hard"
-batched_cosine_similarity: 1024
-sort_clusters: true
-kmeans_with_cos_dist: false
-clustering_input_partition_size: "2gb"
-
-# Extract dedup configuration
-eps_thresholds: [0.01, 0.001]  # List of thresholds to compute
-eps_to_extract: 0.01
+# Configure workflow with parameters
+workflow = TextSemanticDeduplicationWorkflow(
+    # Input/Output configuration
+    input_path="input_data/",
+    output_path="results/",
+    cache_path="semdedup_cache",  # Directory for intermediate files
+    perform_removal=True,
+    
+    # Embedding generation parameters
+    text_field="text",
+    embedding_field="embeddings",
+    model_identifier="sentence-transformers/all-MiniLM-L6-v2",
+    embedding_max_seq_length=512,
+    embedding_pooling="mean_pooling",
+    embedding_model_inference_batch_size=256,
+    
+    # Semantic deduplication parameters
+    n_clusters=100,  # Number of clusters for K-means
+    id_field="id",
+    distance_metric="cosine",
+    which_to_keep="hard",
+    eps=0.01,  # Similarity threshold
+    
+    # K-means clustering parameters
+    kmeans_max_iter=300,
+    kmeans_tol=1e-4,
+    kmeans_random_state=42,
+    kmeans_init="k-means||",
+    pairwise_batch_size=1024,
+    
+    # I/O parameters
+    input_filetype="jsonl",
+    output_filetype="parquet",
+    verbose=True
+)
 ```
 
-You can customize this configuration file to suit your specific needs and dataset characteristics.
+You can customize these parameters to suit your specific needs and dataset characteristics.
 
 :::{note}
-**Configuration Parameters**: The above configuration shows the most commonly used parameters. For advanced use cases, additional parameters like `profile_dir` (for Dask profiling), `embedding_max_mem_gb` (to control GPU memory usage), and clustering optimization parameters are available. See the complete parameter table below for all options.
+**Configuration Parameters**: The above configuration shows the most commonly used parameters. For advanced use cases, additional parameters like `embedding_max_chars` (to control text truncation), `kmeans_oversampling_factor` (for K-means optimization), and I/O parameters are available. See the complete parameter table below for all options.
 :::
 
 ### Embedding Models
@@ -176,15 +203,21 @@ You can choose alternative pre-trained models for embedding generation by modify
 
 Sentence transformers are ideal for text-based semantic similarity tasks. 
 
-```yaml
-embedding_model_name_or_path: "sentence-transformers/all-MiniLM-L6-v2"
+```python
+workflow = TextSemanticDeduplicationWorkflow(
+    model_identifier="sentence-transformers/all-MiniLM-L6-v2",
+    # ... other parameters
+)
 ```
 :::
 
-:::{tab-item} Model
+:::{tab-item} HuggingFace Model
 
-```yaml
-embedding_model_name_or_path: "facebook/opt-125m"
+```python
+workflow = TextSemanticDeduplicationWorkflow(
+    model_identifier="facebook/opt-125m",
+    # ... other parameters
+)
 ```
 
 You can also use your own pre-trained custom models by specifying the path.
@@ -194,18 +227,21 @@ You can also use your own pre-trained custom models by specifying the path.
 When changing the model, ensure that:
 
 1. The model is compatible with the data type you're working with
-2. You adjust the `embedding_batch_size` parameter for your model's memory requirements
+2. You adjust the `embedding_model_inference_batch_size` parameter for your model's memory requirements
 3. The chosen model is appropriate for the language or domain of your dataset
 
 ### Deduplication Threshold
 
 The semantic deduplication process is controlled by the similarity threshold parameter:
 
-```yaml
-eps_to_extract: 0.01
+```python
+workflow = TextSemanticDeduplicationWorkflow(
+    # ... other parameters
+    eps=0.01  # Similarity threshold
+)
 ```
 
-`eps_to_extract`: The similarity threshold used for extracting deduplicated data. This value determines how similar documents need to be to be considered duplicates. Lower values are more strict, requiring higher similarity for documents to be considered duplicates.
+`eps`: The similarity threshold used for identifying duplicates. This value determines how similar documents need to be to be considered duplicates. Lower values are more strict, requiring higher similarity for documents to be considered duplicates.
 
 When choosing an appropriate threshold:
 
@@ -218,49 +254,58 @@ We recommend experimenting with different threshold values to find the optimal b
 
 ::::{tab-set}
 
-:::{tab-item} SemDedup Class
-You can use the SemDedup class to perform all steps:
+:::{tab-item} TextSemanticDeduplicationWorkflow Class
+You can use the TextSemanticDeduplicationWorkflow class to perform all steps:
 
 ```python
 from nemo_curator.stages.text.deduplication.semantic import TextSemanticDeduplicationWorkflow
-import yaml
+from nemo_curator.backends import RayDataExecutor
 
-# Load configuration from YAML file
-with open("sem_dedup_config.yaml", "r") as config_file:
-    config_dict = yaml.safe_load(config_file)
-
-# Create SemDedupConfig object
-config = SemDedupConfig(**config_dict)
-
-# Initialize SemDedup with the configuration
-sem_dedup = SemDedup(
-    config=config,
-    input_column="text",
-    id_column="doc_id",
+# Initialize workflow with configuration
+workflow = TextSemanticDeduplicationWorkflow(
+    input_path="input_data/",
+    output_path="results/",
+    cache_path="cache/",
+    text_field="text",
+    id_field="doc_id",
+    model_identifier="sentence-transformers/all-MiniLM-L6-v2",
+    n_clusters=100,
+    eps=0.01,
     perform_removal=False,  # Two-step process
-    logger="path/to/log/dir",
+    verbose=True
 )
 
-# Two-step semantic deduplication process
-# Step 1: Identify duplicates (returns duplicate IDs)
-duplicates = sem_dedup(dataset)
+# Create executor
+executor = RayDataExecutor()
 
-# Step 2: Remove duplicates from original dataset
-deduplicated_dataset = sem_dedup.remove(dataset, duplicates)
+# Two-step semantic deduplication process
+# Step 1: Identify duplicates (saves duplicate IDs to output_path/duplicates/)
+results = workflow.run(executor)
+
+# Step 2: For manual removal, set perform_removal=True and re-run
+workflow.perform_removal = True
+final_results = workflow.run(executor)
+# Clean dataset saved to output_path/deduplicated/
 
 # Alternative: One-step process
-# sem_dedup_onestep = SemDedup(config=config, perform_removal=True)
-# deduplicated_dataset = sem_dedup_onestep(dataset)
+workflow_onestep = TextSemanticDeduplicationWorkflow(
+    input_path="input_data/",
+    output_path="results/",
+    cache_path="cache/",
+    id_field="doc_id",
+    perform_removal=True  # Complete deduplication
+)
+results = workflow_onestep.run(executor)
 ```
 
 This approach allows for easy experimentation with different configurations and models without changing the core code.
 
 ```{tip}
-**Flexible Interface**: The `SemDedup` class supports both one-step and two-step workflows:
-- Use `perform_removal=True` for direct deduplication (returns clean dataset)
-- Use `perform_removal=False` for manual control over the removal process (returns duplicate IDs, then call `.remove()`)
+**Flexible Interface**: The `TextSemanticDeduplicationWorkflow` class supports both one-step and two-step workflows:
+- Use `perform_removal=True` for direct deduplication (saves clean dataset)
+- Use `perform_removal=False` for manual control over the removal process (saves duplicate IDs only)
 
-This interface matches the behavior of other deduplication modules in NeMo Curator.
+This interface provides comprehensive end-to-end semantic deduplication capabilities.
 ```
 :::
 
@@ -269,57 +314,52 @@ Embedding Creation:
 
 ```python
 from nemo_curator.stages.text.embedders import EmbeddingCreatorStage
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.backends import RayDataExecutor
 
-# Generate embeddings for each document
-embedding_creator = EmbeddingCreator(
-    embedding_model_name_or_path="path/to/pretrained/model",
-    embedding_batch_size=128,
-    embedding_output_dir="path/to/output/embeddings",
-    input_column="text",
-    logger="path/to/log/dir",
+# Create pipeline for embedding generation
+pipeline = Pipeline(name="embedding_generation")
+
+# Add embedding stage
+embedding_stage = EmbeddingCreatorStage(
+    model_identifier="sentence-transformers/all-MiniLM-L6-v2",
+    text_field="text",
+    embedding_field="embeddings",
+    model_inference_batch_size=256
 )
-embeddings_dataset = embedding_creator(dataset)
+pipeline.add_stage(embedding_stage)
+
+# Run pipeline
+executor = RayDataExecutor()
+results = pipeline.run(executor)
 ```
 
-Clustering:
-
-```python
-# Note: ClusteringModel functionality may be integrated into workflow classes
-
-# Cluster the embeddings
-clustering_model = ClusteringModel(
-    id_column="doc_id",
-    max_iter=100,
-    n_clusters=50000,
-    clustering_output_dir="path/to/output/clusters",
-    logger="path/to/log/dir"
-)
-clustered_dataset = clustering_model(embeddings_dataset)
-```
-
-Semantic Deduplication:
+Semantic Deduplication Workflow:
 
 ```python
 from nemo_curator.stages.deduplication.semantic.workflow import SemanticDeduplicationWorkflow
 
-# Perform semantic deduplication
-semantic_dedup = SemanticClusterLevelDedup(
-    n_clusters=50000,
-    emb_by_clust_dir="path/to/embeddings/by/cluster",
-    id_column="doc_id",
+# Perform semantic deduplication on pre-generated embeddings
+workflow = SemanticDeduplicationWorkflow(
+    input_path="path/to/embeddings/",  # Directory with embedding parquet files
+    output_path="path/to/output/",
+    n_clusters=100,
+    id_field="doc_id",
+    embedding_field="embeddings",
     which_to_keep="hard",
-    batched_cosine_similarity=1024,
-    output_dir="path/to/output/deduped",
-    logger="path/to/log/dir"
+    pairwise_batch_size=1024,
+    eps=0.01,  # Similarity threshold for duplicate identification
+    verbose=True
 )
-semantic_dedup.compute_semantic_match_dfs()
-# Returns dataset containing unique document IDs after deduplication
-unique_document_ids = semantic_dedup.extract_dedup_data(eps_to_extract=0.07)
 
-# Note: When using individual components, you need to filter manually
-# The SemDedup class handles this filtering automatically when perform_removal=True
-kept_ids = unique_document_ids.df["doc_id"].compute()  
-deduplicated_dataset = original_dataset.df[original_dataset.df["doc_id"].isin(kept_ids)]
+# Run the workflow
+results = workflow.run(pairwise_executor=executor)
+
+# Results contain timing information and duplicate counts
+print(f"Total duplicates identified: {results['total_duplicates_identified']}")
+print(f"Execution time: {results['total_execution_time']:.2f} seconds")
+
+# Duplicate IDs are saved to output_path/duplicates/
 ```
 
 :::
@@ -332,7 +372,7 @@ deduplicated_dataset = original_dataset.df[original_dataset.df["doc_id"].isin(ke
 
 ```{list-table} Deduplication Method Behavior Comparison
 :header-rows: 1
-:widths: 20 25 25 30
+:widths: 25 25 25 25
 
 * - Method
   - Return Value Options
@@ -346,10 +386,10 @@ deduplicated_dataset = original_dataset.df[original_dataset.df["doc_id"].isin(ke
   - Duplicates or Clean Dataset  
   - ✅ Available
   - One-step or two-step
-* - SemDedup
-  - IDs to Keep Only
-  - ❌ Not Available
-  - Always requires filtering step
+* - TextSemanticDeduplicationWorkflow
+  - Duplicates or Clean Dataset
+  - ✅ Available
+  - One-step or two-step
 ```
 
 ### Key Parameters
@@ -362,79 +402,77 @@ deduplicated_dataset = original_dataset.df[original_dataset.df["doc_id"].isin(ke
   - Type
   - Default
   - Description
-* - `embedding_model_name_or_path`
+* - `model_identifier`
   - str
   - "sentence-transformers/all-MiniLM-L6-v2"
   - Pre-trained model for embedding generation
-* - `embedding_batch_size`
+* - `embedding_model_inference_batch_size`
   - int
-  - 128
+  - 256
   - Number of samples per embedding batch
-* - `embedding_max_mem_gb`
-  - int
-  - null
-  - Maximum GPU memory for embeddings (auto-detected if null)
 * - `n_clusters`
   - int
-  - 1000
-  - Number of clusters for k-means clustering
-* - `max_iter`
-  - int
   - 100
+  - Number of clusters for k-means clustering
+* - `kmeans_max_iter`
+  - int
+  - 300
   - Maximum iterations for clustering
-* - `eps_to_extract`
+* - `eps`
   - float
   - 0.01
   - Threshold for deduplication (higher = more aggressive)
-* - `eps_thresholds`
-  - list
-  - [0.01, 0.001]
-  - List of similarity thresholds to compute
 * - `which_to_keep`
   - str
   - "hard"
   - Strategy for keeping duplicates ("hard"/"easy"/"random")
-* - `batched_cosine_similarity`
+* - `pairwise_batch_size`
   - int
   - 1024
   - Batch size for similarity computation
-* - `clustering_input_partition_size`
+* - `distance_metric`
   - str
-  - "2gb"
-  - Size of data partition for KMeans
-* - `sort_clusters`
+  - "cosine"
+  - Distance metric for similarity ("cosine" or "l2")
+* - `embedding_pooling`
+  - str
+  - "mean_pooling"
+  - Pooling strategy ("mean_pooling" or "last_token")
+* - `perform_removal`
   - bool
   - true
-  - Whether to sort clusters during processing
-* - `kmeans_with_cos_dist`
-  - bool
-  - false
-  - Whether to use cosine distance for KMeans
-* - `write_embeddings_to_disk`
-  - bool
-  - true
-  - Whether to save embeddings to disk
-* - `write_to_filename`
-  - bool
-  - false
-  - Whether to save embeddings to same filename as input
+  - Whether to perform duplicate removal
+* - `text_field`
+  - str
+  - "text"
+  - Name of the text field in input data
+* - `id_field`
+  - str
+  - "id"
+  - Name of the ID field in the data
 ```
 
 ## Output Format
 
-The semantic deduplication process produces the following directory structure in your configured `cache_dir`:
+The semantic deduplication process produces the following directory structure in your configured `cache_path`:
 
 ```s
-cache_dir/
+cache_path/
 ├── embeddings/                           # Embedding outputs
 │   └── *.parquet                         # Parquet files containing document embeddings
-├── clustering_results/                   # Clustering outputs
-│   ├── kmeans_centroids.npy             # Cluster centroids
-│   ├── embs_by_nearest_center/          # Embeddings organized by cluster
-│   │   └── nearest_cent={0..n-1}/       # Subdirectories for each cluster
-│   │       └── *.parquet                # Cluster member embeddings
-│   └── unique_ids_{eps}.parquet         # Final deduplicated document IDs
-└── *.log                                # Process logs
+├── semantic_dedup/                       # Semantic deduplication cache
+│   ├── kmeans_results/                   # K-means clustering outputs
+│   │   ├── kmeans_centroids.npy         # Cluster centroids
+│   │   └── embs_by_nearest_center/      # Embeddings organized by cluster
+│   │       └── nearest_cent={0..n-1}/   # Subdirectories for each cluster
+│   │           └── *.parquet            # Cluster member embeddings
+│   └── pairwise_results/                # Pairwise similarity results
+│       └── *.parquet                    # Similarity scores by cluster
+└── output_path/
+    ├── duplicates/                       # Duplicate identification results
+    │   └── *.parquet                    # Document IDs to remove
+    └── deduplicated/                     # Final clean dataset (if perform_removal=True)
+        └── *.parquet                    # Deduplicated documents
 ```
 
 ### File Formats
@@ -448,12 +486,11 @@ cache_dir/
    - `embs_by_nearest_center/`: Parquet files containing cluster members
    - Format: Parquet files with columns: `[id_column, embedding_column, cluster_id]`
 
-3. **Deduplicated Results** (`clustering_results/unique_ids_{eps}.parquet`):
-   - Final output containing unique document IDs after deduplication
-   - One file per deduplication threshold (`eps`) from `eps_thresholds`
-   - Format: Parquet file with columns: `[id_column, "dist", "cluster"]`
-   - **Important**: Contains only the IDs of documents to keep, not the full document content
-   - Use these IDs to filter your original dataset to obtain the deduplicated content
+3. **Deduplicated Results** (`output_path/duplicates/*.parquet`):
+   - Final output containing document IDs to remove after deduplication
+   - Format: Parquet file with columns: `["id"]`
+   - **Important**: Contains only the IDs of documents to remove, not the full document content
+   - When `perform_removal=True`, clean dataset is saved to `output_path/deduplicated/`
 
 Typically, semantic deduplication reduces dataset size by 20–50% while maintaining or improving model performance.
 

@@ -9,6 +9,7 @@ modality: "text-only"
 ---
 
 (text-process-data-dedup)=
+
 # Deduplication
 
 Remove duplicate and near-duplicate documents efficiently from your text datasets using NeMo Curator's GPU-accelerated and semantic deduplication modules.
@@ -24,6 +25,11 @@ NeMo Curator offers three main approaches to deduplication:
 3. **Semantic Deduplication**: Uses embeddings to identify semantically similar content
 
 Each approach serves different use cases and offers different trade-offs between speed, accuracy, and the types of duplicates detected.
+
+**Note**: Semantic deduplication offers two workflows:
+
+- `TextSemanticDeduplicationWorkflow`: For raw text input with automatic embedding generation
+- `SemanticDeduplicationWorkflow`: For pre-computed embeddings
 
 ---
 
@@ -122,19 +128,19 @@ fuzzy_workflow.run()
 
 # Option 3: Semantic deduplication (requires GPU)
 # For text with embedding generation
-from nemo_curator.stages.deduplication.semantic.workflow import SemanticDeduplicationWorkflow
+from nemo_curator.stages.text.deduplication.semantic import TextSemanticDeduplicationWorkflow
+from nemo_curator.backends.xenna import XennaExecutor
 
-text_sem_workflow = SemanticDeduplicationWorkflow(
+text_sem_workflow = TextSemanticDeduplicationWorkflow(
     input_path="/path/to/input/data",
     output_path="/path/to/output", 
     cache_path="/path/to/cache",
     text_field="text",
     model_identifier="sentence-transformers/all-MiniLM-L6-v2",
     n_clusters=100,
-    perform_removal=False  # Currently only identification supported
+    perform_removal=False  # Set to True to remove duplicates, False to only identify
 )
-# Requires executor (Xenna or RayData)
-from nemo_curator.backends.xenna import XennaExecutor
+# Requires executor for all stages
 text_sem_workflow.run(XennaExecutor())
 
 # Alternative: For pre-computed embeddings
@@ -157,12 +163,17 @@ sem_workflow.run(pairwise_executor=XennaExecutor())
 
 - **Exact deduplication**: Requires Ray backend with GPU support for MD5 hashing operations. GPU acceleration provides significant speedup for large datasets
 - **Fuzzy deduplication**: Requires Ray backend with GPU support for MinHash and LSH operations. GPU acceleration is essential for processing large datasets efficiently
-- **Semantic deduplication**: Requires GPU backend for embedding generation and clustering operations. GPU acceleration is critical for feasible processing times
+- **Semantic deduplication**:
+  - `TextSemanticDeduplicationWorkflow`: Requires GPU backend for embedding generation, clustering, and pairwise operations
+  - `SemanticDeduplicationWorkflow`: Requires GPU backend for clustering operations when working with pre-computed embeddings
+  - GPU acceleration is critical for feasible processing times
 
 ### Hardware Requirements
 
-- **CPU-only workflows**: No deduplication workflows available (all require Ray + GPU)
-- **Ray + GPU workflows**: All deduplication methods require Ray distributed computing framework with GPU support
+- **CPU-only workflows**: No deduplication workflows available (all require GPU support)
+- **GPU workflows**:
+  - Exact and fuzzy deduplication require Ray distributed computing framework with GPU support
+  - Semantic deduplication can use various executors (XennaExecutor, RayDataExecutor) with GPU support
 - **Memory considerations**: GPU memory requirements scale with dataset size and embedding dimensions
 
 For very large datasets (TB-scale), consider running deduplication on distributed GPU clusters with Ray.

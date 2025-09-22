@@ -168,11 +168,3 @@ print(f"Pipeline completed successfully! Processed {len(results) if results else
 ## Next Steps
 
 Explore the [Text Curation documentation](text-overview) for more advanced filtering techniques, GPU acceleration options, and large-scale processing workflows.
-
-Key areas to explore next:
-
-* **Advanced Filtering**: Learn about the 30+ built-in filters for quality assessment
-* **GPU Acceleration**: Scale your processing with RAPIDS and GPU clusters  
-* **Configuration Files**: Use YAML configurations for complex filter pipelines
-* **Distributed Processing**: Process datasets across machines
-* **Quality Classification**: Use machine learning models for document scoring

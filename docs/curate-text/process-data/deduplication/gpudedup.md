@@ -67,7 +67,6 @@ The deduplication workflows support different operational modes:
 ::::{tab-set}
 
 :::{tab-item} Python
-:sync: pyth-sync
 
 ```python
 import ray
@@ -85,7 +84,7 @@ exact_workflow = ExactDeduplicationWorkflow(
     perform_removal=False,  # Currently only identification supported
     assign_id=True,         # Automatically assign unique IDs
     input_filetype="parquet",  # "parquet" or "jsonl"
-    input_blocksize="2GiB"     # Block size for reading
+    input_blocksize="1GiB"     # Block size for reading
 )
 
 # Run the workflow
@@ -179,29 +178,6 @@ ray.shutdown()
 For distributed clusters, refer to the [Ray documentation](https://docs.ray.io/en/latest/cluster/getting-started.html) for cluster setup.
 :::
 
-:::{tab-item} CLI
-:sync: cli-sync
-
-```bash
-# Add IDs if needed
-add_id \
-  --id-field-name="my_id" \
-  --input-data-dir=/path/to/data \
-  --id-prefix="doc_prefix"
-
-# Remove exact duplicates
-gpu_exact_dups \
-  --input-data-dirs /path/to/jsonl/dir1 /path/to/jsonl/dir2 \
-  --output-dir /path/to/output_dir \
-  --input-json-text-field text \
-  --input-json-id-field my_id \
-  --log-dir ./
-```
-
-The CLI utilities only work with JSONL datasets and GPU-based backends. For other formats, use the Python API.
-
-**Note**: CLI commands require proper installation of NeMo Curator with console script entry points. If CLI commands are not available, ensure you have installed the package correctly or use the Python API instead.
-:::
 
 ::::
 
@@ -210,7 +186,6 @@ The CLI utilities only work with JSONL datasets and GPU-based backends. For othe
 ::::{tab-set}
 
 :::{tab-item} Python
-:sync: pyth-sync
 
 ```python
 from nemo_curator.stages.deduplication.fuzzy.workflow import FuzzyDeduplicationWorkflow
@@ -342,68 +317,18 @@ ray.shutdown()
 For distributed clusters, refer to the [Ray documentation](https://docs.ray.io/en/latest/cluster/getting-started.html) for cluster setup.
 :::
 
-:::{tab-item} CLI
-:sync: cli-sync
-
-Fuzzy duplicate removal via the CLI involves several sequential steps:
-
-```bash
-# 1. Compute MinHash signatures
-gpu_compute_minhashes \
-  --input-data-dirs /path/to/jsonl/dir \
-  --output-minhash-dir /path/to/output_minhashes \
-  --input-json-text-field text \
-  --input-json-id-field my_id \
-  --minhash-length 256 \
-  --char-ngram 24 \
-  --seed 42
-
-# 2. Generate LSH buckets
-minhash_buckets \
-  --input-data-dirs /path/to/output_minhashes \
-  --output-bucket-dir /path/to/dedup_output \
-  --input-minhash-field _minhash_signature \
-  --input-json-id-field my_id \
-  --num-bands 20
-
-# 3. Generate edges from buckets
-buckets_to_edges \
-  --input-bucket-dir /path/to/dedup_output/_buckets.parquet \
-  --output-dir /path/to/dedup_output \
-  --input-json-id-field my_id
-
-# 4. Find connected components
-gpu_connected_component \
-  --jaccard-pairs-path /path/to/dedup_output/_edges.parquet \
-  --output-dir /path/to/dedup_output \
-  --cache-dir /path/to/cc_cache \
-  --input-json-id-field my_id
-```
-
-For more advanced configurations including similarity verification, refer to the full documentation.
-:::
 
 ::::
 
 ### Incremental Processing
 
-For new data additions, you don't need to reprocess existing documents:
+For new data additions, you don't need to reprocess existing documents. You can run fuzzy deduplication workflows incrementally by:
 
-1. Organize new data in separate directories
-2. Compute MinHash signatures only for new data
-3. Run subsequent steps on all data (existing and new MinHash signatures)
+1. Organizing new data in separate directories
+2. Running the `FuzzyDeduplicationWorkflow` with the combined dataset (existing + new data)
+3. The workflow will automatically handle the incremental processing through its cache system
 
-```bash
-gpu_compute_minhashes \
-  --input-data-dirs /input/new_data \
-  --output-minhash-dir /output/ \
-  --input-json-text-field text \
-  --input-json-id-field my_id \
-  --minhash-length 256 \
-  --char-ngram 24
-```
-
-Then proceed with the remaining steps as usual on the combined MinHash directories. 
+The workflow's cache system ensures that previously computed MinHash signatures and LSH buckets can be reused, making incremental processing efficient.
 
 ## Performance and GPU Requirements
 
@@ -441,7 +366,7 @@ Then proceed with the remaining steps as usual on the combined MinHash directori
 
 ### Hardware Recommendations
 
-- **CPU-only environments**: No deduplication workflows available (all require Ray + GPU)
+- **CPU-only environments**: Not supported (all workflows require Ray + GPU)
 - **Ray + GPU environments**: Both exact and fuzzy deduplication workflows require distributed Ray cluster with GPU support
 - **Memory considerations**: GPU memory distributed across Ray cluster nodes for large datasets
 - **Distributed processing**: Ray clusters required for all deduplication workflows

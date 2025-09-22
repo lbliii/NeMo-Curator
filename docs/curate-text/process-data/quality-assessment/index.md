@@ -59,9 +59,9 @@ pipeline.add_stage(writer)
 results = pipeline.run()
 ```
 
-:::{note}
+```{note}
 **Default Executor**: When you call `pipeline.run()` without specifying an executor, NeMo Curator automatically uses `XennaExecutor()` as the default. You can optionally specify a different executor by passing it as a parameter: `pipeline.run(executor=my_executor)`.
-:::
+```
 
 The filter object implements two key methods:
 
