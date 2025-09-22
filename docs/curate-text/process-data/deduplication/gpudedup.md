@@ -17,32 +17,7 @@ Remove duplicate and near-duplicate documents from your text datasets using NeMo
 
 These modules use hash-based algorithms to efficiently process large datasets and support two primary methods: **Exact** and **Fuzzy Duplicate** removal. Fuzzy deduplication leverages [RAPIDS](https://rapids.ai) for GPU acceleration.
 
-```{list-table} Hash-Based Duplicate Removal Methods
-:header-rows: 1
-:widths: 20 35 35 10
-
-* - Method
-  - Exact Duplicate Removal
-  - Fuzzy Duplicate Removal
-  - GPU Required
-* - Purpose
-  - Removes identical documents
-  - Removes similar documents based on content
-  - 
-* - Process
-  - 1. Hash document content
-    2. Keep one document per unique hash
-    3. Works on CPU or GPU (GPU recommended)
-  - 1. Compute MinHash signatures
-    2. Group via LSH buckets
-    3. Optional similarity verification
-    4. Keep one doc per similar group
-  - Optional / Required
-* - Best For
-  - Finding exact copies
-  - Finding near-duplicates and variants
-  - 
-```
+For a detailed comparison of deduplication methods, refer to {ref}`Data Processing Concepts <about-concepts-text-data-processing>`.
 
 Removing duplicates improves language model training by preventing overrepresentation of repeated content. For more information, see research by [Muennighoff et al. (2023)](https://arxiv.org/abs/2305.16264) and [Tirumala et al. (2023)](https://arxiv.org/abs/2308.12284).
 

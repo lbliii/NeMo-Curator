@@ -16,33 +16,13 @@ Create custom data loading pipelines using Curator. This guide shows how to buil
 
 ## How It Works
 
-Curator uses a **4-step pipeline pattern** for custom data loading:
-
-1. **URL Generation**: Generate URLs from configuration or input parameters
-2. **Download**: Download files from URLs to local storage
-3. **Iteration**: Extract raw records from downloaded files
-4. **Extraction** (Optional): Transform raw records into final structured format
-
-Each step uses an abstract base class with corresponding processing stages that compose into pipelines.
+Curator uses the same **4-step pipeline pattern** described in {ref}`Data Acquisition Concepts <about-concepts-text-data-acquisition>` for custom data loading. Each step uses an abstract base class with corresponding processing stages that compose into pipelines.
 
 ---
 
 ## Architecture Overview
 
-### Core Components
-
-- **Tasks**: Data containers that flow through the pipeline (`DocumentBatch`, `FileGroupTask`)
-- **Stages**: Processing units that transform tasks (`ProcessingStage` subclasses)
-- **Pipelines**: Compositions of stages executed sequentially
-- **Executors**: Runtime backends that execute pipelines
-
-### Data Flow
-
-```text
-Start → FileGroupTask → DocumentBatch
-   ↓         ↓              ↓
-URLGeneration → Download → Iterate → Extract
-```
+For detailed information about the core components and data flow, see {ref}`Data Acquisition Concepts <about-concepts-text-data-acquisition>` and {ref}`Data Loading Concepts <about-concepts-text-data-loading>`.
 
 ---
 

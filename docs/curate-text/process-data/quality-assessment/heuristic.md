@@ -24,31 +24,7 @@ These filters assess quality using measurable document characteristics such as:
 - Language-specific patterns
 - Text completeness and coherence
 
-Each heuristic filter follows a consistent structure:
-
-```python
-class ExampleFilter(DocumentFilter):
-    def __init__(self, parameter1=default1, parameter2=default2):
-        super().__init__()
-        self._param1 = parameter1
-        self._param2 = parameter2
-        self._name = "example_filter"
-        
-    def score_document(self, text):
-        # Calculate and return a score between 0 and 1
-        # Higher scores typically indicate lower quality
-        score = compute_score(text)
-        return score
-        
-    def keep_document(self, score):
-        # Return True to keep the document, False to filter it out
-        return score <= self._param1
-```
-
-The filtering process typically involves:
-1. Calculating a quality score for each document
-2. Applying a threshold to determine whether to keep or discard the document
-3. Optionally storing the score as metadata for later analysis
+For details on filter structure and the filtering process, refer to {ref}`Data Processing Concepts <about-concepts-text-data-processing>`.
 
 --- 
 
