@@ -9,6 +9,7 @@ modality: "audio-only"
 ---
 
 (audio-process-data-asr-inference)=
+
 # ASR Inference
 
 Perform automatic speech recognition (ASR) on audio files using NeMo Framework models. The ASR inference stage transcribes audio into text, enabling downstream quality assessment and text processing workflows.
@@ -17,10 +18,11 @@ Perform automatic speech recognition (ASR) on audio files using NeMo Framework m
 
 The `InferenceAsrNemoStage` processes `AudioBatch` objects by:
 
-1. **Model Loading**: Downloads and initializes NeMo ASR models on GPU or CPU
-2. **Batch Processing**: Groups audio files for efficient inference
-3. **Transcription**: Generates text predictions for each audio file
-4. **Output Creation**: Returns `AudioBatch` with original data plus predicted transcriptions
+1. **Input Validation**: Verifies required attributes and data structure
+2. **Model Loading**: Downloads and initializes NeMo ASR models on GPU or CPU
+3. **Batch Processing**: Groups audio files for efficient inference
+4. **Transcription**: Generates text predictions for each audio file
+5. **Output Creation**: Returns `AudioBatch` with original data plus predicted transcriptions
 
 ## Basic Usage
 
@@ -101,7 +103,11 @@ asr_stage = asr_stage.with_(
 )
 ```
 
-Note: `batch_size` controls the number of tasks the executor groups per call. The ASR stage does not define `process_batch()`; the executor batches tasks.
+:::{note} `batch_size` controls the number of tasks the executor groups per call. The ASR stage does not define `process_batch()`; the executor batches tasks.
+
+Within a single `AudioBatch`, `process()` transcribes the file paths together.
+
+:::
 
 ## Input Requirements
 
@@ -130,7 +136,7 @@ audio_batch = AudioBatch(
 
 ### Audio File Requirements
 
-- **Supported Formats**: Determined by the selected NeMo ASR model; refer to NeMo ASR documentation.
+- **Supported Formats**: Determined by the selected NeMo ASR model; refer to the NeMo ASR documentation.
 - **Sample Rates**: Typically 16 kHz; refer to the model card for details.
 - **Channels**: Mono or stereo; channel handling (for example, down-mixing) depends on the model.
 - **Duration**: Long files may require manual chunking before inference.
@@ -165,9 +171,10 @@ except RuntimeError as e:
 
 Processing behavior:
 
-- **Input validation**: The stage raises `ValueError` when the task fails validation.
+- **Input structure validation**: The stage uses `validate_input()` to check required attributes/columns and raises `ValueError` if they are missing.
 - **Model loading failures**: `setup()` raises `RuntimeError` if model download or initialization fails.
-- **No automatic retries or auto-tuning**: The stage does not perform automatic batch size reduction or network retries. `AudioBatch.validate()` can emit file existence warnings when applicable; the stage does not auto-skip files.
+- **No automatic retries or auto-tuning**: The stage does not perform automatic batch size reduction or network retries.
+- **Missing files**: `AudioBatch.validate()` may log file-existence warnings when code creates tasks; the stage does not auto-skip files.
 
 ## Performance Optimization
 
@@ -216,7 +223,6 @@ pipeline.add_stage(AudioToDocumentStage())
 
 # Continue with text processing...
 ```
-
 
 ```{toctree}
 :maxdepth: 2

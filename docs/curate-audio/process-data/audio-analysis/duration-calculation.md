@@ -27,7 +27,7 @@ The `GetAudioDurationStage` extracts precise timing information from audio files
 
 ## How It Works
 
-The duration calculation stage reads audio file headers and samples to determine exact duration:
+The duration calculation stage reads audio samples and sample rate to determine exact duration:
 
 ```python
 from nemo_curator.stages.audio.common import GetAudioDurationStage
@@ -51,8 +51,8 @@ print(f"Audio duration: {duration:.3f} seconds")
 
 ### Duration Calculation Process
 
-1. **File Reading**: Uses `soundfile` to read audio file metadata
-2. **Frame Counting**: Counts total audio frames and sample rate
+1. **File Reading**: Uses `soundfile` to read audio samples and sample rate
+2. **Frame Counting**: Counts total audio frames from the loaded samples
 3. **Duration Calculation**: Computes duration as `frames ÷ sample_rate`
 4. **Error Handling**: Sets duration to -1.0 for corrupted files
 
@@ -275,13 +275,14 @@ pipeline.add_stage(PreserveByValueStage(
 
 ### Memory Usage
 
-- The stage loads audio file headers, not full audio data
-- Memory usage scales with the number of files processed simultaneously
-- Process large datasets in smaller batches when memory constraints exist
+- The stage reads audio samples to compute frames
+- Memory usage scales with file duration, channels, and data type
+- Reduce batch size when processing large files or large batches of files
+- For a custom alternative that avoids loading samples, use `soundfile.info` to get `frames` and `samplerate`
 
 ### Processing Speed
 
-- Duration calculation is I/O bound (file system access)
+- Duration calculation is I/O bound and scales with file size
 - Network-mounted files may be slower than local storage
 - Consider parallel processing for large datasets using Ray
 
@@ -314,7 +315,7 @@ import soundfile as sf
 print("Supported formats:", sf.available_formats())
 
 # Common supported formats: WAV, FLAC, OGG, AIFF
-# Not supported: MP3 (requires additional libraries)
+# MP3 support depends on your system's libsndfile build
 ```
 
 #### File Permission Issues
@@ -330,9 +331,8 @@ if not os.access(audio_file, os.R_OK):
 #### Large File Handling
 
 ```python
-# For very large audio files, `soundfile` efficiently reads headers
-# without loading the entire file into memory
-# Duration calculation remains fast regardless of file size
+# For very large audio files, prefer streaming or metadata-based approaches
+# in custom stages (for example, use `sf.info` for frames and samplerate)
 ```
 
 ## Related Topics

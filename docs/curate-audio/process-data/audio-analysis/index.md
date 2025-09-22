@@ -8,11 +8,12 @@ content_type: "workflow"
 modality: "audio-only"
 ---
 (audio-process-data-audio-analysis)=
+
 # Audio Analysis
 
 Extract and analyze audio file characteristics for quality control, metadata generation, and dataset validation. Audio analysis provides essential information about audio files before and during processing.
 
-## How it Works
+## How It Works
 
 Audio analysis in NeMo Curator examines audio files to extract:
 
@@ -21,8 +22,21 @@ Audio analysis in NeMo Curator examines audio files to extract:
 3. **Quality Indicators**: File integrity, format compliance, technical quality
 4. **Metadata Extraction**: Embedded metadata and file properties
 
-:::{note} NeMo Curator provides duration extraction as a built-in stage (`GetAudioDurationStage`). The format and metadata examples below show how to build custom stages and are not built-in.
-:::
+::::{note} NeMo Curator provides duration extraction as a built-in stage (`GetAudioDurationStage`). The format and metadata examples below show how to build custom stages and are not built-in.
+::::
+
+## Input Requirements
+
+Each audio data entry must include the path to the file:
+
+```python
+# Required key in each data item
+{
+    "audio_filepath": "/path/to/audio.wav"
+}
+```
+
+Use `audio_filepath_key` to customize the key name when constructing `GetAudioDurationStage`.
 
 ## Duration Analysis
 
@@ -71,7 +85,7 @@ Refer to [Duration Filtering](../quality-assessment/duration-filtering.md) for e
 
 ## Format Validation
 
-NeMo Curator infers basic format validity during duration extraction using `soundfile.read`. If a file cannot be read by `soundfile`/`libsndfile`, `GetAudioDurationStage` sets `duration = -1.0`, which you can filter out. Refer to [Format Validation](format-validation.md) for behavior and supported formats.
+NeMo Curator infers basic format validity during duration extraction using `soundfile.read`. If `soundfile`/`libsndfile` cannot read a file, `GetAudioDurationStage` sets `duration = -1.0`, which you can filter out. Refer to [Format Validation](format-validation.md) for behavior and supported formats.
 
 ### Basic Format Check
 
@@ -86,9 +100,28 @@ except Exception as e:
     print(f"File validation failed: {e}")
 ```
 
+## Metadata Extraction
+
+You can extract basic audio metadata using `soundfile.info` and add it to your data entries for downstream processing:
+
+```python
+import soundfile as sf
+
+# Read embedded file properties
+info = sf.info("audio_file.wav")
+metadata = {
+    "samplerate": info.samplerate,
+    "channels": info.channels,
+    "format": info.format,
+    "subtype": info.subtype,
+    "duration": info.duration,
+}
+print(metadata)
+```
+
 ## Complete Analysis Pipeline
 
-Here's a complete working pipeline for audio analysis:
+Here is a complete working pipeline for audio analysis:
 
 ```python
 from nemo_curator.pipeline import Pipeline

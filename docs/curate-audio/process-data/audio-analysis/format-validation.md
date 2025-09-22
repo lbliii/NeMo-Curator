@@ -12,7 +12,7 @@ modality: "audio-only"
 
 # Audio Format Support
 
-NeMo Curator's audio processing stages use the `soundfile` library for audio file handling, providing built-in format validation and error handling.
+NeMo Curator audio processing stages use the `soundfile` library for audio file handling. Built-in error handling surfaces unreadable or unsupported files during duration calculation.
 
 ## Supported Formats
 
@@ -44,7 +44,7 @@ duration_stage = GetAudioDurationStage(
 
 ### Error Handling Behavior
 
-When audio files cannot be read:
+When `soundfile`/`libsndfile` cannot read audio files:
 
 - **Duration Calculation**: Returns -1.0 for corrupted/unreadable files
 - **ASR Inference**: Will fail with clear error messages for unsupported formats
@@ -63,7 +63,7 @@ valid_files_filter = PreserveByValueStage(
 
 ## Working Example
 
-Here's a complete pipeline that handles format validation through built-in error handling:
+Here is a complete pipeline that handles format validation through built-in error handling:
 
 ```python
 from nemo_curator.pipeline import Pipeline
