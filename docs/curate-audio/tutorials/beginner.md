@@ -180,24 +180,3 @@ Example output entry:
     "duration": 2.3
 }
 ```
-
-## Key Concepts Learned
-
-- **AudioBatch**: Core data structure for audio processing
-- **Pipeline Stages**: Modular processing components
-- **ASR Inference**: Speech-to-text using NeMo models
-- **Quality Metrics**: WER calculation for transcription accuracy
-- **Filtering**: Data quality control using thresholds
-
-## Next Steps
-
-- Try different languages from the FLEURS dataset
-- Experiment with different ASR models
-- Adjust quality thresholds based on your needs
-- Create custom manifests for your own audio data
-
-## Related Topics
-
-- **[Custom Manifests](../load-data/custom-manifests.md)** - Process your own audio files
-- **[ASR Inference](../process-data/asr-inference/index.md)** - ASR model configuration
-- **[Quality Assessment](../process-data/quality-assessment/index.md)** - Quality metrics and filtering
