@@ -1,7 +1,7 @@
 ---
 description: "Generate image embeddings using built-in and custom embedders for classification, filtering, and similarity search"
 categories: ["workflows"]
-tags: ["embedding", "timm", "custom", "gpu-accelerated", "similarity-search"]
+tags: ["embedding", "clip", "custom", "gpu-accelerated", "similarity-search"]
 personas: ["data-scientist-focused", "mle-focused"]
 difficulty: "intermediate"
 content_type: "workflow"

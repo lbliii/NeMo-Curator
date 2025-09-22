@@ -107,6 +107,7 @@ The `ImageWriterStage` creates:
 * **Preserved Metadata**: All scores and metadata from processing stages are included
 
 Each output tar file contains:
+
 * **Images**: High-quality `.jpg` files that passed filtering
 * **Captions**: Corresponding `.txt` files with image descriptions
 * **Metadata**: `.json` files with scores (`aesthetic_score`, `nsfw_score`) and other metadata

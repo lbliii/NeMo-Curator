@@ -9,6 +9,7 @@ modality: "image-only"
 ---
 
 (about-concepts-image-data-processing)=
+
 # Data Processing Concepts (Image)
 
 This page covers the core concepts for processing image data in NeMo Curator.
@@ -23,6 +24,7 @@ Image embeddings are vector representations of images, used for downstream tasks
 - **Pipeline Integration:** Embedding generation integrates seamlessly into NeMo Curator's pipeline architecture.
 
 **Example:**
+
 ```python
 from nemo_curator.stages.image.embedders.clip_embedder import ImageEmbeddingStage
 
@@ -44,6 +46,7 @@ Classification stages score and filter images based on their embeddings.
 - **Pipeline Integration:** Classification stages run efficiently after embedding generation in the same pipeline.
 
 **Example:**
+
 ```python
 from nemo_curator.stages.image.filters.aesthetic_filter import ImageAestheticFilterStage
 from nemo_curator.stages.image.filters.nsfw_filter import ImageNSFWFilterStage
@@ -64,28 +67,63 @@ pipeline.add_stage(ImageNSFWFilterStage(
 
 ## Filtering
 
-Filtering is built into the classification stages, which automatically remove images that don't meet the configured thresholds.
-- **Aesthetic Filtering:** Images below `score_threshold` are automatically filtered out
-- **NSFW Filtering:** Images above `score_threshold` are automatically filtered out  
+Filtering integrates with the classification stages, which automatically remove images that don't meet the configured thresholds.
+
+- **Aesthetic Filtering:** Images with scores below `score_threshold` are automatically filtered out
+- **NSFW Filtering:** Images with scores above `score_threshold` are automatically filtered out  
 - **Pipeline Flow:** Filtering happens seamlessly as part of the stage processing
 
-The filtering is handled automatically by the stages - images that don't meet criteria are removed from the `ImageBatch` before passing to the next stage.
+The filtering happens automatically within the stages - images that don't meet criteria are removed from the `ImageBatch` before passing to the next stage.
 
 ## Deduplication
 
-Semantic deduplication removes near-duplicate images using embedding similarity and clustering.
-- Compute embeddings for all images
-- Cluster embeddings (e.g., KMeans)
-- Remove or flag duplicates based on similarity thresholds
+Image deduplication removes duplicate images that have been pre-identified through external processes.
+
+- **ImageDuplicatesRemovalStage:** Filters out images based on a list of duplicate IDs stored in Parquet files
+- **ID-based Removal:** Uses image identifiers to remove duplicates rather than computing similarity
+- **Pipeline Integration:** Runs after embedding and classification stages to remove identified duplicates
+
+**Example:**
+
+```python
+from nemo_curator.stages.image.deduplication.removal import ImageDuplicatesRemovalStage
+
+# Add to pipeline
+pipeline.add_stage(ImageDuplicatesRemovalStage(
+    removal_parquets_dir="/path/to/duplicate_ids",
+    duplicate_id_field="id",
+))
+```
 
 ## Pipeline Flow
 
 A typical image curation pipeline using NeMo Curator's stage-based architecture:
+
 1. **Partition** tar files (`FilePartitioningStage`)
 2. **Load** images from WebDataset (`ImageReaderStage`)
 3. **Generate embeddings** (`ImageEmbeddingStage`)
 4. **Filter by aesthetics** (`ImageAestheticFilterStage`)
 5. **Filter NSFW content** (`ImageNSFWFilterStage`)
-6. **Export** results (`ImageWriterStage`)
+6. **Remove duplicates** (`ImageDuplicatesRemovalStage`) - optional
 
-This modular pipeline approach allows you to customize, reorder, or skip stages based on your workflow needs. 
+**Example:**
+
+```python
+from nemo_curator.stages.file_partitioning import FilePartitioningStage
+from nemo_curator.stages.image.io.image_reader import ImageReaderStage
+from nemo_curator.stages.image.embedders.clip_embedder import ImageEmbeddingStage
+from nemo_curator.stages.image.filters.aesthetic_filter import ImageAestheticFilterStage
+from nemo_curator.stages.image.filters.nsfw_filter import ImageNSFWFilterStage
+from nemo_curator.stages.image.deduplication.removal import ImageDuplicatesRemovalStage
+
+# Build pipeline
+pipeline.add_stage(FilePartitioningStage(file_paths="/path/to/tars"))
+pipeline.add_stage(ImageReaderStage())
+pipeline.add_stage(ImageEmbeddingStage(model_dir="/path/to/models"))
+pipeline.add_stage(ImageAestheticFilterStage(model_dir="/path/to/models", score_threshold=0.5))
+pipeline.add_stage(ImageNSFWFilterStage(model_dir="/path/to/models", score_threshold=0.5))
+# Optional: Remove duplicates if you have pre-identified duplicate IDs
+# pipeline.add_stage(ImageDuplicatesRemovalStage(removal_parquets_dir="/path/to/duplicate_ids"))
+```
+
+This modular pipeline approach allows you to customize, reorder, or skip stages based on your workflow needs.

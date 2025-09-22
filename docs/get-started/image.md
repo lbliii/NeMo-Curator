@@ -42,7 +42,7 @@ You can install NeMo Curator in three ways:
 Install the image modules from PyPI:
 
 ```bash
-pip install nemo-curator[image]
+pip install --extra-index-url https://pypi.nvidia.com nemo-curator[image_cuda12]
 ```
 
 :::
@@ -54,30 +54,21 @@ Install the latest version directly from GitHub:
 ```bash
 git clone https://github.com/NVIDIA/NeMo-Curator.git
 cd NeMo-Curator
-pip install "./NeMo-Curator[image]"
+pip install --extra-index-url https://pypi.nvidia.com ".[image_cuda12]"
 ```
 
 :::
 
-:::{tab-item} NeMo Curator Container
+:::{tab-item} Docker Container
 
-NeMo Curator is available as a standalone container:
-
-```{warning}
-**Container Availability**: The standalone NeMo Curator container is currently in development. Check the [NGC Catalog](https://catalog.ngc.nvidia.com/orgs/nvidia/containers) for the latest availability and container path.
-```
+You can build and run NeMo Curator in a container environment using the provided Dockerfile:
 
 ```bash
-# Pull the container 
-docker pull nvcr.io/nvidia/nemo-curator:latest
-
-# Run the container
-docker run --gpus all -it --rm nvcr.io/nvidia/nemo-curator:latest
+git clone https://github.com/NVIDIA/NeMo-Curator.git
+cd NeMo-Curator
+docker build -t nemo-curator -f docker/Dockerfile .
 ```
 
-```{seealso}
-For details on container environments and configurations, see [Container Environments](reference-infrastructure-container-environments-main).
-```
 :::
 ::::
 
@@ -128,7 +119,7 @@ pipeline.add_stage(FilePartitioningStage(
 pipeline.add_stage(ImageReaderStage(
     task_batch_size=100,
     verbose=True,
-    num_threads=16,
+    num_threads=8,
     num_gpus_per_worker=0.25,
 ))
 

@@ -18,7 +18,7 @@ WebDataset is a sharded, metadata-rich file format that enables scalable, distri
 
 ## How it Works
 
-A WebDataset directory contains sharded `.tar` files, each holding image-text pairs and metadata, along with corresponding `.parquet` files for tabular metadata. Optionally, `.idx` index files can be provided for fast DALI-based loading. Each record is identified by a unique ID, which is used as the prefix for all files belonging to that record.
+A WebDataset directory contains sharded `.tar` files, each holding image-text pairs and metadata, along with corresponding `.parquet` files for tabular metadata. Each record is identified by a unique ID, which is used as the prefix for all files belonging to that record.
 
 **Directory Structure Example**
 
@@ -33,13 +33,10 @@ dataset/
 │   ├── ...
 ├── 00000.parquet
 ├── 00001.parquet
-├── 00000.idx  # optional
-├── 00001.idx  # optional
 ```
 
 - `.tar` files: Contain images (`.jpg`), captions (`.txt`), and metadata (`.json`)
 - `.parquet` files: Tabular metadata for each record
-- `.idx` files: (Optional) Index files for fast DALI-based loading
 
 Each record is identified by a unique ID (for example, `000000031`), which is used as the prefix for all files belonging to that record.
 
@@ -163,7 +160,6 @@ ImageObject(
 The WebDataset directory structure remains:
 - Sharded `.tar` files with images, captions, and metadata
 - `.parquet` files with tabular metadata
-- (Optional) `.idx` files for DALI-based loading
 
 ---
 
@@ -215,53 +211,38 @@ pipeline.add_stage(ImageReaderStage(
 ))
 ```
 
-### Performance Benchmarks
+### Performance Characteristics
 
-The DALI-based `ImageReaderStage` provides significant performance improvements over traditional image loading:
+The DALI-based `ImageReaderStage` provides performance benefits over traditional image loading:
 
-- **GPU Decoding**: Up to 3-5x faster than CPU-only image decoding for large batches
-- **Memory Efficiency**: Streams images without loading entire datasets into memory
-- **I/O Optimization**: DALI's WebDataset reader minimizes file system overhead
+- **GPU Acceleration**: Uses GPU decoding when CUDA is available for improved throughput
+- **Memory Efficiency**: Streams images in batches without loading entire datasets into memory
+- **I/O Optimization**: DALI's WebDataset reader is optimized for tar file processing
 
 **Recommended Batch Sizes by Hardware:**
 
-```{list-table} Optimal Batch Size Recommendations
+```{list-table} Batch Size Guidelines
 :header-rows: 1
-:widths: 30 25 25 20
+:widths: 40 30 30
 
 * - Hardware Configuration
-  - Batch Size
-  - GPU Memory
-  - Expected Throughput
+  - Recommended Batch Size
+  - GPU Memory Allocation
 * - **Single GPU (16GB+)**
   - 256-512
   - 0.5-1.0
-  - ~2000-4000 images/sec
 * - **Multi-GPU Setup**
   - 128-256
   - 0.25-0.5
-  - ~1000-2000 images/sec per GPU
 * - **CPU Only (32GB+ RAM)**
   - 32-64
   - 0
-  - ~200-500 images/sec
 * - **CPU Only (16GB RAM)**
   - 16-32
   - 0
-  - ~100-300 images/sec
 ```
 
 ### Advanced Performance Tuning
-
-**Index Files for Large Datasets**
-
-```bash
-# Generate DALI index files for faster loading
-python -c "
-from nvidia.dali.tools import wds2idx
-wds2idx('/path/to/dataset/00000.tar', '/path/to/dataset/00000.idx')
-"
-```
 
 **Parallelism Configuration**
 
@@ -297,8 +278,7 @@ pipeline = Pipeline(
 ## Customization Options & Performance Tips
 
 - **Cloud Storage Support**: You can use local paths or cloud storage URLs (for example, S3, GCS, Azure) in `file_paths`. Make sure your environment is configured with the appropriate credentials.
-- **DALI Index Files**: For large datasets, provide `.idx` files for each `.tar` to enable fast DALI-based loading (see [NVIDIA DALI documentation](https://docs.nvidia.com/deeplearning/dali/user-guide/docs/examples/general/data_loading/dataloading_webdataset.html#Creating-an-index)).
-- **GPU Acceleration**: Use a GPU-enabled environment for best performance. The stage automatically detects CUDA availability and uses GPU decoding when possible.
+- **GPU Acceleration**: Use a GPU-enabled environment for optimal performance. The stage automatically detects CUDA availability and uses GPU decoding when possible.
 - **Parallelism Control**: Adjust `files_per_partition` to control how many tar files are processed together. Lower values increase parallelism but may increase overhead.
 - **Batch Size Tuning**: Increase `task_batch_size` for better throughput, but ensure sufficient memory is available.
 - **Thread Configuration**: Adjust `num_threads` for I/O operations based on your storage system's characteristics.

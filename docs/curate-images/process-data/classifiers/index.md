@@ -9,6 +9,7 @@ modality: "image-only"
 ---
 
 (image-process-data-classifiers)=
+
 # Image Classifiers
 
 NeMo Curator provides classifiers for image curation, including aesthetic and NSFW classifiers. These models help you filter, score, and curate large image datasets for downstream tasks such as generative model training and dataset quality control.
@@ -24,6 +25,21 @@ Image classification in NeMo Curator typically follows these steps:
 
 Classification stages integrate seamlessly into NeMo Curator's pipeline architecture.
 
+## Prerequisites
+
+Before using classification stages, ensure that:
+
+- Load images using `ImageReaderStage`
+- Generate image embeddings using `ImageEmbeddingStage`
+- Populate the `ImageObject.embedding` field for each image
+
+## Imports
+
+```python
+from nemo_curator.stages.image.filters.aesthetic_filter import ImageAestheticFilterStage
+from nemo_curator.stages.image.filters.nsfw_filter import ImageNSFWFilterStage
+```
+
 ---
 
 ## Available Classifiers
@@ -35,7 +51,7 @@ Classification stages integrate seamlessly into NeMo Curator's pipeline architec
 :link: image-process-data-classifiers-aesthetic
 :link-type: ref
 
-Assess the subjective quality of images using a model trained on human aesthetic preferences. Filters images below a configurable aesthetic score threshold.
+Assess the subjective quality of images using a model trained on human aesthetic preferences. Filters images below a configurable aesthetic score threshold (0.0 to 1.0).
 +++
 {bdg-secondary}`ImageAestheticFilterStage` {bdg-secondary}`aesthetic_score`
 :::
@@ -44,7 +60,7 @@ Assess the subjective quality of images using a model trained on human aesthetic
 :link: image-process-data-classifiers-nsfw
 :link-type: ref
 
-Detect not-safe-for-work (NSFW) content in images using a CLIP-based classifier. Filters images above a configurable NSFW probability threshold.
+Detect not-safe-for-work (NSFW) content in images using a CLIP-based classifier. Removes images above a configurable NSFW probability threshold (0.0 to 1.0).
 +++
 {bdg-secondary}`ImageNSFWFilterStage` {bdg-secondary}`nsfw_score`
 :::

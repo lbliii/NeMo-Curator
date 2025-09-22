@@ -9,6 +9,7 @@ modality: "image-only"
 ---
 
 (image-process-data)=
+
 # Process Data for Image Curation
 
 Process image data you've loaded into a WebDataset using NeMo Curator's suite of tools. These tools help you generate embeddings, classify images, and filter your dataset to prepare high-quality data for downstream AI tasks such as generative model training, dataset analysis, or quality control.
@@ -23,7 +24,7 @@ Image processing in NeMo Curator follows a pipeline-based approach with these st
 4. **Apply classifiers** using `ImageAestheticFilterStage` and `ImageNSFWFilterStage`
 5. **Save results** using `ImageWriterStage` to export curated datasets
 
-Each stage processes `ImageBatch` objects containing images, metadata, and processing results. You can use built-in stages or implement custom stages for advanced use cases.
+Each stage processes `ImageBatch` objects containing images, metadata, and processing results. You can use built-in stages or create custom stages for advanced use cases.
 
 ---
 
@@ -70,7 +71,7 @@ Generate image embeddings using CLIP models with GPU acceleration. Supports vari
 :link: image-process-data-embeddings-custom
 :link-type: ref
 
-Implement your own image embedding logic by subclassing `ProcessingStage`. Useful for research models or custom pipelines.
+Create your own image embedding logic by extending `ProcessingStage`. Useful for research models or custom pipelines.
 +++
 {bdg-secondary}`ProcessingStage` {bdg-secondary}`custom` {bdg-secondary}`advanced`
 :::
@@ -79,14 +80,15 @@ Implement your own image embedding logic by subclassing `ProcessingStage`. Usefu
 
 ## Filtering Images
 
-Filtering is built into the classification stages (`ImageAestheticFilterStage`, `ImageNSFWFilterStage`). Images that don't meet the specified thresholds are automatically filtered out during processing.
+The classification stages (`ImageAestheticFilterStage`, `ImageNSFWFilterStage`) include filtering capabilities. Images that don't meet the specified thresholds are automatically filtered out during processing.
 
 **Built-in filtering capabilities:**
+
 * **Aesthetic filtering**: Remove images with low aesthetic scores using `ImageAestheticFilterStage`
 * **NSFW filtering**: Remove inappropriate content using `ImageNSFWFilterStage`
 * **Automatic processing**: Filtering happens during the pipeline execution
 
-**Example: Pipeline with filtering**
+### Pipeline with filtering
 
 ```python
 from nemo_curator.stages.image.filters.aesthetic_filter import ImageAestheticFilterStage
@@ -99,15 +101,15 @@ pipeline.add_stage(ImageAestheticFilterStage(
     num_gpus_per_worker=0.25,
 ))
 
-# Filter NSFW content (remove images with score >= 0.5)
+# Filter NSFW content (keep images with score < 0.5)
 pipeline.add_stage(ImageNSFWFilterStage(
     model_dir="/models", 
-    score_threshold=0.5,  # Maximum NSFW score
+    score_threshold=0.5,  # Maximum NSFW score (images below this are kept)
     num_gpus_per_worker=0.25,
 ))
 ```
 
-For custom filtering logic, you can implement your own `ProcessingStage` subclass.
+For custom filtering logic, you can create your own stage by extending `ProcessingStage[ImageBatch, ImageBatch]`.
 
 ```{toctree}
 :maxdepth: 2
