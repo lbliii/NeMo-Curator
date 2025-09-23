@@ -42,7 +42,7 @@ pipeline.add_stage(ImageWriterStage(
 ```
 
 - The writer stage creates tar files with curated images
-- Metadata (including scores) is stored in separate Parquet files alongside tar archives
+- Metadata (if updated during curation pipeline) is stored in separate Parquet files alongside tar archives
 - Configurable images per tar file for optimal sharding
 - `deterministic_name=True` ensures reproducible file naming based on input content
 
