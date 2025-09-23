@@ -156,45 +156,13 @@ class AdaptiveWerFilterStage(LegacySpeechStage):
 
 ### Statistical WER Filtering
 
+For statistical analysis-based threshold selection, you can analyze your dataset's WER distribution and then apply the calculated threshold using NeMo Curator's `PreserveByValueStage`:
+
 ```python
-import numpy as np
-
-def create_statistical_wer_filter(audio_data: list[dict], percentile: float = 75) -> float:
-    """Calculate WER threshold based on dataset statistics."""
-    
-    wer_values = [item["wer"] for item in audio_data if "wer" in item]
-    
-    if not wer_values:
-        return 50.0  # Default threshold
-    
-    # Use percentile-based threshold
-    threshold = np.percentile(wer_values, percentile)
-    
-    # Analysis
-    stats = {
-        "mean_wer": np.mean(wer_values),
-        "median_wer": np.median(wer_values),
-        "std_wer": np.std(wer_values),
-        "suggested_threshold": threshold,
-        "samples_kept": sum(1 for wer in wer_values if wer <= threshold),
-        "samples_total": len(wer_values),
-        "retention_rate": sum(1 for wer in wer_values if wer <= threshold) / len(wer_values)
-    }
-    
-    print(f"Statistical WER Analysis:")
-    print(f"  Mean WER: {stats['mean_wer']:.2f}%")
-    print(f"  Suggested threshold (P{percentile}): {threshold:.2f}%")
-    print(f"  Retention rate: {stats['retention_rate']:.1%}")
-    
-    return threshold
-
-# Usage
-threshold = create_statistical_wer_filter(processed_audio_data, percentile=80)
-
-# Apply statistical threshold
+# Apply calculated statistical threshold
 statistical_filter = PreserveByValueStage(
     input_value_key="wer",
-    target_value=threshold,
+    target_value=calculated_threshold,  # From your statistical analysis
     operator="le"
 )
 ```
@@ -277,130 +245,6 @@ language_thresholds = {
 language_filter = create_language_aware_wer_filter(language_thresholds)
 ```
 
-## WER Analysis and Insights
-
-### WER Distribution Analysis
-
-```python
-import numpy as np
-
-def analyze_wer_distribution(audio_data: list[dict]) -> dict:
-    """Analyze WER distribution to inform filtering decisions."""
-    
-    wer_values = [item["wer"] for item in audio_data if "wer" in item]
-    
-    analysis = {
-        "basic_stats": {
-            "count": len(wer_values),
-            "mean": np.mean(wer_values),
-            "median": np.median(wer_values),
-            "std": np.std(wer_values),
-            "min": min(wer_values),
-            "max": max(wer_values)
-        },
-        
-        "percentiles": {
-            f"p{p}": np.percentile(wer_values, p)
-            for p in [10, 25, 50, 75, 90, 95, 99]
-        },
-        
-        "quality_distribution": {
-            "excellent": sum(1 for wer in wer_values if wer <= 10),
-            "good": sum(1 for wer in wer_values if 10 < wer <= 25),
-            "fair": sum(1 for wer in wer_values if 25 < wer <= 50),
-            "poor": sum(1 for wer in wer_values if 50 < wer <= 75),
-            "very_poor": sum(1 for wer in wer_values if wer > 75)
-        },
-        
-        "threshold_impact": {}
-    }
-    
-    # Calculate retention rates for different thresholds
-    for threshold in [10, 15, 20, 25, 30, 40, 50]:
-        retained = sum(1 for wer in wer_values if wer <= threshold)
-        retention_rate = retained / len(wer_values)
-        analysis["threshold_impact"][f"wer_{threshold}"] = {
-            "threshold": threshold,
-            "samples_retained": retained,
-            "retention_rate": retention_rate
-        }
-    
-    return analysis
-
-# Generate recommendations
-def recommend_wer_threshold(analysis: dict, target_retention: float = 0.8) -> float:
-    """Recommend WER threshold based on desired retention rate."""
-    
-    threshold_impact = analysis["threshold_impact"]
-    
-    # Find threshold that achieves target retention
-    for threshold_key in sorted(threshold_impact.keys()):
-        threshold_data = threshold_impact[threshold_key]
-        
-        if threshold_data["retention_rate"] >= target_retention:
-            return threshold_data["threshold"]
-    
-    # If no threshold achieves target retention, return highest
-    return max(threshold_impact[key]["threshold"] for key in threshold_impact)
-```
-
-### Error Pattern Analysis
-
-```python
-import numpy as np
-
-def analyze_wer_error_patterns(audio_data: list[dict]) -> dict:
-    """Analyze common error patterns in high-WER samples."""
-    
-    high_wer_samples = [
-        item for item in audio_data 
-        if item.get("wer", 0) > 50.0
-    ]
-    
-    error_patterns = {
-        "common_characteristics": {},
-        "duration_correlation": {},
-        "text_length_correlation": {},
-        "recommendations": []
-    }
-    
-    if not high_wer_samples:
-        return error_patterns
-    
-    # Analyze duration patterns
-    durations = [item.get("duration", 0) for item in high_wer_samples]
-    error_patterns["duration_correlation"] = {
-        "mean_duration": np.mean(durations),
-        "very_short": sum(1 for d in durations if d < 1.0),
-        "very_long": sum(1 for d in durations if d > 30.0)
-    }
-    
-    # Analyze text characteristics
-    texts = [item.get("text", "") for item in high_wer_samples]
-    text_lengths = [len(text.split()) for text in texts]
-    
-    error_patterns["text_length_correlation"] = {
-        "mean_word_count": np.mean(text_lengths),
-        "very_short_text": sum(1 for length in text_lengths if length < 3),
-        "very_long_text": sum(1 for length in text_lengths if length > 50)
-    }
-    
-    # Generate recommendations
-    recommendations = []
-    
-    if error_patterns["duration_correlation"]["very_short"] > len(high_wer_samples) * 0.3:
-        recommendations.append("Consider filtering very short audio files (< 1s)")
-    
-    if error_patterns["duration_correlation"]["very_long"] > len(high_wer_samples) * 0.2:
-        recommendations.append("Consider segmenting long audio files (> 30s)")
-    
-    if error_patterns["text_length_correlation"]["very_short_text"] > len(high_wer_samples) * 0.4:
-        recommendations.append("High WER correlated with short transcriptions - check data quality")
-    
-    error_patterns["recommendations"] = recommendations
-    
-    return error_patterns
-```
 
 ## Filtering Strategies
 
@@ -546,132 +390,23 @@ class ContextAwareWerFilterStage(LegacySpeechStage):
 
 ### Quality vs. Quantity Trade-offs
 
-```python
-import numpy as np
-import pandas as pd
-
-def evaluate_filtering_trade_offs(audio_data: list[dict], 
-                                thresholds: list[float]) -> pd.DataFrame:
-    """Evaluate quality vs. quantity trade-offs for different WER thresholds."""
-    
-    results = []
-    
-    for threshold in thresholds:
-        filtered_data = [
-            item for item in audio_data 
-            if item.get("wer", 100) <= threshold
-        ]
-        
-        if filtered_data:
-            wer_values = [item["wer"] for item in filtered_data]
-            durations = [item.get("duration", 0) for item in filtered_data]
-            
-            result = {
-                "threshold": threshold,
-                "samples_retained": len(filtered_data),
-                "retention_rate": len(filtered_data) / len(audio_data),
-                "mean_wer": np.mean(wer_values),
-                "total_hours": sum(durations) / 3600,
-                "quality_score": (100 - np.mean(wer_values)) * (len(filtered_data) / len(audio_data))
-            }
-        else:
-            result = {
-                "threshold": threshold,
-                "samples_retained": 0,
-                "retention_rate": 0.0,
-                "mean_wer": 0.0,
-                "total_hours": 0.0,
-                "quality_score": 0.0
-            }
-        
-        results.append(result)
-    
-    return pd.DataFrame(results)
-
-# Usage
-trade_off_analysis = evaluate_filtering_trade_offs(
-    audio_data=processed_samples,
-    thresholds=[10, 15, 20, 25, 30, 40, 50]
-)
-
-print(trade_off_analysis)
-```
-
-### Validation Strategies
-
-```python
-import numpy as np
-
-def validate_wer_filtering_effectiveness(original_data: list[dict], 
-                                       filtered_data: list[dict]) -> dict:
-    """Validate effectiveness of WER filtering."""
-    
-    original_wers = [item["wer"] for item in original_data]
-    filtered_wers = [item["wer"] for item in filtered_data]
-    
-    validation_metrics = {
-        "filtering_summary": {
-            "original_count": len(original_data),
-            "filtered_count": len(filtered_data),
-            "retention_rate": len(filtered_data) / len(original_data)
-        },
-        
-        "quality_improvement": {
-            "original_mean_wer": np.mean(original_wers),
-            "filtered_mean_wer": np.mean(filtered_wers),
-            "wer_improvement": np.mean(original_wers) - np.mean(filtered_wers),
-            "std_reduction": np.std(original_wers) - np.std(filtered_wers)
-        },
-        
-        "distribution_shift": {
-            "original_p95": np.percentile(original_wers, 95),
-            "filtered_p95": np.percentile(filtered_wers, 95),
-            "excellent_ratio_original": sum(1 for wer in original_wers if wer <= 10) / len(original_wers),
-            "excellent_ratio_filtered": sum(1 for wer in filtered_wers if wer <= 10) / len(filtered_wers)
-        }
-    }
-    
-    return validation_metrics
-```
+When selecting WER thresholds, consider the balance between data quality and quantity. You can experiment with different thresholds using NeMo Curator's filtering stages to find the optimal balance for your specific use case.
 
 ## Troubleshooting
 
 ### Common WER Filtering Issues
 
 **Too Aggressive Filtering**: Very high WER threshold rejection
-
-```python
-import numpy as np
-
-# Diagnose: Check WER distribution
-wer_dist = [item["wer"] for item in audio_data]
-print(f"WER distribution: P50={np.percentile(wer_dist, 50):.1f}, P75={np.percentile(wer_dist, 75):.1f}")
-
-# Solution: Relax threshold or check ASR model selection
-```
+- Solution: Relax threshold or check ASR model selection
+- Use adaptive thresholds based on dataset characteristics
 
 **Inconsistent Quality**: High variance in WER values
-
-```python
-# Diagnose: Analyze error patterns
-error_analysis = analyze_wer_error_patterns(audio_data)
-
-# Solution: Add duration filtering, improve audio preprocessing
-```
+- Solution: Add duration filtering, improve audio preprocessing
+- Consider context-aware filtering approaches
 
 **Language-Specific Issues**: Poor performance for certain languages
-
-```python
-import numpy as np
-
-# Diagnose: Check language-specific WER distribution
-for lang in languages:
-    lang_data = [item for item in audio_data if item.get("language") == lang]
-    lang_wers = [item["wer"] for item in lang_data]
-    print(f"{lang}: mean WER = {np.mean(lang_wers):.2f}%")
-
-# Solution: Use language-specific models and thresholds
-```
+- Solution: Use language-specific models and thresholds
+- Implement language-aware filtering with appropriate adjustments
 
 ## Related Topics
 

@@ -16,24 +16,29 @@ Create custom quality assessment metrics for specialized audio curation use case
 The example thresholds and weights in this article are illustrative and should be calibrated for your specific dataset and goals. Performance may vary significantly based on audio quality, domain, and language.
 ```
 
+## Before You Start
+
+Before creating custom quality metrics, you should understand these foundational NeMo Curator concepts:
+
+- **Processing Stages**: The fundamental computation units that can be chained in pipelines. See the [video abstractions guide](../../../about/concepts/video/abstractions.md#stages) for detailed stage architecture concepts.
+- **AudioBatch Data Structure**: The core container for audio data. See [AudioBatch concepts](../../../about/concepts/audio/audio-batch.md) for complete structure details and usage patterns.
+- **ASR Pipeline Architecture**: How audio processing stages work together. See [ASR pipeline concepts](../../../about/concepts/audio/asr-pipeline.md) for the complete workflow overview.
+
 ## Creating Custom Quality Stages
 
 ### Basic Custom Metric Stage
 
 ```python
-from nemo_curator.stages.audio.common import LegacySpeechStage
+from nemo_curator.stages.function_decorators import processing_stage
 from nemo_curator.tasks import AudioBatch
-from dataclasses import dataclass
 
-@dataclass
-class CustomAudioQualityStage(LegacySpeechStage):
+@processing_stage(name="custom_audio_quality")
+def custom_audio_quality_stage(audio_batch: AudioBatch) -> AudioBatch:
     """Template for custom audio quality assessment."""
     
-    # Configuration parameters
-    quality_threshold: float = 0.5
-    metric_name: str = "custom_quality"
+    filtered_data = []
     
-    def process_dataset_entry(self, data_entry: dict) -> list[AudioBatch]:
+    for data_entry in audio_batch.data:
         # Extract relevant data
         audio_filepath = data_entry.get("audio_filepath", "")
         text = data_entry.get("text", "")
@@ -41,25 +46,26 @@ class CustomAudioQualityStage(LegacySpeechStage):
         duration = data_entry.get("duration", 0)
         
         # Calculate custom quality metric
-        quality_score = self.calculate_quality_metric(
+        quality_score = calculate_quality_metric(
             data_entry, audio_filepath, text, pred_text, duration
         )
         
         # Add metric to data entry
-        data_entry[self.metric_name] = quality_score
+        data_entry["custom_quality"] = quality_score
         
         # Optional: Apply threshold filtering
-        if quality_score >= self.quality_threshold:
-            data_entry[f"{self.metric_name}_passed"] = True
-            return [AudioBatch(data=data_entry)]
-        else:
-            return []  # Filter out low-quality samples
+        quality_threshold = 0.5
+        if quality_score >= quality_threshold:
+            data_entry["custom_quality_passed"] = True
+            filtered_data.append(data_entry)
     
-    def calculate_quality_metric(self, data_entry: dict, audio_filepath: str, text: str, 
-                               pred_text: str, duration: float) -> float:
-        """Override this method to implement custom quality calculation."""
-        # Placeholder implementation
-        return 1.0  # Replace with actual metric calculation
+    return AudioBatch(data=filtered_data, filepath_key=audio_batch.filepath_key)
+
+def calculate_quality_metric(data_entry: dict, audio_filepath: str, text: str, 
+                           pred_text: str, duration: float) -> float:
+    """Implement your custom quality calculation here."""
+    # Placeholder implementation
+    return 1.0  # Replace with actual metric calculation
 ```
 
 ## Domain-Specific Quality Metrics
@@ -67,13 +73,28 @@ class CustomAudioQualityStage(LegacySpeechStage):
 ### Conversational Speech Quality
 
 ```python
-@dataclass
-class ConversationalQualityStage(CustomAudioQualityStage):
+@processing_stage(name="conversational_quality")
+def conversational_quality_stage(audio_batch: AudioBatch) -> AudioBatch:
     """Quality assessment specialized for conversational speech."""
-    metric_name: str = "conversational_quality"
     
-    def calculate_quality_metric(self, data_entry: dict, audio_filepath: str, text: str,
-                               pred_text: str, duration: float) -> float:
+    for data_entry in audio_batch.data:
+        # Extract relevant data
+        audio_filepath = data_entry.get("audio_filepath", "")
+        text = data_entry.get("text", "")
+        pred_text = data_entry.get("pred_text", "")
+        duration = data_entry.get("duration", 0)
+        
+        # Calculate conversational quality score
+        quality_score = calculate_conversational_quality(
+            data_entry, audio_filepath, text, pred_text, duration
+        )
+        
+        data_entry["conversational_quality"] = quality_score
+    
+    return audio_batch
+
+def calculate_conversational_quality(data_entry: dict, audio_filepath: str, text: str,
+                                   pred_text: str, duration: float) -> float:
         """Calculate conversational speech quality score."""
         
         quality_factors = []
@@ -670,95 +691,31 @@ def create_ensemble_quality_pipeline() -> Pipeline:
     return pipeline
 ```
 
-## Metric Validation and Calibration
+## Best Practices
 
-### Cross-Validation with Human Assessment
+### Custom Metric Development Guidelines
 
-The calibration functions require additional dependencies. Install them with:
+1. **Use Modern Stage Patterns**: Use `@processing_stage` decorators for new custom stages - this is the current recommended approach
+2. **Store Detailed Breakdowns**: Include factor-level scores for debugging and analysis
+3. **Handle Edge Cases**: Gracefully handle missing dependencies, malformed audio, or empty text
+4. **Calibrate Thresholds**: Test your metrics on representative data before production use
+5. **Document Assumptions**: Clearly document the assumptions and limitations of your custom metrics
 
-```bash
-pip install scipy scikit-learn
-```
+### Integration with NeMo Curator Pipelines
 
-```python
-def calibrate_custom_metric(custom_scores: list[float], 
-                          human_ratings: list[float]) -> dict:
-    """Calibrate custom quality metric against human assessments."""
-    
-    import numpy as np
-    from scipy.stats import pearsonr, spearmanr
-    from sklearn.metrics import mean_absolute_error
-    
-    # Calculate correlations
-    pearson_corr, pearson_p = pearsonr(custom_scores, human_ratings)
-    spearman_corr, spearman_p = spearmanr(custom_scores, human_ratings)
-    
-    # Calculate prediction accuracy
-    mae = mean_absolute_error(human_ratings, custom_scores)
-    
-    calibration_results = {
-        "correlation_analysis": {
-            "pearson_correlation": pearson_corr,
-            "pearson_p_value": pearson_p,
-            "spearman_correlation": spearman_corr,
-            "spearman_p_value": spearman_p
-        },
-        
-        "prediction_accuracy": {
-            "mean_absolute_error": mae,
-            "rmse": np.sqrt(np.mean((np.array(custom_scores) - np.array(human_ratings)) ** 2))
-        },
-        
-        "calibration_quality": {
-            "strong_correlation": pearson_corr >= 0.7,
-            "significant": pearson_p < 0.05,
-            "acceptable_error": mae <= 0.2
-        }
-    }
-    
-    return calibration_results
-```
-
-### A/B Testing Framework
-
-```{note}
-The A/B testing framework requires numpy, which is already included as a core dependency.
-```
+Custom quality stages integrate seamlessly with other NeMo Curator components:
 
 ```python
-def ab_test_quality_metrics(audio_data: list[dict], 
-                          metric_a_func: callable,
-                          metric_b_func: callable,
-                          validation_set: list[dict]) -> dict:
-    """A/B test different quality metrics."""
-    
-    import numpy as np
-    # Calculate metrics for both approaches
-    scores_a = [metric_a_func(item) for item in audio_data]
-    scores_b = [metric_b_func(item) for item in audio_data]
-    
-    # Test on validation set
-    val_scores_a = [metric_a_func(item) for item in validation_set]
-    val_scores_b = [metric_b_func(item) for item in validation_set]
-    
-    # Compare distributions
-    comparison = {
-        "metric_a": {
-            "mean": np.mean(scores_a),
-            "std": np.std(scores_a),
-            "validation_mean": np.mean(val_scores_a)
-        },
-        "metric_b": {
-            "mean": np.mean(scores_b), 
-            "std": np.std(scores_b),
-            "validation_mean": np.mean(val_scores_b)
-        },
-        "comparison": {
-            "correlation": np.corrcoef(scores_a, scores_b)[0, 1],
-            "mean_difference": np.mean(scores_a) - np.mean(scores_b),
-            "consistency": np.std(scores_a) - np.std(scores_b)
-        }
-    }
-    
-    return comparison
+from nemo_curator.pipeline import Pipeline
+
+# Example integration
+pipeline = Pipeline(name="custom_quality_assessment")
+pipeline.add_stage(GetAudioDurationStage())
+pipeline.add_stage(GetPairwiseWerStage())
+pipeline.add_stage(YourCustomQualityStage())
+pipeline.add_stage(PreserveByValueStage(
+    input_value_key="your_custom_metric",
+    target_value=0.7,
+    operator="ge"
+))
 ```
