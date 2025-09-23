@@ -73,26 +73,56 @@ Filtering integrates with the classification stages, which automatically remove 
 - **NSFW Filtering:** Images with scores above `score_threshold` are automatically filtered out  
 - **Pipeline Flow:** Filtering happens seamlessly as part of the stage processing
 
-The filtering happens automatically within the stages - images that don't meet criteria are removed from the `ImageBatch` before passing to the next stage.
+The filtering happens automatically within the stages - the stages remove images that don't meet criteria from the `ImageBatch` before passing to the next stage.
 
 ## Deduplication
 
-Image deduplication removes duplicate images that have been pre-identified through external processes.
+Image deduplication identifies and removes duplicate images using semantic similarity based on embeddings. NeMo Curator provides a complete workflow from embedding-based duplicate detection to image removal.
 
-- **ImageDuplicatesRemovalStage:** Filters out images based on a list of duplicate IDs stored in Parquet files
-- **ID-based Removal:** Uses image identifiers to remove duplicates rather than computing similarity
-- **Pipeline Integration:** Runs after embedding and classification stages to remove identified duplicates
+### Semantic Duplicate Detection
+
+- **SemanticDeduplicationWorkflow:** Uses embeddings to identify duplicates through clustering and pairwise similarity
+- **Embedding-based:** Leverages CLIP embeddings generated in previous pipeline stages
+- **Configurable Similarity:** Control duplicate detection strictness with similarity thresholds
+- **Scalable Processing:** GPU-accelerated clustering and similarity computation
+
+**Example:**
+
+```python
+from nemo_curator.stages.deduplication.semantic import SemanticDeduplicationWorkflow
+
+# Run semantic deduplication on embeddings
+dedup_workflow = SemanticDeduplicationWorkflow(
+    input_path="/path/to/embeddings",
+    output_path="/path/to/removal_ids",
+    id_field="image_id",
+    embedding_field="embedding",
+    n_clusters=100,
+    eps=0.01,  # Similarity threshold (lower = more strict)
+)
+dedup_workflow.run()
+```
+
+### Duplicate Removal
+
+- **ImageDuplicatesRemovalStage:** Filters out images based on duplicate IDs identified by semantic deduplication
+- **ID-based Removal:** Uses image identifiers to remove duplicates efficiently
+- **Pipeline Integration:** Runs after embedding and classification stages using duplicate IDs from semantic workflow
 
 **Example:**
 
 ```python
 from nemo_curator.stages.image.deduplication.removal import ImageDuplicatesRemovalStage
 
-# Add to pipeline
+# Add to pipeline after running semantic deduplication
 pipeline.add_stage(ImageDuplicatesRemovalStage(
-    removal_parquets_dir="/path/to/duplicate_ids",
+    removal_parquets_dir="/path/to/removal_ids/duplicates",
     duplicate_id_field="id",
 ))
+```
+
+```{seealso}
+For a complete end-to-end workflow, refer to the [Image Duplicate Removal Tutorial](image-tutorials-dedup).
 ```
 
 ## Pipeline Flow
@@ -104,7 +134,7 @@ A typical image curation pipeline using NeMo Curator's stage-based architecture:
 3. **Generate embeddings** (`ImageEmbeddingStage`)
 4. **Filter by aesthetics** (`ImageAestheticFilterStage`)
 5. **Filter NSFW content** (`ImageNSFWFilterStage`)
-6. **Remove duplicates** (`ImageDuplicatesRemovalStage`) - optional
+6. **Remove duplicates** (`ImageDuplicatesRemovalStage`) - requires running `SemanticDeduplicationWorkflow` first
 
 **Example:**
 
@@ -122,8 +152,15 @@ pipeline.add_stage(ImageReaderStage())
 pipeline.add_stage(ImageEmbeddingStage(model_dir="/path/to/models"))
 pipeline.add_stage(ImageAestheticFilterStage(model_dir="/path/to/models", score_threshold=0.5))
 pipeline.add_stage(ImageNSFWFilterStage(model_dir="/path/to/models", score_threshold=0.5))
-# Optional: Remove duplicates if you have pre-identified duplicate IDs
-# pipeline.add_stage(ImageDuplicatesRemovalStage(removal_parquets_dir="/path/to/duplicate_ids"))
+# Optional: Remove duplicates (run semantic deduplication workflow first)
+pipeline.add_stage(ImageDuplicatesRemovalStage(
+    removal_parquets_dir="/path/to/removal_ids/duplicates",
+    duplicate_id_field="id",
+))
 ```
 
 This modular pipeline approach allows you to customize, reorder, or skip stages based on your workflow needs.
+
+```{note}
+For duplicate removal, you'll need to run the semantic deduplication workflow separately between embedding generation and the removal stage. See the [Image Duplicate Removal Tutorial](image-tutorials-dedup) for the complete three-step process: embedding generation → semantic deduplication → duplicate removal.
+```
