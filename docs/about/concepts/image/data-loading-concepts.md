@@ -14,14 +14,16 @@ modality: "image-only"
 
 This page covers the core concepts for loading and managing image datasets in NeMo Curator.
 
-## Tar Archive Format and Directory Structure
+> **Input vs. Output**: This page focuses on **input** data formats for loading datasets into NeMo Curator. For information about **output** formats (including Parquet metadata files created during export), see the [Data Export Concepts](data-export-concepts.md) page.
 
-NeMo Curator processes tar archives containing JPEG images for scalable, distributed image curation. The `ImageReaderStage` extracts only JPEG images from `.tar` files, ignoring other content. Optionally, `.idx` index files can be provided for fast DALI-based loading.
+## Input Data Format and Directory Structure
 
-**Example directory structure:**
+NeMo Curator loads image datasets from tar archives for scalable, distributed image curation. The `ImageReaderStage` reads only JPEG images from input `.tar` files, ignoring other content. Optionally, `.idx` index files can be provided for fast DALI-based loading.
+
+**Example input directory structure:**
 
 ```bash
-dataset/
+input_dataset/
 ├── 00000.tar
 │   ├── 000000000.jpg
 │   ├── 000000000.txt
@@ -33,8 +35,13 @@ dataset/
 ├── 00001.idx  # optional
 ```
 
-- `.tar` files: Contain images (`.jpg`), captions (`.txt`), and metadata (`.json`)
+**Input file types:**
+
+- `.tar` files: Contain images (`.jpg`), captions (`.txt`), and metadata (`.json`) - only images are loaded
 - `.idx` files: (Optional) Index files for fast DALI-based loading
+
+:::{note} While tar archives may contain captions (`.txt`) and metadata (`.json`) files, the `ImageReaderStage` only extracts JPEG images. Other file types are ignored during the loading process.
+:::
 
 Each record is identified by a unique ID (e.g., `000000031`), used as the prefix for all files belonging to that record.
 
