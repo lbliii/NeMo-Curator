@@ -91,14 +91,14 @@ Load and process large-scale image datasets from local storage or cloud sources 
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2
 
-:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` WebDataset
-:link: image-load-data-webdataset
+:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` Tar Archives
+:link: image-load-data-tar-archives
 :link-type: ref
-Load and process sharded image-text datasets in WebDataset format
+Load and process JPEG images from tar archives using DALI
 +++
-{bdg-secondary}`webdataset`
-{bdg-secondary}`sharded`
-{bdg-secondary}`distributed`
+{bdg-secondary}`tar-archives`
+{bdg-secondary}`dali`
+{bdg-secondary}`gpu-accelerated`
 :::
 
 ::::
@@ -150,7 +150,7 @@ Configure Ray-based executors for distributed processing and resource management
 :::
 
 :::{grid-item-card} {octicon}`zap;1.5em;sd-mr-1` Performance Optimization
-:link: image-load-data-webdataset
+:link: image-load-data-tar-archives
 :link-type: ref
 
 Optimize performance with DALI GPU acceleration and efficient resource allocation.

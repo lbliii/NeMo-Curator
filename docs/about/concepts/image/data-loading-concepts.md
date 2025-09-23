@@ -1,7 +1,7 @@
 ---
-description: "Core concepts for loading and managing image datasets using WebDataset format with cloud storage support"
+description: "Core concepts for loading and managing image datasets from tar archives with cloud storage support"
 categories: ["concepts-architecture"]
-tags: ["data-loading", "webdataset", "dali", "cloud-storage", "sharding", "gpu-accelerated"]
+tags: ["data-loading", "tar-archives", "dali", "cloud-storage", "sharding", "gpu-accelerated"]
 personas: ["data-scientist-focused", "mle-focused"]
 difficulty: "intermediate"
 content_type: "concept"
@@ -14,9 +14,9 @@ modality: "image-only"
 
 This page covers the core concepts for loading and managing image datasets in NeMo Curator.
 
-## WebDataset Format and Directory Structure
+## Tar Archive Format and Directory Structure
 
-NeMo Curator uses the [WebDataset](https://github.com/webdataset/webdataset) format for scalable, distributed image curation. A WebDataset directory contains sharded `.tar` files, each holding image-text pairs and metadata. Optionally, `.idx` index files can be provided for fast DALI-based loading.
+NeMo Curator processes tar archives containing JPEG images for scalable, distributed image curation. The `ImageReaderStage` extracts only JPEG images from `.tar` files, ignoring other content. Optionally, `.idx` index files can be provided for fast DALI-based loading.
 
 **Example directory structure:**
 
@@ -59,7 +59,7 @@ pipeline = Pipeline(name="image_loading")
 
 # Partition tar files
 pipeline.add_stage(FilePartitioningStage(
-    file_paths="/path/to/webdataset",  # or "s3://bucket/webdataset"
+    file_paths="/path/to/tar_dataset",  # or "s3://bucket/tar_dataset"
     files_per_partition=1,
     file_extensions=[".tar"],
 ))
@@ -75,11 +75,11 @@ pipeline.add_stage(ImageReaderStage(
 
 ## DALI Integration for High-Performance Loading
 
-The `ImageReaderStage` uses [NVIDIA DALI](https://docs.nvidia.com/deeplearning/dali/user-guide/docs/) for efficient, GPU-accelerated loading and preprocessing of images from WebDataset tar files. DALI enables:
+The `ImageReaderStage` uses [NVIDIA DALI](https://docs.nvidia.com/deeplearning/dali/user-guide/docs/) for efficient, GPU-accelerated loading and preprocessing of JPEG images from tar files. DALI enables:
 
 - **GPU Acceleration:** Fast image decoding on GPU with automatic CPU fallback
 - **Batch Processing:** Efficient batching and streaming of image data
-- **WebDataset Native:** Built-in support for WebDataset tar format
+- **Tar Archive Processing:** Built-in support for tar archive format
 - **Memory Efficiency:** Streams images without loading entire datasets into memory
 
 ## Index Files

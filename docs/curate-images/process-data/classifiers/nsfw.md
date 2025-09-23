@@ -43,7 +43,7 @@ pipeline = Pipeline(name="nsfw_filtering", description="Filter NSFW content from
 
 # Stage 1: Partition tar files
 pipeline.add_stage(FilePartitioningStage(
-    file_paths="/path/to/webdataset",
+    file_paths="/path/to/tar_dataset",
     files_per_partition=1,
     file_extensions=[".tar"],
 ))

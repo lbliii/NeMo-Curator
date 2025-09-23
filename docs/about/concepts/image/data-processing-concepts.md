@@ -100,7 +100,7 @@ pipeline.add_stage(ImageDuplicatesRemovalStage(
 A typical image curation pipeline using NeMo Curator's stage-based architecture:
 
 1. **Partition** tar files (`FilePartitioningStage`)
-2. **Load** images from WebDataset (`ImageReaderStage`)
+2. **Load** images from tar archives (`ImageReaderStage`)
 3. **Generate embeddings** (`ImageEmbeddingStage`)
 4. **Filter by aesthetics** (`ImageAestheticFilterStage`)
 5. **Filter NSFW content** (`ImageNSFWFilterStage`)

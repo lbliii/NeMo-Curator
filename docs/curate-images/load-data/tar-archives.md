@@ -1,24 +1,24 @@
 ---
-description: "Load and process image-text pair datasets in WebDataset format with sharded storage and distributed processing"
+description: "Load and process JPEG images from tar archives using DALI-powered GPU acceleration with distributed processing"
 categories: ["how-to-guides"]
-tags: ["webdataset", "data-loading", "sharding", "distributed", "cloud-storage", "dali"]
+tags: ["tar-archives", "data-loading", "dali", "gpu-acceleration", "distributed", "cloud-storage"]
 personas: ["data-scientist-focused", "mle-focused"]
 difficulty: "intermediate"
 content_type: "how-to"
 modality: "image-only"
 ---
 
-(image-load-data-webdataset)=
+(image-load-data-tar-archives)=
 
-# WebDataset
+# Loading Images from Tar Archives
 
-Load and process image-text pair datasets in WebDataset format using NeMo Curator's DALI-powered `ImageReaderStage`.
+Load and process JPEG images from tar archives using NeMo Curator's DALI-powered `ImageReaderStage`.
 
-WebDataset is a sharded, metadata-rich file format that enables scalable, distributed image curation. The `ImageReaderStage` uses NVIDIA DALI for high-performance image decoding with automatic GPU/CPU fallback.
+The `ImageReaderStage` uses NVIDIA DALI for high-performance image decoding with GPU acceleration and automatic CPU fallback, designed for processing large collections of images stored in tar files.
 
 ## How it Works
 
-A WebDataset directory contains sharded `.tar` files, each holding image-text pairs and metadata, along with corresponding `.parquet` files for tabular metadata. Each record is identified by a unique ID, which is used as the prefix for all files belonging to that record.
+The `ImageReaderStage` processes directories containing `.tar` files with JPEG images. While tar files may contain other file types (text, JSON, etc.), the stage extracts only JPEG images for processing.
 
 **Directory Structure Example**
 
@@ -26,19 +26,24 @@ A WebDataset directory contains sharded `.tar` files, each holding image-text pa
 dataset/
 ├── 00000.tar
 │   ├── 000000000.jpg
-│   ├── 000000000.txt
-│   ├── 000000000.json
+│   ├── 000000001.jpg
+│   ├── 000000002.jpg
 │   ├── ...
 ├── 00001.tar
+│   ├── 000001000.jpg
+│   ├── 000001001.jpg
 │   ├── ...
-├── 00000.parquet
-├── 00001.parquet
+├── 00000.idx  # optional index file
+├── 00001.idx  # optional index file
 ```
 
-- `.tar` files: Contain images (`.jpg`), captions (`.txt`), and metadata (`.json`)
-- `.parquet` files: Tabular metadata for each record
+**What gets processed:**
+- **JPEG images**: All `.jpg` files within tar archives
+- **Index files**: Optional `.idx` files for faster DALI loading
 
-Each record is identified by a unique ID (for example, `000000031`), which is used as the prefix for all files belonging to that record.
+**What gets ignored:**
+- Text files (`.txt`), JSON files (`.json`), and other non-JPEG content within tar archives
+- Any files outside the tar archives (like standalone Parquet files)
 
 ---
 
@@ -50,16 +55,16 @@ from nemo_curator.stages.file_partitioning import FilePartitioningStage
 from nemo_curator.stages.image.io.image_reader import ImageReaderStage
 
 # Create pipeline
-pipeline = Pipeline(name="image_loading", description="Load images from WebDataset")
+pipeline = Pipeline(name="image_loading", description="Load images from tar archives")
 
 # Stage 1: Partition tar files for parallel processing
 pipeline.add_stage(FilePartitioningStage(
-    file_paths="/path/to/webdataset",
+    file_paths="/path/to/tar_dataset",
     files_per_partition=1,
     file_extensions=[".tar"],
 ))
 
-# Stage 2: Read images from webdataset tar files
+# Stage 2: Read JPEG images from tar files using DALI
 pipeline.add_stage(ImageReaderStage(
     task_batch_size=100,
     verbose=True,
@@ -69,11 +74,11 @@ pipeline.add_stage(ImageReaderStage(
 
 # Run the pipeline (uses XennaExecutor by default)
 results = pipeline.run()
-
-
 ```
 
-- `file_paths`: Path to the root of the WebDataset directory (local or cloud storage)
+**Parameters:**
+
+- `file_paths`: Path to directory containing tar files (local or cloud storage)
 - `files_per_partition`: Number of tar files to process per partition (controls parallelism)
 - `task_batch_size`: Number of images per ImageBatch for processing
 
@@ -81,31 +86,34 @@ results = pipeline.run()
 
 ## ImageReaderStage Details
 
-The `ImageReaderStage` is the core component that handles WebDataset loading with the following capabilities:
+The `ImageReaderStage` is the core component that handles tar archive loading with the following capabilities:
 
 ### DALI Integration
 
 - **Automatic Device Selection**: Uses GPU decoding when CUDA is available, CPU decoding otherwise
-- **WebDataset Reader**: Leverages DALI's native WebDataset reader for optimal performance
+- **Tar Archive Reader**: Leverages DALI's webdataset reader to process tar files
 - **Batch Processing**: Processes images in configurable batch sizes for memory efficiency
+- **JPEG-Only Processing**: Extracts only JPEG files (`ext=["jpg"]`) from tar archives
 
 ### Image Processing
 
-- **Format Support**: Reads JPEG images (`.jpg`) from tar files
+- **Format Support**: Reads only JPEG images (`.jpg`) from tar files
 - **Size Preservation**: Maintains original image dimensions (no automatic resizing)
 - **RGB Output**: Converts images to RGB format for consistent downstream processing
+- **Metadata Extraction**: Creates ImageObject instances with image paths and generated IDs
 
 ### Error Handling
 
 - **Missing Components**: Skips missing or corrupted images with `missing_component_behavior="skip"`
 - **Graceful Fallback**: Automatically falls back to CPU processing if GPU is unavailable
 - **Validation**: Validates tar file paths and provides clear error messages
+- **Non-JPEG Filtering**: Silently ignores non-JPEG files within tar archives
 
 ---
 
 ## Parameters
 
-```{list-table} WebDataset Loading Parameters
+```{list-table} Tar Archive Loading Parameters
 :header-rows: 1
 :widths: 20 20 40 20
 
@@ -115,7 +123,7 @@ The `ImageReaderStage` is the core component that handles WebDataset loading wit
   - Default
 * - `file_paths`
   - str
-  - Path to the WebDataset directory (local or cloud storage)
+  - Path to directory containing tar files (local or cloud storage)
   - Required
 * - `files_per_partition`
   - int
@@ -127,7 +135,7 @@ The `ImageReaderStage` is the core component that handles WebDataset loading wit
   - 100
 * - `num_threads`
   - int
-  - Number of threads for I/O operations
+  - Number of threads for DALI operations
   - 8
 * - `num_gpus_per_worker`
   - float
@@ -157,9 +165,7 @@ ImageObject(
 )
 ```
 
-The WebDataset directory structure remains:
-- Sharded `.tar` files with images, captions, and metadata
-- `.parquet` files with tabular metadata
+**Note**: Only JPEG images are extracted from tar files. Other content (text files, JSON metadata, etc.) within the tar archives is ignored during processing.
 
 ---
 
@@ -179,9 +185,9 @@ The WebDataset directory structure remains:
 
 ### Format Support
 
-- **WebDataset Native**: Built specifically for WebDataset `.tar` format with DALI webdataset reader
-- **Image Formats**: Supports JPEG images (`.jpg` extension) within tar files
-- **Metadata Preservation**: Extracts image IDs and paths for downstream processing
+- **Tar Archive Processing**: Uses DALI's webdataset reader to process tar files efficiently
+- **JPEG-Only**: Supports only JPEG images (`.jpg` extension) within tar files
+- **Metadata Extraction**: Generates image IDs and preserves file paths for downstream processing
 
 ## Performance Optimization
 
@@ -217,7 +223,7 @@ The DALI-based `ImageReaderStage` provides performance benefits over traditional
 
 - **GPU Acceleration**: Uses GPU decoding when CUDA is available for improved throughput
 - **Memory Efficiency**: Streams images in batches without loading entire datasets into memory
-- **I/O Optimization**: DALI's WebDataset reader is optimized for tar file processing
+- **I/O Optimization**: DALI's webdataset reader is optimized for tar file processing
 
 **Recommended Batch Sizes by Hardware:**
 

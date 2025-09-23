@@ -12,13 +12,13 @@ modality: "image-only"
 
 # Process Data for Image Curation
 
-Process image data you've loaded into a WebDataset using NeMo Curator's suite of tools. These tools help you generate embeddings, classify images, and filter your dataset to prepare high-quality data for downstream AI tasks such as generative model training, dataset analysis, or quality control.
+Process image data you've loaded from tar archives using NeMo Curator's suite of tools. These tools help you generate embeddings, classify images, and filter your dataset to prepare high-quality data for downstream AI tasks such as generative model training, dataset analysis, or quality control.
 
 ## How it Works
 
 Image processing in NeMo Curator follows a pipeline-based approach with these stages:
 
-1. **Partition files** using `FilePartitioningStage` to distribute WebDataset tar files
+1. **Partition files** using `FilePartitioningStage` to distribute tar files
 2. **Read images** using `ImageReaderStage` with DALI acceleration
 3. **Generate embeddings** using `ImageEmbeddingStage` with CLIP models
 4. **Apply classifiers** using `ImageAestheticFilterStage` and `ImageNSFWFilterStage`

@@ -56,7 +56,7 @@ def create_image_embedding_pipeline(input_dir, embeddings_dir, model_dir):
         file_extensions=[".tar"],
     ))
     
-    # Read images from WebDataset
+    # Read images from tar archives
     pipeline.add_stage(ImageReaderStage(
         task_batch_size=100,
         verbose=True,
@@ -87,13 +87,13 @@ def create_image_embedding_pipeline(input_dir, embeddings_dir, model_dir):
 
 ```python
 # Set your paths
-INPUT_WDS_DIR = "/path/to/input/webdataset"
+INPUT_TAR_DIR = "/path/to/input/tar_dataset"
 EMBEDDINGS_DIR = "/path/to/embeddings"
 MODEL_DIR = "/path/to/models"
 
 # Create and run pipeline
 embedding_pipeline = create_image_embedding_pipeline(
-    INPUT_WDS_DIR, EMBEDDINGS_DIR, MODEL_DIR
+    INPUT_TAR_DIR, EMBEDDINGS_DIR, MODEL_DIR
 )
 embedding_pipeline.run()  # Uses XennaExecutor by default
 ```
@@ -243,13 +243,13 @@ def create_image_removal_pipeline(input_dir, removal_dir, output_dir):
     return pipeline
 
 # Set paths
-INPUT_WDS_DIR = "/path/to/input/webdataset"
+INPUT_TAR_DIR = "/path/to/input/tar_dataset"
 REMOVAL_DIR = "/path/to/removal_ids"  
 OUTPUT_DIR = "/path/to/deduplicated/dataset"
 
 # Run removal pipeline
 removal_pipeline = create_image_removal_pipeline(
-    INPUT_WDS_DIR, REMOVAL_DIR, OUTPUT_DIR
+    INPUT_TAR_DIR, REMOVAL_DIR, OUTPUT_DIR
 )
 removal_pipeline.run()  # Uses XennaExecutor by default
 ```
@@ -318,7 +318,7 @@ def run_image_deduplication_workflow():
     """Run complete image deduplication workflow."""
     
     # Define paths
-    INPUT_WDS_DIR = "/path/to/input/webdataset"
+    INPUT_TAR_DIR = "/path/to/input/tar_dataset"
     EMBEDDINGS_DIR = "/path/to/embeddings"
     REMOVAL_DIR = "/path/to/removal_ids"
     OUTPUT_DIR = "/path/to/deduplicated/dataset"

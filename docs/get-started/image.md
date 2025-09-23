@@ -201,7 +201,7 @@ python ~/nemo_curator/image_curation_example.py \
 
 Explore the [Image Curation documentation](image-overview) for more advanced processing techniques:
 
-* **[WebDataset Loading](../curate-images/load-data/webdataset.md)** - Learn about data format and loading options
+* **[Tar Archive Loading](../curate-images/load-data/tar-archives.md)** - Learn about loading JPEG images from tar files
 * **[CLIP Embeddings](../curate-images/process-data/embeddings/clip-embedder.md)** - Understand embedding generation
 * **[Quality Filtering](../curate-images/process-data/classifiers/index.md)** - Advanced aesthetic and NSFW classification
 * **[Complete Tutorial](https://github.com/NVIDIA/NeMo-Curator/blob/main/tutorials/image/getting-started/image_curation_example.py)** - Full working example with data download

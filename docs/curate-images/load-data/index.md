@@ -38,10 +38,10 @@ The result is a stream of `ImageBatch` objects ready for embedding, classificati
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2
 
-:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` WebDataset Pipeline
-:link: image-load-data-webdataset
+:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` Tar Archive Pipeline
+:link: image-load-data-tar-archives
 :link-type: ref
-Load and process sharded image-text datasets using `FilePartitioningStage` and `ImageReaderStage` for scalable distributed curation.
+Load and process JPEG images from tar archives using `FilePartitioningStage` and `ImageReaderStage` for scalable distributed curation.
 +++
 {bdg-secondary}`FilePartitioningStage`
 {bdg-secondary}`ImageReaderStage`

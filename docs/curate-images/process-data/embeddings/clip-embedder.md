@@ -38,7 +38,7 @@ pipeline = Pipeline(name="image_embedding", description="Generate CLIP embedding
 
 # Stage 1: Partition tar files
 pipeline.add_stage(FilePartitioningStage(
-    file_paths="/path/to/webdataset",
+    file_paths="/path/to/tar_dataset",
     files_per_partition=1,
     file_extensions=[".tar"],
 ))
