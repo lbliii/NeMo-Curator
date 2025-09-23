@@ -60,16 +60,6 @@ pipeline.add_stage(ImageEmbeddingStage(
 
 # Run the pipeline (uses XennaExecutor by default)
 results = pipeline.run()
-
-# Or explicitly specify an executor:
-from nemo_curator.backends.xenna import XennaExecutor
-from nemo_curator.backends.experimental.ray_data import RayDataExecutor
-from nemo_curator.backends.experimental.ray_actor_pool import RayActorPoolExecutor
-
-executor = XennaExecutor()  # Default, recommended for most workloads
-# executor = RayDataExecutor()  # Experimental Ray-based option
-# executor = RayActorPoolExecutor()  # Production-ready Ray executor
-results = pipeline.run(executor)
 ```
 
 ## Key Parameters
