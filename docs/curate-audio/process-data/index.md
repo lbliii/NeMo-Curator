@@ -45,7 +45,7 @@ Use pretrained NeMo ASR models for accurate speech recognition
 :::
 
 :::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` Batch Processing
-:link: asr-inference/batch-processing
+:link: asr-inference/index
 :link-type: doc
 Efficiently process large audio datasets with configurable batch sizes
 +++

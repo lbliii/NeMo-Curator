@@ -63,7 +63,7 @@ Import your audio data from various sources into NeMo Curator's processing pipel
 :gutter: 1 1 1 2
 
 :::{grid-item-card} {octicon}`file-media;1.5em;sd-mr-1` Local Files
-:link: audio-load-data-local-files
+:link: audio-load-data-local
 :link-type: ref
 Load audio files from local directories and file systems
 +++
