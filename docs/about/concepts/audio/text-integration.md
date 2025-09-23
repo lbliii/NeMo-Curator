@@ -291,7 +291,6 @@ final_results = text_pipeline.run(audio_results)
 ```python
 # Run a single pipeline that includes both audio and text stages using an executor
 from nemo_curator.pipeline import Pipeline
-from nemo_curator.backends.xenna import XennaExecutor
 
 pipeline = Pipeline(name="audio_text", stages=[
     InferenceAsrNemoStage(model_name="stt_en_fastconformer_transducer_large"),
@@ -299,7 +298,7 @@ pipeline = Pipeline(name="audio_text", stages=[
     AudioToDocumentStage(),
     ScoreFilter(filter_obj=text_quality_filter)
 ])
-results = pipeline.run(XennaExecutor())
+results = pipeline.run()
 ```
 
 ### Scaling Strategies

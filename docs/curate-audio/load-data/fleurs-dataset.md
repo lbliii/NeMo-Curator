@@ -32,7 +32,6 @@ The `CreateInitialManifestFleursStage` handles the complete FLEURS data preparat
 ```python
 from nemo_curator.stages.audio.datasets.fleurs.create_initial_manifest import CreateInitialManifestFleursStage
 from nemo_curator.pipeline import Pipeline
-from nemo_curator.backends.xenna import XennaExecutor
 
 # Create FLEURS loading stage
 fleurs_stage = CreateInitialManifestFleursStage(
@@ -46,8 +45,7 @@ pipeline = Pipeline(name="fleurs_loading")
 pipeline.add_stage(fleurs_stage.with_(batch_size=4))
 
 # Execute
-executor = XennaExecutor()
-pipeline.run(executor)
+pipeline.run()
 ```
 
 Note: You can omit the explicit executor and call `pipeline.run()` without arguments. By default, it uses `XennaExecutor`.

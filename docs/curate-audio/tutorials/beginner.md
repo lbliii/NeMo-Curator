@@ -50,7 +50,6 @@ from nemo_curator.stages.audio.metrics.get_wer import GetPairwiseWerStage
 from nemo_curator.stages.audio.common import GetAudioDurationStage, PreserveByValueStage
 from nemo_curator.stages.audio.io.convert import AudioToDocumentStage
 from nemo_curator.stages.text.io.writer import JsonlWriter
-from nemo_curator.backends.xenna import XennaExecutor
 ```
 
 ### Step 2: Create the Pipeline
@@ -134,8 +133,7 @@ def main():
     
     # Create and run pipeline
     pipeline = create_audio_pipeline(args)
-    executor = XennaExecutor()
-    pipeline.run(executor)
+    pipeline.run()
     
     print("Pipeline completed!")
 

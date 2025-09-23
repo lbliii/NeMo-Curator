@@ -30,24 +30,45 @@ To use NeMo Curator's audio curation modules, ensure you meet the following requ
 
 ## Installation Options
 
-You can install NeMo Curator with audio support in three ways:
+You can install NeMo Curator with audio support in four ways:
 
 ::::{tab-set}
+
+:::{tab-item} uv Installation (Recommended)
+
+The fastest and most reliable way to install NeMo Curator with audio support:
+
+```bash
+# Install uv first (if not already installed)
+pip install uv
+
+# Audio curation modules (CPU-only)
+uv pip install nemo-curator[audio_cpu]
+
+# Audio + GPU acceleration for other modalities  
+uv pip install --extra-index-url https://pypi.nvidia.com nemo-curator[audio_cuda12,deduplication_cuda12]
+```
+
+```{note}
+uv provides faster dependency resolution and more reliable installations. It's the same tool used by NeMo Curator developers and CI/CD systems.
+```
+
+:::
 
 :::{tab-item} PyPI Installation
 
 The simplest way to install NeMo Curator with audio support:
 
 ```bash
-# Audio curation modules with NeMo Framework
-pip install nemo-curator[audio]
+# Audio curation modules (CPU-only)
+pip install nemo-curator[audio_cpu]
 
 # Audio + GPU acceleration for other modalities
-pip install --extra-index-url https://pypi.nvidia.com nemo-curator[audio,deduplication_cuda12x]
+pip install --extra-index-url https://pypi.nvidia.com nemo-curator[audio_cuda12,deduplication_cuda12]
 ```
 
 ```{note}
-The audio extras include NeMo Framework ASR models, soundfile for audio processing, and editdistance for quality metrics.
+The audio extras include NeMo Toolkit with ASR models. Additional audio processing libraries (soundfile, editdistance) are installed automatically as NeMo Toolkit dependencies.
 ```
 
 :::
@@ -56,14 +77,22 @@ The audio extras include NeMo Framework ASR models, soundfile for audio processi
 
 Install the latest version directly from GitHub:
 
+**Using uv (recommended):**
 ```bash
 git clone https://github.com/NVIDIA/NeMo-Curator.git
 cd NeMo-Curator
-pip install --extra-index-url https://pypi.nvidia.com ".[audio]"
+uv sync --extra audio_cuda12
+```
+
+**Using pip:**
+```bash
+git clone https://github.com/NVIDIA/NeMo-Curator.git
+cd NeMo-Curator
+pip install --extra-index-url https://pypi.nvidia.com ".[audio_cuda12]"
 ```
 
 ```{note}
-Replace `audio` with `audio,deduplication_cuda12x` for GPU acceleration or `all` for all modalities.
+Use `audio_cpu` for CPU-only audio processing, `audio_cuda12` for GPU acceleration, or `all` for all modalities.
 ```
 
 :::
@@ -116,7 +145,6 @@ Here's a simple example to get started with audio curation using the FLEURS data
 
 ```python
 from nemo_curator.pipeline import Pipeline
-from nemo_curator.backends.xenna import XennaExecutor
 from nemo_curator.stages.audio.datasets.fleurs.create_initial_manifest import CreateInitialManifestFleursStage
 from nemo_curator.stages.audio.inference.asr_nemo import InferenceAsrNemoStage
 from nemo_curator.stages.audio.metrics.get_wer import GetPairwiseWerStage
@@ -169,8 +197,7 @@ pipeline.add_stage(
 )
 
 # Execute the pipeline
-executor = XennaExecutor()
-pipeline.run(executor)
+pipeline.run()
 ```
 
 ## Alternative: Configuration-Based Approach

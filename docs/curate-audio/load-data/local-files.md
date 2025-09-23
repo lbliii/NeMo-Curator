@@ -112,7 +112,6 @@ from nemo_curator.stages.audio.inference.asr_nemo import InferenceAsrNemoStage
 from nemo_curator.stages.audio.common import GetAudioDurationStage, PreserveByValueStage
 from nemo_curator.stages.audio.io.convert import AudioToDocumentStage
 from nemo_curator.stages.text.io.writer import JsonlWriter
-from nemo_curator.backends.xenna import XennaExecutor
 
 def process_local_audio_manifest(manifest_path: str, output_dir: str):
     """Process local audio files using a manifest."""
@@ -150,8 +149,7 @@ def process_local_audio_manifest(manifest_path: str, output_dir: str):
     pipeline.add_stage(JsonlWriter(path=output_dir))
     
     # Execute pipeline
-    executor = XennaExecutor()
-    pipeline.run(executor)
+    pipeline.run()
 
 # Usage: First create manifest, then process
 create_audio_manifest("/path/to/audio/files", "local_manifest.jsonl")
