@@ -266,21 +266,6 @@ pipeline.add_stage(FilePartitioningStage(
 ))
 ```
 
-**Ray Executor Selection for Image Workloads**
-
-```python
-from nemo_curator.backends.experimental.ray_actor_pool import RayActorPoolExecutor
-
-# Use Ray Actor Pool for better resource management
-pipeline = Pipeline(
-    name="image_loading",
-    executor=RayActorPoolExecutor(config={
-        "num_actors_per_stage": 4,
-        "cleanup_actors": True,     # Automatic resource cleanup
-    })
-)
-```
-
 ## Customization Options & Performance Tips
 
 - **Cloud Storage Support**: You can use local paths or cloud storage URLs (for example, S3, GCS, Azure) in `file_paths`. Make sure your environment is configured with the appropriate credentials.
