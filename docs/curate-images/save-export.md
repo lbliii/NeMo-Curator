@@ -1,7 +1,7 @@
 ---
-description: "Save metadata, export filtered datasets, and reshard WebDatasets for downstream use after image curation"
+description: "Save metadata, export filtered datasets, and configure output sharding for downstream use after image curation"
 categories: ["how-to-guides"]
-tags: ["data-export", "parquet", "webdataset", "filtering", "resharding", "metadata"]
+tags: ["data-export", "parquet", "tar-files", "filtering", "sharding", "metadata"]
 personas: ["data-scientist-focused", "mle-focused"]
 difficulty: "intermediate"
 content_type: "how-to"
@@ -15,14 +15,14 @@ After processing and filtering your image datasets using NeMo Curator's pipeline
 
 ## Saving Results with ImageWriterStage
 
-The `ImageWriterStage` is the primary method for saving curated images and metadata to WebDataset format. This stage is typically the final step in your image curation pipeline.
+The `ImageWriterStage` is the primary method for saving curated images and metadata to tar archives with accompanying Parquet files. This stage is typically the final step in your image curation pipeline.
 
 ```python
 from nemo_curator.stages.image.io.image_writer import ImageWriterStage
 
 # Add ImageWriterStage to your pipeline
 pipeline.add_stage(ImageWriterStage(
-    output_dir="/output/curated_images",    # Output directory for WebDataset shards
+    output_dir="/output/curated_images",    # Output directory for tar files and metadata
     images_per_tar=1000,                    # Number of images per tar file
     remove_image_data=True,                 # Remove image data from memory after writing
     verbose=True,                           # Enable progress logging
@@ -79,20 +79,20 @@ pipeline.add_stage(ImageNSFWFilterStage(
 
 # Save filtered results
 pipeline.add_stage(ImageWriterStage(
-    output_dir="/output/filtered_webdataset",
+    output_dir="/output/filtered_dataset",
     images_per_tar=1000,
     remove_image_data=True,
 ))
 ```
 
-## Resharding WebDatasets
+## Configuring Output Sharding
 
 To change the sharding of your dataset (create larger or smaller shards), adjust the `images_per_tar` parameter in `ImageWriterStage`:
 
 ```python
 # Create larger shards (20,000 images per tar file)
 pipeline.add_stage(ImageWriterStage(
-    output_dir="/output/resharded_webdataset",
+    output_dir="/output/resharded_dataset",
     images_per_tar=20000,  # Larger shard size
     remove_image_data=True,
 ))
@@ -102,15 +102,21 @@ pipeline.add_stage(ImageWriterStage(
 
 The `ImageWriterStage` creates:
 
-* **WebDataset Shards**: `.tar` files containing images, captions, and metadata
-* **Structured Naming**: Files are named `00000.tar`, `00001.tar`, etc.
-* **Preserved Metadata**: All scores and metadata from processing stages are included
+* **Tar Archives**: `.tar` files containing JPEG images
+* **Parquet Files**: `.parquet` files with metadata for each corresponding tar file
+* **Deterministic Naming**: Files named with content-based hashes for reproducibility
+* **Preserved Metadata**: All scores and metadata from processing stages stored in Parquet files
 
-Each output tar file contains:
+**Output Structure:**
+```bash
+output/
+├── images-{hash}-000000.tar     # Contains JPEG images
+├── images-{hash}-000000.parquet # Metadata for corresponding tar
+├── images-{hash}-000001.tar
+├── images-{hash}-000001.parquet
+```
 
-* **Images**: High-quality `.jpg` files that passed filtering
-* **Captions**: Corresponding `.txt` files with image descriptions
-* **Metadata**: `.json` files with scores (`aesthetic_score`, `nsfw_score`) and other metadata
+Each tar file contains JPEG images with sequential or ID-based filenames, while metadata (including `aesthetic_score`, `nsfw_score`, and other processing data) is stored in the accompanying Parquet files.
 
 ---
 

@@ -47,7 +47,7 @@ flowchart LR
   - **Embeddings**: CLIP ViT-L/14 for semantic understanding
   - **Quality filters**: Aesthetic predictor and NSFW classifier
   - **Thresholds**: Configurable scoring thresholds for filtering
-- **Outputs**: Filtered WebDataset with embeddings, quality scores, and image data.
+- **Outputs**: Filtered tar archives with embeddings, quality scores, and image data.
 
 For more information, refer to the [Image Concepts](about-concepts-image) section.
 

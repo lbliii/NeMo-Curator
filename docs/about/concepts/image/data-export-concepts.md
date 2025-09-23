@@ -1,7 +1,7 @@
 ---
 description: "Core concepts for saving and exporting curated image datasets including metadata, filtering, and resharding"
 categories: ["concepts-architecture"]
-tags: ["data-export", "webdataset", "parquet", "filtering", "resharding", "metadata"]
+tags: ["data-export", "tar-files", "parquet", "filtering", "resharding", "metadata"]
 personas: ["data-scientist-focused", "mle-focused"]
 difficulty: "intermediate"
 content_type: "concept"
@@ -16,9 +16,10 @@ This page covers the core concepts for saving and exporting curated image datase
 
 ## Key Topics
 
-- Saving metadata to Parquet
-- Exporting filtered datasets
-- Resharding WebDatasets
+- Saving metadata to Parquet files
+- Exporting filtered datasets as tar archives
+- Configuring output sharding
+- Understanding output format structure
 - Preparing data for downstream training or analysis
 
 ## Saving Results
@@ -40,8 +41,8 @@ pipeline.add_stage(ImageWriterStage(
 ))
 ```
 
-- The writer stage creates new WebDataset tar files with curated images
-- Metadata (including scores) is preserved in the output structure
+- The writer stage creates tar files with curated images
+- Metadata (including scores) is stored in separate Parquet files alongside tar archives
 - Configurable images per tar file for optimal sharding
 - `deterministic_name=True` ensures reproducible file naming based on input content
 
@@ -84,17 +85,38 @@ pipeline.add_stage(ImageWriterStage(output_dir="/output/curated"))
 - Images passing all filters reach the output
 - Thresholds are configurable per stage
 
-## Resharding WebDatasets
+## Output Format
 
-Resharding is controlled by the `ImageWriterStage` parameters, which determine how many images are packed into each output tar file.
+The `ImageWriterStage` creates tar archives containing curated images with accompanying metadata files:
+
+**Output Structure:**
+
+```bash
+output/
+├── images-{hash}-000000.tar    # Contains JPEG images
+├── images-{hash}-000000.parquet # Metadata for corresponding tar
+├── images-{hash}-000001.tar
+├── images-{hash}-000001.parquet
+```
+
+**Format Details:**
+
+- **Tar contents**: JPEG images with sequential or ID-based filenames
+- **Metadata storage**: Separate Parquet files containing image paths, IDs, and processing metadata
+- **Naming**: Deterministic or random naming based on configuration
+- **Sharding**: Configurable number of images per tar file for optimal performance
+
+## Configuring Output Sharding
+
+The `ImageWriterStage` parameters control how images get distributed across output tar files.
 
 **Example:**
 
 ```python
 # Configure output sharding
 pipeline.add_stage(ImageWriterStage(
-    output_dir="/output/resharded_dataset",
-    images_per_tar=5000,  # New shard size
+    output_dir="/output/curated_dataset",
+    images_per_tar=5000,  # Images per tar file
     remove_image_data=True,
     deterministic_name=True,
 ))

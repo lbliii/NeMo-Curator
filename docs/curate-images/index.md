@@ -35,7 +35,7 @@ flowchart LR
     D --> E[Aesthetic Classification<br/>Quality scoring]
     E --> F[NSFW Classification<br/>Content filtering]
     F --> G[Duplicate Removal<br/>Semantic deduplication]
-    G --> H[Export & Resharding<br/>WebDataset output]
+    G --> H[Export & Sharding<br/>Tar + Parquet output]
     
     classDef input fill:#e1f5fe,stroke:#0277bd,color:#000
     classDef processing fill:#f3e5f5,stroke:#7b1fa2,color:#000
