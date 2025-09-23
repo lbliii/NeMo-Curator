@@ -272,12 +272,3 @@ This distribution function is a documentation example, not part of the shipped A
 **High Coverage (Lenient Filtering)**:
 - Pros: Maximum data utilization, diverse content
 - Cons: Lower average quality, potential model degradation
-
-## Related Topics
-
-- **[ASR Pipeline](asr-pipeline.md)** - Overall pipeline architecture
-- **[AudioBatch Structure](audio-batch.md)** - Data structure concepts
-- **[Quality Assessment Implementation](../../curate-audio/process-data/quality-assessment/index.md)** - Practical quality filtering
-- **[WER Filtering Guide](../../curate-audio/process-data/quality-assessment/wer-filtering.md)** - Detailed WER filtering
-- **[Duration Filtering](../../curate-audio/process-data/quality-assessment/duration-filtering.md)** - Filter by audio length and speech rate
-- **[Audio Analysis](../../curate-audio/process-data/audio-analysis/index.md)** - Duration extraction and format/metadata analysis
