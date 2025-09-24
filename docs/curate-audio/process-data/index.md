@@ -83,15 +83,6 @@ Filter audio samples by duration ranges and speech rate metrics
 {bdg-secondary}`range-filtering`
 :::
 
-:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Custom Metrics
-:link: quality-assessment/custom-metrics
-:link-type: doc
-Implement custom quality assessment metrics for specialized use cases
-+++
-{bdg-secondary}`custom-filters`
-{bdg-secondary}`extensible`
-{bdg-secondary}`domain-specific`
-:::
 
 ::::
 

@@ -184,17 +184,17 @@ AudioBatch memory footprint depends on these factors:
 
 **Batch Size Impact**:
 
-**Small batches (1-4 samples)**:
+**Small batches**:
 - Lower memory usage
 - Higher overhead per sample
 - Better for memory-constrained environments
 
-**Medium batches (8-16 samples)**:
+**Medium batches**:
 - Balanced memory and performance
 - Good for most use cases
 - Optimal for CPU processing
 
-**Large batches (32+ samples)**:
+**Large batches**:
 - Higher memory usage
 - Better GPU utilization
 - Optimal for GPU processing with sufficient VRAM

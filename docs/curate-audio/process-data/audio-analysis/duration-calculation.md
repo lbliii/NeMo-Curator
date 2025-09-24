@@ -299,14 +299,6 @@ pipeline.add_stage(PreserveByValueStage(
 
 ### Common Issues
 
-#### Import Errors
-
-```python
-# Correct import path
-from nemo_curator.stages.audio.common import GetAudioDurationStage
-# Not: from nemo_curator.stages.audio import GetAudioDurationStage
-```
-
 #### Unsupported Audio Formats
 
 ```python
@@ -318,26 +310,3 @@ print("Supported formats:", sf.available_formats())
 # MP3 support depends on your system's libsndfile build
 ```
 
-#### File Permission Issues
-
-```python
-# Ensure read permissions on audio files
-import os
-audio_file = "/path/to/audio.wav"
-if not os.access(audio_file, os.R_OK):
-    print(f"Cannot read file: {audio_file}")
-```
-
-#### Large File Handling
-
-```python
-# For very large audio files, prefer streaming or metadata-based approaches
-# in custom stages (for example, use `sf.info` for frames and samplerate)
-```
-
-## Related Topics
-
-- **[Format Validation](format-validation.md)** - Check audio files before duration calculation
-- **[Quality Assessment](../quality-assessment/index.md)** - Use duration in quality filtering workflows  
-- **[Audio Analysis Overview](index.md)** - Complete audio analysis capabilities
-- **[Duration Filtering](../quality-assessment/duration-filtering.md)** - Filter datasets by duration ranges

@@ -115,7 +115,6 @@ NeMo Curator provides speech and audio curation capabilities designed for prepar
 - **Quality Assessment & Filtering**
   - [Word Error Rate (WER) Filtering](../curate-audio/process-data/quality-assessment/wer-filtering.md) - Filter based on transcription accuracy
   - [Duration-based Filtering](../curate-audio/process-data/quality-assessment/duration-filtering.md) - Remove audio files outside duration thresholds
-  - [Custom Quality Metrics](../curate-audio/process-data/quality-assessment/custom-metrics.md) - Implement custom audio quality assessments
 
 - **Audio Analysis**
   - [Duration Calculation](../curate-audio/process-data/audio-analysis/duration-calculation.md) - Extract precise audio duration using soundfile

@@ -352,5 +352,4 @@ This example comes directly from `tutorials/audio/fleurs/pipeline.py` and shows 
 
 - **[Quality Assessment Overview](index.md)**: Complete quality filtering workflow
 - **[WER Filtering](wer-filtering.md)**: Transcription accuracy filtering
-- **[Custom Metrics](custom-metrics.md)**: More quality measures
 - **[Audio Analysis](../audio-analysis/index.md)**: Duration calculation and analysis

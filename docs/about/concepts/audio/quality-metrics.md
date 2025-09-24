@@ -256,7 +256,7 @@ This distribution function is a documentation example, not part of the shipped A
 
 1. **Primary Metric**: Use WER as the main quality indicator
 2. **Secondary Filters**: Apply duration and text length filters
-3. **Custom Metrics**: Add domain-specific quality measures
+3. **Value-based Filtering**: Apply configurable threshold filtering
 4. **Validation**: Cross-validate quality with human evaluation
 
 ### Quality-Performance Trade-offs

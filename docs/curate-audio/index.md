@@ -114,11 +114,10 @@ Generate transcriptions using NVIDIA NeMo ASR models
 :::{grid-item-card} {octicon}`shield-check;1.5em;sd-mr-1` Quality Assessment
 :link: audio-process-data-quality-assessment
 :link-type: ref
-Assess transcription quality using WER, CER, and custom metrics
+Assess transcription quality using WER and CER
 +++
 {bdg-secondary}`wer-filtering`
 {bdg-secondary}`duration-filtering`
-{bdg-secondary}`custom-metrics`
 :::
 
 :::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Audio Analysis

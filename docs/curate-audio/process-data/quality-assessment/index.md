@@ -19,8 +19,7 @@ Audio quality assessment in NeMo Curator focuses on speech-specific metrics that
 
 1. **Transcription Accuracy**: Word Error Rate (WER) and Character Error Rate (CER) between ground truth and ASR predictions
 2. **Duration Analysis**: Audio length validation and speech rate calculations  
-3. **Custom Metrics**: Domain-specific quality measures for specialized datasets
-4. **Value-based Filtering**: Configurable filtering using comparison operators
+3. **Value-based Filtering**: Configurable filtering using comparison operators
 
 ## Quality Metrics
 
@@ -229,7 +228,6 @@ pipeline.run(executor)
 
 - **[WER Filtering](wer-filtering.md)** - Detailed guide to Word Error Rate filtering
 - **[Duration Filtering](duration-filtering.md)** - Audio length and speech rate filtering
-- **[Custom Metrics](custom-metrics.md)** - Implementing domain-specific quality measures
 - **[Audio Analysis](../audio-analysis/index.md)** - Audio file analysis and validation
 
 ```{toctree}
@@ -239,5 +237,4 @@ pipeline.run(executor)
 
 WER Filtering <wer-filtering.md>
 Duration Filtering <duration-filtering.md>
-Custom Metrics <custom-metrics.md>
 ```
