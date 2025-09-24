@@ -61,7 +61,8 @@ Install the latest version directly from GitHub:
 ```bash
 git clone https://github.com/NVIDIA/NeMo-Curator.git
 cd NeMo-Curator
-pip install --extra-index-url https://pypi.nvidia.com ".[text_cuda12]"
+uv sync --extra text_cuda12 --all-groups
+source .venv/bin/activate 
 ```
 
 ```{note}
