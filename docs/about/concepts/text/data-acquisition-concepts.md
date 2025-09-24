@@ -163,7 +163,7 @@ class CustomIterator(DocumentIterator):
         return ["content", "metadata"]
 ```
 
-### DocumentExtractor
+### DocumentExtractor (Optional)
 
 Converts raw content formats to clean, structured text.
 
