@@ -268,6 +268,8 @@ cc_stage = CommonCrawlDownloadExtractStage(
 Curator supports several execution backends:
 
 ```python
+from nemo_curator.backends.xenna import XennaExecutor
+executor = XennaExecutor()
 
 # Experimental Ray Data executor (optional)
 from nemo_curator.backends.experimental.ray_data.executor import RayDataExecutor
