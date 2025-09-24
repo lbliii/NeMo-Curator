@@ -215,8 +215,6 @@ pipeline.add_stage(download_extract_stage)
 # Execute acquisition pipeline
 results = pipeline.run()
 
-# Results are DocumentBatch tasks ready for further processing
-print(f"Acquired {len(results)} document batches")
 ```
 
 ### Batch Processing
