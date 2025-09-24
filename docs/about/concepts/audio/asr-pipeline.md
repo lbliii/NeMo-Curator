@@ -67,18 +67,19 @@ graph TD
 - GPU-accelerated inference when hardware is available
 - Support for multilingual and domain-specific model variants
 
-**Model Management**: Efficient resource utilization
+**Model Management**: Efficient resource usage
 
 - Lazy loading of models to conserve system memory
 - Automatic GPU or CPU device selection based on available resources
-- Optimized model-level batching handled within NeMo framework
+- Model-level batching handled within NeMo framework
 
 ### 3. Inference Processing
 
-**Batch Processing**: Optimized for high throughput
+**Batch Processing**: Supports processing audio files together
 
-- Vectorized transcription processing over multiple audio files
-- Configurable batch size and resource allocation using `.with_(batch_size=..., resources=Resources(...))`
+- Audio files process together in a single call to the NeMo ASR model
+- Batch size configuration controls task grouping for processing using `.with_(batch_size=..., resources=Resources(...))`
+- Internal batching and optimization handled by the NeMo framework
 
 **Output Generation**: Structured transcription results
 
@@ -87,22 +88,25 @@ graph TD
 
 ## Processing Stages
 
-### Stage 1: Audio Loading and Validation
+### Stage 1: Data Loading
 
 ```python
-# AudioBatch creation with validation
-audio_batch = AudioBatch(
-    data=[
-        {
-            "audio_filepath": "/path/to/audio.wav",
-            "text": "ground truth transcription"
-        }
-    ],
-    filepath_key="audio_filepath"
+from nemo_curator.stages.audio.datasets.fleurs.create_initial_manifest import CreateInitialManifestFleursStage
+from nemo_curator.stages.text.io.reader import JsonlReader
+
+# Data loading from datasets (e.g., FLEURS)
+fleurs_stage = CreateInitialManifestFleursStage(
+    lang="en_us",              # Language code
+    split="dev",               # Data split
+    raw_data_dir="/path/to/data"
 )
 
-# Automatic validation
-is_valid = audio_batch.validate()  # Checks file existence
+# Or load from custom manifest files
+manifest_reader = JsonlReader(
+    input_file_path="/path/to/manifest.jsonl"
+)
+
+# Stages automatically create AudioBatch objects from loaded data
 ```
 
 ### Stage 2: ASR Model Setup
@@ -123,11 +127,12 @@ asr_stage.setup()  # Downloads and loads model
 ### Stage 3: Transcription Generation
 
 ```python
-# Batch transcription
-audio_files = ["/path/to/audio1.wav", "/path/to/audio2.wav"]
-transcriptions = asr_stage.transcribe(audio_files)
+# ASR stage processes AudioBatch objects automatically
+# The stage extracts file paths and calls transcribe() internally
+processed_batch = asr_stage.process(audio_batch)
 
-# Output format: ["predicted text 1", "predicted text 2"]
+# Output: AudioBatch with added "pred_text" field
+# Each item now contains both original data and predictions
 ```
 
 ### Stage 4: Quality Assessment Integration
@@ -151,7 +156,7 @@ duration_stage = GetAudioDurationStage(
 
 ### Input Data Flow
 
-1. **Audio Files** → File system or cloud storage
+1. **Audio Files** → File system
 2. **Manifest Files** → JSONL format with metadata
 3. **AudioBatch Objects** → Validated, structured data containers
 
@@ -177,9 +182,9 @@ duration_stage = GetAudioDurationStage(
 
 - Larger models provide better accuracy but require more processing time
 - NeMo models support streaming capabilities, though this stage performs offline transcription
-- Language-specific models significantly improve accuracy for target languages
+- Language-specific models improve accuracy for target languages
 
-**Hardware Utilization**:
+**Hardware Usage**:
 
 - GPU acceleration typically outperforms CPU processing for larger workloads
 - Memory requirements scale proportionally with model size and audio input lengths
@@ -197,10 +202,10 @@ asr_stage = InferenceAsrNemoStage(
 )
 ```
 
-**Throughput Optimization**:
+**Resource Configuration**:
 
 ```python
-# Optimize for maximum throughput
+# Configure resources for processing
 asr_stage = InferenceAsrNemoStage(
     model_name="nvidia/stt_en_fastconformer_hybrid_large_pc"
 ).with_(

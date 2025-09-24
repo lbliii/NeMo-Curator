@@ -20,7 +20,6 @@ This guide covers the `AudioBatch` data structure, which serves as the core cont
 - **File Path Management**: Automatically validates audio file existence and accessibility
 - **Batch Processing**: Groups multiple audio samples for efficient parallel processing
 - **Metadata Handling**: Preserves audio characteristics and processing results throughout pipeline stages
-- **Warning Logging**: Provides detailed logging for validation warnings during file existence checks
 
 ## Structure and Components
 
@@ -64,100 +63,17 @@ audio_batch = AudioBatch(
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
-| `data` | `list[dict]` | List of audio sample dictionaries |
-| `filepath_key` | `str` | Key name for audio file paths in data |
+| `data` | `dict \| list[dict] \| None` | Audio sample data (stored internally as `list[dict]`) |
+| `filepath_key` | `str \| None` | Key name for audio file paths in data (optional) |
 | `task_id` | `str` | Unique identifier for the batch |
 | `dataset_name` | `str` | Name of the source dataset |
-| `num_items` | `int` | Number of audio samples in batch (read-only) |
+| `num_items` | `int` | Number of audio samples in batch (read-only property) |
 
 ## Data Validation
 
 ### Automatic Validation
 
-`AudioBatch` provides built-in validation for audio data integrity:
-
-```python
-# File existence validation
-audio_batch = AudioBatch(
-    data=[
-        {"audio_filepath": "/valid/path/audio.wav", "text": "valid sample"},
-        {"audio_filepath": "/invalid/path/missing.wav", "text": "invalid sample"}
-    ],
-    filepath_key="audio_filepath"
-)
-
-# Validate entire batch
-is_valid = audio_batch.validate()  # Returns False due to missing file
-
-# Validate individual items
-for i, item in enumerate(audio_batch.data):
-    item_valid = audio_batch.validate_item(item)
-    if not item_valid:
-        print(f"Item {i} failed validation")
-```
-
-### Validation Behavior
-
-The validation process performs these checks:
-
-1. **File Existence**: Verifies that audio files exist at specified paths when `filepath_key` is provided
-
-**Validation Behavior**: Validation runs automatically during task construction and logs warnings for missing files. It does not enforce required metadata fields (such as `text`) and does not abort processing for missing files.
-
-**Warning Handling**: Invalid files generate warnings but don't stop processing:
-
-```python
-# Example warning output:
-# WARNING: File /missing/audio.wav does not exist
-```
-
-## Batch Processing Patterns
-
-### Optimal Batch Sizes
-
-Choose batch sizes based on your hardware and processing requirements:
-
-```python
-from nemo_curator.stages.audio.metrics.get_wer import GetPairwiseWerStage
-
-# GPU processing - larger batches for efficiency
-wer_stage_gpu = GetPairwiseWerStage().with_(batch_size=32)
-
-# CPU processing - smaller batches to avoid memory issues  
-wer_stage_cpu = GetPairwiseWerStage().with_(batch_size=8)
-
-# Memory-constrained environments
-wer_stage_small = GetPairwiseWerStage().with_(batch_size=4)
-```
-
-### Dynamic Batching
-
-```python
-def create_dynamic_batches(audio_files: list, target_duration: float = 60.0) -> list[AudioBatch]:
-    """Create batches based on total audio duration."""
-    
-    batches = []
-    current_batch = []
-    current_duration = 0.0
-    
-    for audio_file in audio_files:
-        duration = audio_file.get("duration", 0)
-        
-        if current_duration + duration > target_duration and current_batch:
-            # Create batch when target duration reached
-            batches.append(AudioBatch(data=current_batch))
-            current_batch = []
-            current_duration = 0.0
-        
-        current_batch.append(audio_file)
-        current_duration += duration
-    
-    # Handle remaining files
-    if current_batch:
-        batches.append(AudioBatch(data=current_batch))
-    
-    return batches
-```
+`AudioBatch` provides built-in validation for audio data integrity.
 
 ## Metadata Management
 
@@ -167,25 +83,20 @@ Common fields stored in AudioBatch data:
 
 ```python
 audio_sample = {
-    # Required fields
+    # Core fields (user-provided)
     "audio_filepath": "/path/to/audio.wav",
     "text": "transcription text",
     
-    # Audio characteristics
-    "duration": 3.2,
-    "sample_rate": 16000,
-    "channels": 1,
+    # Fields added by processing stages
+    "pred_text": "asr prediction",    # Added by ASR inference stages
+    "wer": 12.5,                     # Added by GetPairwiseWerStage
+    "duration": 3.2,                 # Added by GetAudioDurationStage
     
-    # Processing results
-    "pred_text": "asr prediction",
-    "wer": 12.5,
-    
-    # Dataset metadata
+    # Optional user-provided metadata
     "language": "en_us",
     "speaker_id": "speaker_001",
-    "recording_quality": "studio",
     
-    # Custom fields
+    # Custom fields (examples)
     "domain": "conversational",
     "noise_level": "low"
 }
@@ -193,34 +104,6 @@ audio_sample = {
 
 ```{note}
 Character error rate (CER) is available as a utility function and typically requires a custom stage to compute and store it.
-```
-
-### Metadata Evolution
-
-AudioBatch data evolves through the processing pipeline:
-
-```python
-# Initial state (after loading)
-initial_data = {
-    "audio_filepath": "/audio.wav",
-    "text": "ground truth"
-}
-
-# After ASR inference
-post_asr_data = {
-    "audio_filepath": "/audio.wav", 
-    "text": "ground truth",
-    "pred_text": "asr prediction"  # Added by ASR stage
-}
-
-# After quality assessment
-post_quality_data = {
-    "audio_filepath": "/audio.wav",
-    "text": "ground truth", 
-    "pred_text": "asr prediction",
-    "wer": 15.2,                    # Added by WER stage
-    "duration": 3.4                 # Added by duration stage
-}
 ```
 
 ## Error Handling
@@ -246,9 +129,9 @@ corrupted_sample = {
 # Invalid metadata
 invalid_sample = {
     "audio_filepath": "/valid/audio.wav",
-    # Missing required "text" field
+    # Missing "text" field - needed for WER calculation but not enforced by AudioBatch
 }
-# AudioBatch does not enforce required metadata fields. Add a validation stage if required.
+# AudioBatch does not enforce metadata field requirements. Add a validation stage if required.
 ```
 
 ### Error Recovery Strategies
@@ -344,16 +227,22 @@ def process(self, task: AudioBatch) -> AudioBatch:
 
 ### Chaining Stages
 
-```text
-# AudioBatch flows through multiple stages
-pipeline_flow = [
-    "AudioBatch (raw)" →
-    "ASR Stage" →
-    "AudioBatch (with predictions)" →
-    "Quality Stage" →  
-    "AudioBatch (with metrics)" →
-    "Filter Stage" →
-    "AudioBatch (filtered)" →
-    "Export Stage"
-]
+AudioBatch flows through multiple processing stages, with each stage adding new metadata fields:
+
+```{mermaid}
+flowchart TD
+    A["AudioBatch (raw)<br/>• audio_filepath<br/>• text"] --> B[ASR Inference Stage]
+    B --> C["AudioBatch (with predictions)<br/>• audio_filepath<br/>• text<br/>• pred_text"]
+    C --> D[Quality Assessment Stage]
+    D --> E["AudioBatch (with metrics)<br/>• audio_filepath<br/>• text<br/>• pred_text<br/>• wer<br/>• duration"]
+    E --> F[Filter Stage]
+    F --> G["AudioBatch (filtered)<br/>• audio_filepath<br/>• text<br/>• pred_text<br/>• wer<br/>• duration"]
+    G --> H[Export Stage]
+    H --> I[Output Files]
+    
+    style A fill:#e1f5fe
+    style C fill:#f3e5f5
+    style E fill:#e8f5e8
+    style G fill:#fff3e0
+    style I fill:#fce4ec
 ```

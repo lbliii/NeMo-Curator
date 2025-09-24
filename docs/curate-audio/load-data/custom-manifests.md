@@ -111,20 +111,14 @@ pipeline.add_stage(
 
 ### Validation
 
-The `AudioBatch` automatically validates file paths when processing:
+Audio file validation happens automatically during pipeline processing:
 
 ```python
-from nemo_curator.tasks import AudioBatch
+# Validation occurs when stages process AudioBatch objects
+# Files are checked for existence during ASR inference
+# Invalid files generate warnings but don't stop processing
 
-# AudioBatch will check if files exist
-audio_batch = AudioBatch(
-    data=[
-        {"audio_filepath": "/data/audio/sample.wav", "text": "hello world"}
-    ],
-    filepath_key="audio_filepath"
-)
-
-# Check validation
+# Pipeline stages handle validation automatically
 if audio_batch.validate():
     print("All audio files exist")
 else:

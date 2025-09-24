@@ -113,25 +113,17 @@ Within a single `AudioBatch`, `process()` transcribes the file paths together.
 
 ### AudioBatch Format
 
-Input `AudioBatch` objects must contain:
+Data loading stages create input `AudioBatch` objects that must contain:
 
 ```python
-audio_batch = AudioBatch(
-    data=[
-        {
-            "audio_filepath": "/path/to/audio1.wav",
-            # Optional: existing metadata
-            "duration": 5.2,
-            "language": "en"
-        },
-        {
-            "audio_filepath": "/path/to/audio2.wav",
-            "duration": 3.8,
-            "language": "en"
-        }
-    ],
-    filepath_key="audio_filepath"
-)
+# AudioBatch structure (created automatically by loading stages)
+# Each item in the batch contains:
+{
+    "audio_filepath": "/path/to/audio1.wav",
+    # Optional: existing metadata
+    "duration": 5.2,
+    "language": "en"
+}
 ```
 
 ### Audio File Requirements
