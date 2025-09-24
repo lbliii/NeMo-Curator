@@ -47,6 +47,8 @@ flowchart LR
     style E fill:#fff3e0
 ```
 
+The `AudioToDocumentStage` provides the conversion bridge between audio and text processing workflows.
+
 **Parallel Processing**: Simultaneous audio and text analysis
 
 ```{mermaid}
@@ -167,8 +169,15 @@ flowchart TD
 
 **AudioBatch to DocumentBatch**:
 
+NeMo Curator provides the `AudioToDocumentStage` for converting audio processing results to text processing format:
+
 ```python
-# Conversion preserves all metadata
+from nemo_curator.stages.audio.io.convert import AudioToDocumentStage
+
+# Create the conversion stage
+converter = AudioToDocumentStage()
+
+# Example input AudioBatch data
 audio_data = {
     "audio_filepath": "/audio.wav",
     "text": "ground truth", 
@@ -177,17 +186,18 @@ audio_data = {
     "duration": 3.4
 }
 
-# Becomes DocumentBatch with the same fields preserved
-document_data = {
-    "audio_filepath": "/audio.wav",
-    "text": "ground truth",
-    "pred_text": "asr prediction",
-    "wer": 15.2,
-    "duration": 3.4
-}
+# The stage returns a list containing one DocumentBatch
+# with the same fields preserved as pandas DataFrame
+document_batches = converter.process(audio_batch)
+document_batch = document_batches[0]  # Extract the single DocumentBatch
+
+# All fields are preserved in the DocumentBatch:
+# - audio_filepath, text, pred_text, wer, duration
 ```
 
 **Note**: A built-in `DocumentBatch` to `AudioBatch` conversion stage is not provided. Create a custom stage if you need reverse conversion.
+
+For practical usage examples and step-by-step implementation, refer to {doc}`/curate-audio/process-data/text-integration/index`.
 
 ### Metadata Flow
 
@@ -303,7 +313,7 @@ results = pipeline.run()
 
 ### Scaling Strategies
 
-**Horizontal Scaling**: Distribute across multiple workers
+**Horizontal Scaling**: Distribute across several workers
 
 - Partition audio files across workers
 - Independent processing with final aggregation
@@ -325,7 +335,7 @@ results = pipeline.run()
 - Text stages handle language processing
 - Integration stages manage cross-modal operations
 
-**Composable Architecture**: Mix and match audio and text processing stages
+**Modular Architecture**: Mix and match audio and text processing stages
 
 - Flexible pipeline construction
 - Reusable stage components
