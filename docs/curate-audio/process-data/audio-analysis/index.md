@@ -100,25 +100,6 @@ except Exception as e:
     print(f"File validation failed: {e}")
 ```
 
-## Metadata Extraction
-
-You can extract basic audio metadata using `soundfile.info` and add it to your data entries for downstream processing:
-
-```python
-import soundfile as sf
-
-# Read embedded file properties
-info = sf.info("audio_file.wav")
-metadata = {
-    "samplerate": info.samplerate,
-    "channels": info.channels,
-    "format": info.format,
-    "subtype": info.subtype,
-    "duration": info.duration,
-}
-print(metadata)
-```
-
 ## Complete Analysis Pipeline
 
 Here is a complete working pipeline for audio analysis:

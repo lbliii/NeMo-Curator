@@ -217,42 +217,29 @@ stage3_output = {**stage2_output, "wer": 15.2, "duration": 3.4}
 stage4_output = {**stage3_output, "word_count": 6, "language": "en"}
 ```
 
-## Quality Consistency Concepts
+## Quality Assessment Integration
 
-### Cross-Modal Validation
+### Available Quality Metrics
 
-Ensure consistency between audio and text quality:
+NeMo Curator provides these audio quality assessment capabilities:
 
-**Transcription-Audio Alignment**:
+**Word Error Rate (WER) Analysis**:
 
-- WER correlates with audio quality
-- Duration matches transcription length
-- Language detection consistency
+- WER correlates with transcription accuracy
+- Available through `GetPairwiseWerStage`
+- Measures percentage of incorrect words between ground truth and ASR predictions
 
-**Quality Threshold Coordination**:
+**Duration and Speech Rate Analysis**:
 
-- Audio quality thresholds inform text filtering
-- Text quality metrics verify audio processing
-- Combined quality scores for integrated assessment
+- Duration validation using `GetAudioDurationStage`  
+- Speech rate calculation using `get_wordrate()` function
+- Character rate calculation using `get_charrate()` function
 
-### Multi-Modal Quality Metrics
+**Individual Quality Dimensions**:
 
-**Composite Quality Scoring**:
-Conceptual example (not a built-in stage):
-
-```python
-composite_quality = (
-    0.4 * audio_quality_score +      # ASR accuracy, duration appropriateness
-    0.4 * text_quality_score +       # Text coherence, length, language
-    0.2 * consistency_score          # Audio-text alignment
-)
-```
-
-**Quality Dimensions**:
-
-- **Technical Quality**: File integrity, format compliance, duration
-- **Content Quality**: Transcription accuracy, semantic coherence
-- **Consistency Quality**: Audio-text alignment, cross-modal validation
+- **Technical Quality**: File integrity, format compliance, duration validation
+- **Content Quality**: Transcription accuracy via WER/CER metrics
+- **Speech Rate Quality**: Words/characters per second analysis
 
 ## Performance and Scaling
 
@@ -281,19 +268,29 @@ from nemo_curator.pipeline import Pipeline
 from nemo_curator.stages.audio.inference.asr_nemo import InferenceAsrNemoStage
 from nemo_curator.stages.audio.io.convert import AudioToDocumentStage
 from nemo_curator.stages.text.modules.score_filter import ScoreFilter
+from nemo_curator.filters import WordCountFilter  # Example filter
+
+# Define a text quality filter
+text_quality_filter = WordCountFilter(min_words=10)
 
 # Process audio completely first
-audio_pipeline = Pipeline([
-    InferenceAsrNemoStage(model_name="stt_en_fastconformer_transducer_large"),
-    AudioToDocumentStage()
-])
-audio_results = audio_pipeline.run()
+audio_pipeline = Pipeline(
+    name="audio_processing",
+    stages=[
+        InferenceAsrNemoStage(model_name="stt_en_fastconformer_transducer_large"),
+        AudioToDocumentStage()
+    ]
+)
+audio_results = audio_pipeline.run(executor)
 
 # Then process text
-text_pipeline = Pipeline([
-    ScoreFilter(filter_obj=text_quality_filter)
-])
-final_results = text_pipeline.run(audio_results)
+text_pipeline = Pipeline(
+    name="text_processing", 
+    stages=[
+        ScoreFilter(filter_obj=text_quality_filter)
+    ]
+)
+final_results = text_pipeline.run(executor, initial_tasks=audio_results)
 ```
 
 **Parallel Processing**: Audio and Text (higher memory, faster)
