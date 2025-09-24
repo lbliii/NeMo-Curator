@@ -18,18 +18,158 @@ Removing duplicates improves language model training by preventing overrepresent
 
 ## How It Works
 
-NeMo Curator offers three main approaches to deduplication:
+NeMo Curator's deduplication framework is built around three main approaches that work within the {ref}`data processing architecture <about-concepts-text-data-processing>`:
 
-1. **Exact Deduplication**: Uses document hashing to identify identical content
-2. **Fuzzy Deduplication**: Uses MinHash and LSH to find near-duplicate content  
-3. **Semantic Deduplication**: Uses embeddings to identify semantically similar content
+::::{tab-set}
 
-Each approach serves different use cases and offers different trade-offs between speed, accuracy, and the types of duplicates detected.
+:::{tab-item} Exact Deduplication
+
+Exact deduplication uses MD5 hashing to identify identical documents:
+
+```python
+from nemo_curator.stages.deduplication.exact.workflow import ExactDeduplicationWorkflow
+
+# Configure exact deduplication
+exact_workflow = ExactDeduplicationWorkflow(
+    input_path="/path/to/input/data",
+    output_path="/path/to/output",
+    text_field="text",
+    perform_removal=False,  # Currently only identification supported
+    assign_id=True,  # Automatically assign unique IDs
+    input_filetype="parquet"  # "parquet" or "jsonl"
+)
+
+# Run with Ray backend (GPU required)
+exact_workflow.run()
+```
+
+The workflow:
+
+1. Computes MD5 hashes for each document's text content
+2. Groups documents by identical hash values
+3. Identifies duplicates for removal or creates cleaned dataset
+
+:::
+
+:::{tab-item} Fuzzy Deduplication
+
+Fuzzy deduplication uses MinHash and LSH to find near-duplicate content:
+
+```python
+from nemo_curator.stages.deduplication.fuzzy.workflow import FuzzyDeduplicationWorkflow
+
+# Configure fuzzy deduplication
+fuzzy_workflow = FuzzyDeduplicationWorkflow(
+    input_path="/path/to/input/data",
+    cache_path="/path/to/cache",
+    output_path="/path/to/output",
+    text_field="text",
+    perform_removal=False,  # Currently only identification supported
+    # MinHash + LSH parameters
+    seed=42,
+    char_ngrams=24,
+    num_bands=20,
+    minhashes_per_band=13
+)
+
+# Run with Ray backend (GPU required)
+fuzzy_workflow.run()
+```
+
+The workflow:
+
+1. Generates MinHash signatures for each document
+2. Uses Locality Sensitive Hashing (LSH) to find similar signatures
+3. Identifies near-duplicates based on similarity thresholds
+
+:::
+
+:::{tab-item} Semantic Deduplication
+
+Semantic deduplication uses embeddings to identify meaning-based duplicates:
+
+```python
+from nemo_curator.stages.text.deduplication.semantic import TextSemanticDeduplicationWorkflow
+
+# End-to-end semantic deduplication
+text_workflow = TextSemanticDeduplicationWorkflow(
+    input_path="/path/to/input/data",
+    output_path="/path/to/output", 
+    cache_path="/path/to/cache",
+    text_field="text",
+    model_identifier="sentence-transformers/all-MiniLM-L6-v2",
+    n_clusters=100,
+    eps=0.01,  # Similarity threshold
+    perform_removal=True  # Complete deduplication
+)
+
+# Run with GPU backend
+text_workflow.run()
+```
+
+The workflow:
+
+1. Generates embeddings for each document using transformer models
+2. Clusters embeddings using K-means
+3. Computes pairwise similarities within clusters
+4. Identifies semantic duplicates based on cosine similarity threshold
 
 **Note**: Semantic deduplication offers two workflows:
-
 - `TextSemanticDeduplicationWorkflow`: For raw text input with automatic embedding generation
 - `SemanticDeduplicationWorkflow`: For pre-computed embeddings
+
+:::
+
+:::{tab-item} Step-by-Step Approach
+
+For advanced users, semantic deduplication can be broken down into separate stages:
+
+```python
+from nemo_curator.stages.deduplication.id_generator import create_id_generator_actor
+from nemo_curator.stages.text.embedders import EmbeddingCreatorStage
+from nemo_curator.stages.deduplication.semantic import SemanticDeduplicationWorkflow
+
+# 1. Create ID generator for consistent tracking
+create_id_generator_actor()
+
+# 2. Generate embeddings separately
+embedding_pipeline = Pipeline(
+    stages=[
+        ParquetReader(file_paths=input_path, _generate_ids=True),
+        EmbeddingCreatorStage(
+            model_identifier="sentence-transformers/all-MiniLM-L6-v2",
+            text_field="text"
+        ),
+        ParquetWriter(path=embedding_output_path, fields=["_curator_dedup_id", "embeddings"])
+    ]
+)
+embedding_out = embedding_pipeline.run()
+
+# 3. Run clustering and pairwise similarity
+semantic_workflow = SemanticDeduplicationWorkflow(
+    input_path=embedding_output_path,
+    output_path=semantic_workflow_path,
+    n_clusters=100,
+    id_field="_curator_dedup_id",
+    embedding_field="embeddings",
+    eps=None  # Skip duplicate identification for analysis
+)
+semantic_out = semantic_workflow.run()
+
+# 4. Analyze results and choose eps parameter
+# (analyze cosine similarity distributions)
+
+# 5. Identify and remove duplicates
+# (run duplicate identification and removal workflows)
+```
+
+This approach provides fine-grained control over each stage and enables analysis of intermediate results.
+
+:::
+
+::::
+
+Each approach serves different use cases and offers different trade-offs between speed, accuracy, and the types of duplicates detected.
 
 ---
 
@@ -175,7 +315,57 @@ sem_workflow.run()  # Uses XennaExecutor by default
   - Semantic deduplication can use various executors (XennaExecutor, RayDataExecutor) with GPU support
 - **Memory considerations**: GPU memory requirements scale with dataset size and embedding dimensions
 
+### Backend Setup
+
+For optimal performance, especially with large datasets, configure Ray backend appropriately:
+
+```python
+from nemo_curator.core.client import RayClient
+
+# Configure Ray cluster for deduplication workloads
+client = RayClient(
+    num_cpus=64,    # Adjust based on available cores
+    num_gpus=4      # Should be roughly 2x the memory of embeddings
+)
+client.start()
+
+try:
+    # Run your deduplication workflow
+    workflow.run()
+finally:
+    client.stop()
+```
+
 For very large datasets (TB-scale), consider running deduplication on distributed GPU clusters with Ray.
+
+### ID Generator for Large-Scale Operations
+
+For large-scale duplicate removal, use the ID Generator to ensure consistent document tracking:
+
+```python
+from nemo_curator.stages.deduplication.id_generator import (
+    create_id_generator_actor, 
+    write_id_generator_to_disk,
+    kill_id_generator_actor
+)
+
+# Create and persist ID generator
+create_id_generator_actor()
+id_generator_path = "semantic_id_generator.json"
+write_id_generator_to_disk(id_generator_path)
+kill_id_generator_actor()
+
+# Use saved ID generator in removal workflow
+removal_workflow = TextDuplicatesRemovalWorkflow(
+    input_path=input_path,
+    ids_to_remove_path=duplicates_path,
+    output_path=output_path,
+    id_generator_path=id_generator_path,
+    # ... other parameters
+)
+```
+
+The ID Generator ensures that the same documents receive identical IDs across different workflow stages, enabling efficient duplicate removal.
 
 ```{toctree}
 :maxdepth: 4

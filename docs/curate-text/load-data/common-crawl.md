@@ -51,7 +51,7 @@ Here's how to create and run a Common Crawl processing pipeline:
 ```python
 from nemo_curator.pipeline import Pipeline
 from nemo_curator.stages.text.download import CommonCrawlDownloadExtractStage
-from nemo_curator.stages.io.writer import JsonlWriter
+from nemo_curator.stages.text.io.writer import JsonlWriter
 
 def main():
     # Create pipeline
@@ -92,7 +92,7 @@ For how pipelines execute across backends (`XennaExecutor`, `RayDataExecutor`), 
 To write Parquet instead of JSONL, use `ParquetWriter`:
 
 ```python
-from nemo_curator.stages.io.writer import ParquetWriter
+from nemo_curator.stages.text.io.writer import ParquetWriter
 
 # Replace the JSONL writer with ParquetWriter
 writer = ParquetWriter(output_dir="./cc_output_parquet")

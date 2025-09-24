@@ -21,8 +21,6 @@ For a detailed comparison of deduplication methods, refer to {ref}`Data Processi
 
 Removing duplicates improves language model training by preventing overrepresentation of repeated content. For more information, see research by [Muennighoff et al. (2023)](https://arxiv.org/abs/2305.16264) and [Tirumala et al. (2023)](https://arxiv.org/abs/2308.12284).
 
-<!-- Note: "overrepresentation", "Muennighoff", "Tirumala", and "Jaccard" are legitimate technical terms -->
-
 ---
 
 ## Understanding Operational Modes
@@ -53,6 +51,7 @@ The deduplication workflows support different operational modes:
 ```
 
 **Important Notes:**
+
 - **Both workflows**: Currently support identification only. Removal functionality is planned for future releases
 - **Output locations**: Both workflows write results to specified output directory, not as return values
 - **Ray requirement**: Both workflows require Ray distributed computing framework with GPU support
@@ -69,12 +68,10 @@ The deduplication workflows support different operational modes:
 :::{tab-item} Python
 
 ```python
-import ray
 # Note: Import directly from workflow module (not available in __init__.py)
 from nemo_curator.stages.deduplication.exact.workflow import ExactDeduplicationWorkflow
 
-# Initialize Ray cluster (required for exact deduplication)
-ray.init(num_gpus=4)
+# Ray cluster setup handled by RayClient
 
 # Basic exact deduplication workflow
 exact_workflow = ExactDeduplicationWorkflow(
@@ -116,9 +113,10 @@ exact_workflow_advanced = ExactDeduplicationWorkflow(
     assign_id=False,        # Use existing ID field
     id_field="document_id", # Existing ID field name
     perform_removal=False,
-    # Ray environment variables
+    # UCX environment variables for optimized GPU communication
     env_vars={
-        "CUDA_VISIBLE_DEVICES": "0,1,2,3"
+        "UCX_TLS": "rc,cuda_copy,cuda_ipc",
+        "UCX_IB_GPU_DIRECT_RDMA": "yes"
     }
 )
 
@@ -135,49 +133,33 @@ initial_tasks = [
 ]
 exact_workflow.run(initial_tasks=initial_tasks)
 
-# Cleanup Ray when done
-ray.shutdown()
+# Ray cleanup handled by RayClient
 ```
 
 **Performance Recommendations:**
+
 - Uses MD5 hashing for exact duplicate detection
 - Requires Ray cluster with GPU support
 - Automatically partitions output to 1/3 the number of input tasks for efficiency
 - Clear output directory between runs to avoid conflicts
 
 **Output Structure:**
+
 - **Output directory**: Contains duplicate IDs to remove and ID generator mapping
   - `ExactDuplicateIds/`: Parquet files with document IDs to remove
   - `exact_id_generator.json`: ID generator mapping (when `assign_id=True`)
 
 **Workflow Stages:**
+
 1. **File Partitioning**: Groups input files for parallel processing (if needed)
 2. **Exact Duplicate Identification**: Computes MD5 hashes and identifies duplicates
 
 **Ray Cluster Setup:**
 
-The ExactDeduplicationWorkflow requires a Ray cluster with GPU support. Set up Ray before running:
-
-```python
-import ray
-
-# Initialize Ray cluster (local with GPUs)
-ray.init(num_gpus=4)
-
-# Or connect to existing Ray cluster
-# ray.init(address="ray://head-node-ip:10001")
-
-# Run exact deduplication workflow
-exact_workflow = ExactDeduplicationWorkflow(...)
-exact_workflow.run()
-
-# Shutdown Ray when done
-ray.shutdown()
-```
+The ExactDeduplicationWorkflow requires a Ray cluster with GPU support. Ray cluster initialization and cleanup is handled automatically by RayClient.
 
 For distributed clusters, refer to the [Ray documentation](https://docs.ray.io/en/latest/cluster/getting-started.html) for cluster setup.
 :::
-
 
 ::::
 
@@ -295,28 +277,10 @@ fuzzy_workflow.run(initial_tasks=initial_tasks)
 
 **Ray Cluster Setup:**
 
-The FuzzyDeduplicationWorkflow requires a Ray cluster with GPU support. Set up Ray before running:
-
-```python
-import ray
-
-# Initialize Ray cluster (local with GPUs)
-ray.init(num_gpus=4)
-
-# Or connect to existing Ray cluster
-# ray.init(address="ray://head-node-ip:10001")
-
-# Run fuzzy deduplication workflow
-fuzzy_workflow = FuzzyDeduplicationWorkflow(...)
-fuzzy_workflow.run()
-
-# Shutdown Ray when done
-ray.shutdown()
-```
+The FuzzyDeduplicationWorkflow requires a Ray cluster with GPU support. Ray cluster initialization and cleanup is handled automatically by RayClient.
 
 For distributed clusters, refer to the [Ray documentation](https://docs.ray.io/en/latest/cluster/getting-started.html) for cluster setup.
 :::
-
 
 ::::
 
@@ -376,14 +340,11 @@ The workflow's cache system ensures that previously computed MinHash signatures 
 When working with deduplication workflows, consider these common scenarios:
 
 ```python
-import ray
 import os
 from nemo_curator.stages.deduplication.exact.workflow import ExactDeduplicationWorkflow
 from nemo_curator.stages.deduplication.fuzzy.workflow import FuzzyDeduplicationWorkflow
 
-# Ensure Ray is initialized before deduplication
-if not ray.is_initialized():
-    ray.init(num_gpus=4)
+# Ray initialization handled automatically by RayClient
 
 # Handle output directory issues
 output_path = "/path/to/output"
@@ -431,6 +392,5 @@ if os.path.exists(exact_output_path) and len(os.listdir(exact_output_path)) == 0
 if os.path.exists(fuzzy_output_path) and len(os.listdir(fuzzy_output_path)) == 0:
     print("No fuzzy duplicates found in the dataset")
 
-# Cleanup Ray when done
-ray.shutdown()
+# Ray cleanup handled by RayClient
 ```

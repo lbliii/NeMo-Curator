@@ -275,37 +275,27 @@ classifier = PromptTaskComplexityClassifier()
 result_dataset = classifier(dataset=input_dataset)
 ```
 
-## Using Ray Executors
+## Scaling with Different Executors
 
-All NVIDIA NeMo Curator classifiers are compatible with Ray-based executors for enhanced scalability and performance. You can use either the experimental Ray Data executor or the Ray Actor Pool executor:
-
-### Ray Data Executor (Experimental)
+All NVIDIA NeMo Curator classifiers support different execution backends for enhanced scalability and performance. By default, pipelines use the `XennaExecutor`, but you can choose different backends based on your computational requirements.
 
 ```python
-from nemo_curator.backends.experimental.ray_data import RayDataExecutor
+from nemo_curator.backends.xenna import XennaExecutor
 from nemo_curator.pipeline import Pipeline
 from nemo_curator.stages.text.classifiers import QualityClassifier
 
 # Create pipeline with classifier
-pipeline = Pipeline(name="ray_classifier_pipeline")
+pipeline = Pipeline(name="classifier_pipeline")
 pipeline.add_stage(read_stage)
 pipeline.add_stage(QualityClassifier())
 pipeline.add_stage(write_stage)
 
-# Run with Ray Data executor
-executor = RayDataExecutor()
-results = pipeline.run()
+# Run with default Xenna executor (recommended)
+executor = XennaExecutor(config={"execution_mode": "streaming"})
+results = pipeline.run(executor)
 ```
 
-### Ray Actor Pool Executor
-
-```python
-from nemo_curator.backends.experimental.ray_actor_pool import RayActorPoolExecutor
-
-results = pipeline.run()
-```
-
-**Note**: Ray executors are particularly beneficial for large-scale classification tasks and are actively used in NVIDIA NeMo Curator's deduplication workflows.
+For large-scale distributed classification tasks, consider using Ray-based executors or other backends. Refer to the {doc}`Pipeline Execution Backends </reference/infrastructure/execution-backends>` reference for detailed information about available executors, their configurations, and when to use each backend type.
 
 ## CrossFit Integration
 

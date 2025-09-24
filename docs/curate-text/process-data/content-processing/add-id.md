@@ -302,5 +302,5 @@ for input_path, prefix in datasets:
     pipeline.add_stage(AddId(id_field="doc_id", id_prefix=prefix))
     pipeline.add_stage(JsonlWriter(output_path=f"./output/{prefix}/"))
     
-    executor.run(pipeline)
+    pipeline.run(executor)
 ```

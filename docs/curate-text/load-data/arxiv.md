@@ -48,7 +48,7 @@ Create and run an ArXiv processing pipeline and write outputs to JSONL:
 ```python
 from nemo_curator.pipeline import Pipeline
 from nemo_curator.stages.text.download import ArxivDownloadExtractStage
-from nemo_curator.stages.io.writer import JsonlWriter
+from nemo_curator.stages.text.io.writer import JsonlWriter
 
 def main():
     pipeline = Pipeline(

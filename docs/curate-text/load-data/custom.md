@@ -238,7 +238,7 @@ For executor options and configuration, refer to {ref}`reference-execution-backe
 ```python
 from nemo_curator.stages.modules import ScoreFilter
 from nemo_curator.stages.filters import WordCountFilter
-from nemo_curator.stages.io.writer import JsonlWriter
+from nemo_curator.stages.text.io.writer import JsonlWriter
 
 def create_full_pipeline():
     pipeline = Pipeline(name="full_processing")

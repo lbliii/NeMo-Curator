@@ -44,7 +44,7 @@ Here's how to download and extract Wikipedia data using Curator:
 ```python
 from nemo_curator.pipeline import Pipeline
 from nemo_curator.stages.text.download import WikipediaDownloadExtractStage
-from nemo_curator.stages.io.writer import JsonlWriter
+from nemo_curator.stages.text.io.writer import JsonlWriter
 
 # Create the Wikipedia processing stage
 wikipedia_stage = WikipediaDownloadExtractStage(

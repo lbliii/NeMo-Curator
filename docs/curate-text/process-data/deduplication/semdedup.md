@@ -254,7 +254,7 @@ We recommend experimenting with different threshold values to find the optimal b
 
 ::::{tab-set}
 
-:::{tab-item} TextSemanticDeduplicationWorkflow Class
+:::{tab-item} End-to-End Workflow
 You can use the TextSemanticDeduplicationWorkflow class to perform all steps:
 
 ```python
@@ -307,6 +307,119 @@ This approach allows for easy experimentation with different configurations and 
 
 This interface provides comprehensive end-to-end semantic deduplication capabilities.
 ```
+:::
+
+:::{tab-item} Step-by-Step Workflow
+
+For advanced users who need fine-grained control over each stage, semantic deduplication can be broken down into separate components:
+
+```python
+from nemo_curator.stages.deduplication.id_generator import create_id_generator_actor
+from nemo_curator.stages.text.embedders import EmbeddingCreatorStage
+from nemo_curator.stages.deduplication.semantic import SemanticDeduplicationWorkflow, IdentifyDuplicatesStage
+from nemo_curator.stages.text.deduplication.removal_workflow import TextDuplicatesRemovalWorkflow
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.stages.text.io.reader import ParquetReader
+from nemo_curator.stages.text.io.writer import ParquetWriter
+
+# Step 1: Create ID generator for consistent tracking
+create_id_generator_actor()
+
+# Step 2: Generate embeddings separately
+embedding_pipeline = Pipeline(
+    name="embedding_pipeline",
+    stages=[
+        ParquetReader(file_paths=input_path, files_per_partition=1, fields=["text"], _generate_ids=True),
+        EmbeddingCreatorStage(
+            model_identifier="sentence-transformers/all-MiniLM-L6-v2",
+            text_field="text",
+            max_seq_length=None,
+            max_chars=None,
+            embedding_pooling="mean_pooling",
+            model_inference_batch_size=256,
+        ),
+        ParquetWriter(path=embedding_output_path, fields=["_curator_dedup_id", "embeddings"]),
+    ],
+)
+embedding_out = embedding_pipeline.run()
+
+# Step 3: Run clustering and pairwise similarity (without duplicate identification)
+semantic_workflow = SemanticDeduplicationWorkflow(
+    input_path=embedding_output_path,
+    output_path=semantic_workflow_path,
+    n_clusters=100,
+    id_field="_curator_dedup_id",
+    embedding_field="embeddings",
+    ranking_strategy=RankingStrategy(metadata_cols=["cosine_dist_to_cent"], ascending=True),
+    eps=None,  # Skip duplicate identification for analysis
+)
+semantic_out = semantic_workflow.run()
+
+# Step 4: Analyze similarity distribution to choose eps
+import pandas as pd
+import numpy as np
+from collections import Counter
+from functools import reduce
+
+pairwise_path = os.path.join(semantic_workflow_path, "pairwise_results")
+
+def get_bins(df: pd.DataFrame, num_bins: int = 1_000) -> dict[float, int]:
+    bins = np.linspace(0, 1.01, num_bins)
+    return Counter(
+        pd.cut(df["cosine_sim_score"], bins=bins, labels=bins[1:], retbins=False, include_lowest=True, right=True)
+        .value_counts()
+        .to_dict()
+    )
+
+# Analyze similarity distribution across all clusters
+similarity_across_dataset = reduce(
+    lambda x, y: x + y,
+    [
+        get_bins(pd.read_parquet(os.path.join(pairwise_path, f), columns=["cosine_sim_score"]), num_bins=1000)
+        for f in os.listdir(pairwise_path)
+    ],
+)
+
+# Plot distribution to choose appropriate eps
+import matplotlib.pyplot as plt
+plt.ecdf(x=similarity_across_dataset.keys(), weights=similarity_across_dataset.values())
+plt.xlabel("Cosine Similarity")
+plt.ylabel("Ratio of dataset below the similarity score")
+plt.show()
+
+# Step 5: Identify duplicates with chosen eps
+duplicates_pipeline = Pipeline(
+    name="identify_duplicates_pipeline",
+    stages=[
+        FilePartitioningStage(file_paths=pairwise_path, files_per_partition=1),
+        IdentifyDuplicatesStage(output_path=duplicates_output_path, eps=0.1),
+    ],
+)
+identify_duplicates_out = duplicates_pipeline.run()
+
+# Step 6: Remove duplicates from original dataset
+removal_workflow = TextDuplicatesRemovalWorkflow(
+    input_path=input_path,
+    ids_to_remove_path=duplicates_output_path,
+    output_path=os.path.join(output_path, "deduplicated"),
+    input_filetype="parquet",
+    input_fields=["text"],
+    input_files_per_partition=1,
+    output_filetype="parquet",
+    output_fields=["text", "_curator_dedup_id"],
+    ids_to_remove_duplicate_id_field="id",
+    id_generator_path=id_generator_path,
+)
+removal_out = removal_workflow.run()
+```
+
+This step-by-step approach provides:
+
+- **Analysis capabilities**: Inspect intermediate results (embeddings, clusters, pairwise similarities)
+- **Parameter tuning**: Choose optimal `eps` based on similarity distribution analysis
+- **Flexibility**: Run different stages on different machines or with different configurations
+- **Debugging**: Isolate issues to specific stages
+
 :::
 
 :::{tab-item} Individual Components
@@ -493,6 +606,78 @@ cache_path/
    - When `perform_removal=True`, clean dataset is saved to `output_path/deduplicated/`
 
 Typically, semantic deduplication reduces dataset size by 20–50% while maintaining or improving model performance.
+
+## Advanced Configuration
+
+### ID Generator for Large-Scale Operations
+
+For large-scale duplicate removal operations, the ID Generator is essential for consistent document tracking across workflow stages:
+
+```python
+from nemo_curator.stages.deduplication.id_generator import (
+    create_id_generator_actor,
+    write_id_generator_to_disk,
+    kill_id_generator_actor
+)
+
+# Create and manage ID generator
+create_id_generator_actor()
+
+# Persist ID generator state for later use
+id_generator_path = "semantic_id_generator.json"
+write_id_generator_to_disk(id_generator_path)
+kill_id_generator_actor()
+
+# Use persisted ID generator in removal workflow
+removal_workflow = TextDuplicatesRemovalWorkflow(
+    input_path=input_path,
+    ids_to_remove_path=duplicates_path,
+    output_path=output_path,
+    id_generator_path=id_generator_path,
+    # Important: Match the same partitioning as embedding generation
+    input_files_per_partition=1,
+    # ... other parameters
+)
+```
+
+**Critical Requirements:**
+
+- The same input configuration (file paths, partitioning) must be used across all stages
+- ID consistency is maintained by hashing filenames in each task
+- Mismatched partitioning between stages will cause ID lookup failures
+
+### Ray Backend Configuration
+
+For optimal performance with large datasets, configure the Ray backend appropriately:
+
+```python
+from nemo_curator.core.client import RayClient
+
+# Configure Ray cluster for semantic deduplication
+client = RayClient(
+    num_cpus=64,    # Adjust based on available cores
+    num_gpus=4      # Should be roughly 2x the memory of embeddings
+)
+client.start()
+
+try:
+    # Run your semantic deduplication workflow
+    workflow = TextSemanticDeduplicationWorkflow(
+        input_path=input_path,
+        output_path=output_path,
+        cache_path=cache_path,
+        # ... other parameters
+    )
+    results = workflow.run()
+finally:
+    client.stop()
+```
+
+The Ray backend provides:
+
+- **Distributed processing** across multiple GPUs
+- **Memory management** for large embedding matrices
+- **Fault tolerance** for long-running workflows
 
 ## Performance Considerations
 

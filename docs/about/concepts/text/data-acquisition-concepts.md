@@ -382,21 +382,18 @@ Data acquisition includes basic content-level deduplication during extraction (e
 ```
 
 ```python
-# Acquisition produces DocumentBatch tasks through pipeline
-acquisition_pipeline = Pipeline(name="data_acquisition")
-# ... add acquisition stages ...
-acquired_results = acquisition_pipeline.run(executor)
-
-# Save results using writer stages
 from nemo_curator.stages.text.io.writer import ParquetWriter
 
-# Create pipeline for saving acquired data
-save_pipeline = Pipeline(name="save_acquired_data")
-writer = ParquetWriter(path="acquired_data/")
-save_pipeline.add_stage(writer)
+# Create acquisition pipeline with all stages including writer
+acquisition_pipeline = Pipeline(name="data_acquisition")
+# ... add acquisition stages ...
 
-# Execute save pipeline with acquired results
-save_pipeline.run(executor, initial_tasks=acquired_results)
+# Add writer to save results directly
+writer = ParquetWriter(path="acquired_data/")
+acquisition_pipeline.add_stage(writer)
+
+# Run pipeline to acquire and save data in one execution
+results = acquisition_pipeline.run(executor)
 
 # Later: Load using pipeline-based data loading
 from nemo_curator.stages.text.io.reader import ParquetReader
