@@ -14,57 +14,40 @@ modality: "text-only"
 
 This guide covers the core concepts for loading and managing text data from local files in NVIDIA NeMo Curator.
 
-(documentdataset)=
-
 ## Pipeline-Based Data Loading
 
 NeMo Curator uses a **pipeline-based architecture** for handling large-scale text data processing. Data flows through processing stages that transform tasks, enabling distributed processing of local files.
 
-```{list-table}
-:header-rows: 1
+The system provides two primary readers for text data:
 
-* - Component
-  - Description
-* - Reader Stages
-  - - `JsonlReader` and `ParquetReader` for file input
-    - File partitioning and distributed loading
-    - Column selection and performance optimization
-    - Support for cloud storage via storage options
-* - Processing Stages
-  - - Modular stages for filtering, transformation, and analysis
-    - `DocumentBatch` tasks flow between stages
-    - GPU acceleration support via PyArrow and cuDF
-    - Distributed execution via Ray or other backends
-* - Pipeline Orchestration
-  - - Compose stages into end-to-end workflows
-    - Automatic task scheduling and resource management
-    - State tracking and error recovery
-    - Flexible execution backends (Xenna, Ray, etc.)
-```
+- **JsonlReader** - For JSON Lines format files (most common)
+- **ParquetReader** - For columnar Parquet files (better performance for large datasets)
 
-:::{dropdown} Usage Examples
-:icon: code-square
+Both readers support optimization through:
+
+- **Field selection** - Reading specified columns to reduce memory usage
+- **Partitioning control** - Using `block_size` or `files_per_partition` to optimize distributed processing
+- **Recommended block size** - Use ~128MB for optimal object store performance with smaller data chunks
 
 ```python
-# Pipeline-based data loading with reader stages
 from nemo_curator.pipeline import Pipeline
 from nemo_curator.stages.text.io.reader import JsonlReader, ParquetReader
 
-# Create pipeline with JSONL reader
+# Basic usage with optimization
 pipeline = Pipeline(name="data_processing")
 
-# Read JSONL files
+# JSONL reader with field selection and partitioning
 jsonl_reader = JsonlReader(
-   file_paths="/path/to/jsonl_directory",
-    files_per_partition=4,
-    fields=["text", "id"]  # Column selection
+    file_paths="/path/to/jsonl_directory",
+    blocksize="128MB",  # Recommended for object store optimization
+    fields=["text", "id"]  # Column selection for efficiency
 )
 pipeline.add_stage(jsonl_reader)
 
-# Read Parquet files with PyArrow optimization
+# Parquet reader with performance optimization
 parquet_reader = ParquetReader(
     file_paths="data.parquet",
-    files_per_partition=4,
+    files_per_partition=4,  # Alternative to blocksize
     fields=["text", "metadata"],
     read_kwargs={
         "engine": "pyarrow",
@@ -74,47 +57,25 @@ parquet_reader = ParquetReader(
 
 # Execute pipeline
 results = pipeline.run()
-
-# Access results as DocumentBatch tasks
-for task in results:
-    df = task.to_pandas()  # Convert to pandas
-    print(f"Processed {task.num_items} documents")
 ```
 
-:::
-
-(data-loading-file-formats)=
-
 ## Supported File Formats
-
-NeMo Curator's pipeline architecture supports various file formats for loading text data from local files:
 
 ::::{tab-set}
 
 :::{tab-item} JSONL
 :sync: `jsonl`
 
-**JSON Lines format** - Most commonly used format for text datasets in NeMo Curator.
+**JSON Lines format** - Most commonly used format for text datasets.
 
 ```python
 from nemo_curator.stages.text.io.reader import JsonlReader
 
-# Single file
-reader = JsonlReader(file_paths="data.jsonl")
-
-# Multiple files
-reader = JsonlReader(file_paths=[
-    "file1.jsonl", 
-    "file2.jsonl"
-])
-
-# Directory of files
-reader = JsonlReader(file_paths="data_directory/")
-
-# Performance optimization with column selection
+# Optimized JSONL reading
 reader = JsonlReader(
-   file_paths="/path/to/jsonl_directory", 
-    fields=["text", "id"]
+    file_paths="data_directory/",
+    blocksize="128MB",  # Optimal for distributed processing
+    fields=["text", "id"]  # Read only required columns
 )
 ```
 
@@ -125,27 +86,16 @@ reader = JsonlReader(
 :::{tab-item} Parquet
 :sync: parquet
 
-**Columnar format** - Better performance for large datasets and PyArrow optimization.
+**Columnar format** - Better performance for large datasets with PyArrow optimization.
 
 ```python
 from nemo_curator.stages.text.io.reader import ParquetReader
 
-# Basic Parquet reading
-reader = ParquetReader(file_paths="data.parquet")
-
-# PyArrow optimization (default, recommended for production)
+# Optimized Parquet reading
 reader = ParquetReader(
     file_paths="data.parquet",
-    read_kwargs={
-        "engine": "pyarrow",
-        "dtype_backend": "pyarrow"
-    }
-)
-
-# Column selection for better performance
-reader = ParquetReader(
-    file_paths="data.parquet",
-    fields=["text", "metadata"]
+    files_per_partition=8,  # Control partition size
+    fields=["text", "metadata"]  # Column selection
 )
 ```
 
@@ -153,193 +103,100 @@ reader = ParquetReader(
 
 :::
 
-:::{tab-item} Custom
-:sync: custom
+::::
 
-**Custom formats** - Extensible framework for specialized file readers.
+## Optimization Strategies
 
-```python
-# Create custom reader by subclassing BaseReader
-from nemo_curator.stages.text.io.reader.base import BaseReader
-import pandas as pd
+### Partitioning Control
 
-class CustomFormatReader(BaseReader):
-    def read_data(self, file_paths, read_kwargs, fields):
-        # Implement custom reading logic
-        # Must return pandas DataFrame
-        data = []
-        for path in file_paths:
-            # Your custom file reading logic here
-            file_data = your_custom_read_function(path)
-            data.append(file_data)
-        return pd.concat(data, ignore_index=True)
-
-# Use in pipeline
-reader = CustomFormatReader(file_paths="data.custom")
+```{note}
+**Partitioning Strategy**: Specify either `files_per_partition` or `blocksize`. If `files_per_partition` is provided, `blocksize` is ignored.
 ```
 
-{bdg-secondary}`extensible` {bdg-secondary}`specialized`
+```python
+# Option 1: Size-based partitioning (recommended)
+reader = JsonlReader(
+    file_paths="/path/to/data",
+    blocksize="128MB"  # Optimal for object store performance
+)
 
-:::
+# Option 2: File count-based partitioning  
+reader = ParquetReader(
+    file_paths="/path/to/data",
+    files_per_partition=16  # Match your cluster size
+)
+```
 
-::::
+### Performance Recommendations
+
+- **Block size**: Use ~128MB for optimal object store performance - smaller objects improve distributed data exchange
+- **Field selection**: Specify `fields` parameter to read required columns
+- **Engine choice**: ParquetReader defaults to PyArrow with `dtype_backend="pyarrow"` for GPU compatibility
+- **Partition sizing**: Match `files_per_partition` to your available CPU/GPU count
 
 ## Data Export Options
 
 NeMo Curator provides flexible export options for processed datasets:
 
-::::{tab-set}
-
-:::{tab-item} JSONL Export
-:sync: `jsonl`-export
-
-**JSON Lines export** - Human-readable format for text datasets.
-
 ```python
-from nemo_curator.stages.text.io.writer import JsonlWriter
+from nemo_curator.stages.text.io.writer import JsonlWriter, ParquetWriter
 
-# Basic export
-writer = JsonlWriter(path="output_directory/")
-
-# Add writer to pipeline after processing stages
-pipeline.add_stage(writer)
+# Add writers to pipeline after processing stages
+pipeline.add_stage(JsonlWriter(path="output_directory/"))
+# or
+pipeline.add_stage(ParquetWriter(path="output_directory/"))
 
 # Execute pipeline to write results
 results = pipeline.run()
 ```
 
-{bdg-secondary}`human-readable` {bdg-secondary}`debugging-friendly`
+```{note}
+**Deterministic File Naming**
 
-:::
-
-:::{tab-item} Parquet Export
-:sync: parquet-export
-
-**Parquet export** - Optimized columnar format for production workflows.
-
-```python
-from nemo_curator.stages.text.io.writer import ParquetWriter
-
-# Basic export
-writer = ParquetWriter(path="output_directory/")
-
-# Add writer to pipeline after processing stages
-pipeline.add_stage(writer)
-
-# Execute pipeline to write results
-results = pipeline.run()
+Writers automatically generate deterministic filenames based on source files processed by readers, ensuring consistent and reproducible output across pipeline runs.
 ```
-
-{bdg-secondary}`high-performance` {bdg-secondary}`production-ready`
-
-:::
-
-::::
 
 ## Common Loading Patterns
 
-::::{tab-set}
-
-:::{tab-item} Multiple Sources
-:sync: multiple-sources
-
-**Loading from various sources** - Combine data from different locations and formats.
+### Multi-Source Data
 
 ```python
-from nemo_curator.stages.text.io.reader import JsonlReader, ParquetReader
-
-# Combine several directories in a single reader
+# Combine multiple directories
 reader = JsonlReader(file_paths=[
     "dataset_v1/",
-    "dataset_v2/",
+    "dataset_v2/", 
     "additional_data/"
 ])
 
-# For different file types, use separate pipelines
-# Pipeline 1: JSONL data
-jsonl_pipeline = Pipeline(name="jsonl_processing")
-jsonl_pipeline.add_stage(JsonlReader(file_paths="text_data.jsonl"))
-
-# Pipeline 2: Parquet data  
-parquet_pipeline = Pipeline(name="parquet_processing")
-parquet_pipeline.add_stage(ParquetReader(file_paths="structured_data.parquet"))
-
-# Execute pipelines separately, then combine results as needed
+# For different file types, use separate readers in the same pipeline
+pipeline = Pipeline(name="multi_format_processing")
+pipeline.add_stage(JsonlReader(file_paths="text_data.jsonl"))
+pipeline.add_stage(ParquetReader(file_paths="structured_data.parquet"))
 ```
 
-{bdg-secondary}`data-aggregation` {bdg-secondary}`multi-source`
-
-:::
-
-:::{tab-item} Performance Optimization
-:sync: performance
-
-**Performance optimization** - Maximize throughput and reduce memory usage.
+### Large-Scale Processing
 
 ```python
-# Optimize Parquet reading with PyArrow
-reader = ParquetReader(
-    file_paths="large_dataset.parquet",
-    fields=["text", "id"],  # Column selection for efficiency
-    files_per_partition=4,   # Optimize partition size
-    read_kwargs={
-        "engine": "pyarrow",
-        "dtype_backend": "pyarrow"
-    }
-)
-
-# Optimize memory usage with blocksize
-reader = JsonlReader(
-   file_paths="/path/to/jsonl_directory",
-    blocksize="512MB",  # Adjust based on available memory
-    files_per_partition=8
-)
-
-# Parallel loading with optimal partitioning
-reader = ParquetReader(
-    file_paths="data/",
-    files_per_partition=16  # Match CPU/GPU count
-)
-```
-
-{bdg-secondary}`high-performance` {bdg-secondary}`memory-efficient`
-
-:::
-
-:::{tab-item} Large Datasets
-:sync: large-datasets
-
-**Working with large datasets** - Handle massive datasets efficiently.
-
-```python
-# Efficient processing for large datasets
+# Efficient processing for massive datasets
 reader = ParquetReader(
     file_paths="massive_dataset/",
-    files_per_partition=8,  # Optimize for cluster size
-    blocksize="1GB"        # Large blocks for efficiency
+    blocksize="128MB",  # Optimal chunk size for distributed processing
+    fields=["text", "id"]  # Memory efficiency through column selection
 )
 
-# Add to pipeline with processing stages
 pipeline = Pipeline(name="large_dataset_processing")
 pipeline.add_stage(reader)
 
-# Add memory-efficient processing stages
+# Add processing stages
 from nemo_curator.stages.text.modules import ScoreFilter
 pipeline.add_stage(ScoreFilter(...))
 
-# Execute with default executor
 results = pipeline.run()
 ```
 
-{bdg-secondary}`scalable` {bdg-secondary}`memory-conscious`
-
-:::
-
-::::
-
 ## Remote Data Acquisition
 
-For users who need to download and process data from remote sources, NeMo Curator provides a comprehensive data acquisition framework. This is covered in detail in {ref}`Data Acquisition Concepts <about-concepts-text-data-acquisition>`, which includes:
+For users who need to download and process data from remote sources, NeMo Curator provides a comprehensive data acquisition framework. {ref}`Data Acquisition Concepts <about-concepts-text-data-acquisition>` covers this in detail, including:
 
 - **DocumentDownloader, DocumentIterator, DocumentExtractor** components
 - **Built-in support** for Common Crawl, ArXiv, Wikipedia, and custom sources  
