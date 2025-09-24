@@ -152,60 +152,97 @@ sample_documents(
 | `--label` | FastText label prefix for the category | `__label__hq` or `__label__cc` |
 | `--output-train-file` | Output file for training samples | `./samples.txt` |
 
-### 2. Train a Classifier
+### 2. Use Pre-trained Quality Classifiers
 
-Next, train a fastText classifier using the prepared samples. You can use the fastText library directly:
+For most quality filtering use cases, we recommend using the pre-trained quality classifiers available in NeMo Curator rather than training custom fastText models:
+
+#### Option A: DeBERTa Quality Classifier (Recommended)
+
+Use the pre-trained `nvidia/quality-classifier-deberta` model for robust quality assessment:
 
 ```python
-import fasttext
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.stages.text.io.reader import JsonlReader
+from nemo_curator.stages.text.io.writer import JsonlWriter
+from nemo_curator.stages.text.modules import DistributedDataClassifier
+from nemo_curator.stages.text.classifiers import QualityClassifier
 
-# Combine training samples into a single file
-with open('./fasttext_samples.train', 'w') as outfile:
-    with open('./cc_samples.txt', 'r') as infile:
-        outfile.write(infile.read())
-    with open('./hq_samples.txt', 'r') as infile:
-        outfile.write(infile.read())
+# Create pipeline with DeBERTa quality classifier
+pipeline = Pipeline(name="quality_classification_pipeline")
 
-# Train the fastText model
-model = fasttext.train_supervised(
-    input='./fasttext_samples.train',
-    epoch=25,
-    lr=0.1,
-    wordNgrams=2,
-    dim=100,
-    loss='softmax'
+# Add stages
+read_stage = JsonlReader("input_data/")
+classify_stage = DistributedDataClassifier(
+    QualityClassifier(
+        model_path="nvidia/quality-classifier-deberta",
+        labels=["Low", "Medium", "High"],  # Quality levels
+        batch_size=256,
+        max_chars=2000
+    ),
+    text_field="text",
+    pred_column="quality_pred"
 )
+write_stage = JsonlWriter("classified_output/")
 
-# Save the trained model
-model.save_model('./quality_classifier.bin')
+pipeline.add_stage(read_stage)
+pipeline.add_stage(classify_stage)
+pipeline.add_stage(write_stage)
 
-# Evaluate the model
-print("Model validation results:")
-result = model.test('./fasttext_samples.train')
-print(f"Number of examples: {result[0]}")
-print(f"Precision: {result[1]:.4f}")
-print(f"Recall: {result[2]:.4f}")
+# Execute pipeline
+results = pipeline.run()
 ```
 
-#### Training Parameters
+#### Option B: Custom fastText Models
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `epoch` | Number of training epochs | 25 |
-| `lr` | Learning rate | 0.1 |
-| `wordNgrams` | Max length of word ngram | 2 |
-| `dim` | Size of word vectors | 100 |
-| `loss` | Loss function (softmax, ns, hs) | softmax |
+If you need to train custom fastText models for specific domains or requirements, refer to the [fastText documentation](https://fasttext.cc/docs/en/supervised-tutorial.html) for comprehensive training guides.
 
-The training will output validation metrics including precision and recall scores.
+:::{note}
+**When to use each approach:**
 
-### 3. Apply the Classifier for Filtering
+- **DeBERTa Quality Classifier**: Higher accuracy, multi-class output (Low/Medium/High), better for general quality assessment
+- **fastText**: Faster inference, lower memory usage, better for high-throughput scenarios or when you have domain-specific training data
+:::
 
-Finally, use the trained model to filter your dataset. Note that FastText classifiers work as filters in pipelines, not as distributed classifiers:
+### 3. Filter Data Using Quality Scores
+
+After obtaining quality predictions, you can filter your dataset based on the scores. Here are examples for both classifier types:
 
 ::::{tab-set}
 
-:::{tab-item} Python
+:::{tab-item} DeBERTa Quality Filter
+
+```python
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.stages.text.io.reader import JsonlReader
+from nemo_curator.stages.text.io.writer import JsonlWriter
+from nemo_curator.stages.text.modules import ScoreFilter
+from nemo_curator.stages.text.filters import QualityFilter
+
+# Create pipeline with DeBERTa quality filter
+pipeline = Pipeline(name="deberta_quality_pipeline")
+
+# Add stages
+read_stage = JsonlReader("input_data/")
+filter_stage = ScoreFilter(
+    QualityFilter(
+        model_path="nvidia/quality-classifier-deberta",
+        filter_by=["High"],  # Keep only high-quality documents
+        batch_size=256
+    ),
+    text_field="text",
+    score_field="quality_pred"
+)
+write_stage = JsonlWriter("high_quality_output/")
+
+pipeline.add_stage(read_stage)
+pipeline.add_stage(filter_stage)
+pipeline.add_stage(write_stage)
+
+# Execute pipeline
+results = pipeline.run()
+```
+
+:::{tab-item} FastText Quality Filter
 
 ```python
 from nemo_curator.pipeline import Pipeline
@@ -214,14 +251,14 @@ from nemo_curator.stages.text.io.writer import JsonlWriter
 from nemo_curator.stages.text.modules import ScoreFilter
 from nemo_curator.stages.text.filters import FastTextQualityFilter
 
-# Create pipeline with FastText filter
+# Create pipeline with FastText filter (requires pre-trained model)
 pipeline = Pipeline(name="fasttext_quality_pipeline")
 
 # Add stages
 read_stage = JsonlReader("input_data/")
 filter_stage = ScoreFilter(
     FastTextQualityFilter(
-        model_path="./quality_classifier.bin",
+        model_path="./quality_classifier.bin",  # Path to your fastText model
         label="__label__hq",  # High quality label
         alpha=3,              # Pareto distribution alpha parameter
         seed=42               # Random seed for reproducibility
@@ -235,48 +272,48 @@ pipeline.add_stage(read_stage)
 pipeline.add_stage(filter_stage)
 pipeline.add_stage(write_stage)
 
-# Execute pipeline (uses XennaExecutor by default)
+# Execute pipeline
 results = pipeline.run()
-
-# Optional: Use a custom executor configuration
-
-custom_executor = XennaExecutor(config={
-    "execution_mode": "streaming",
-    "cpu_allocation_percentage": 0.9
-})
-results = pipeline.run(executor=custom_executor)
 ```
 
 :::
 
 :::{tab-item} Configuration
 
-You can configure FastText filters with different parameters:
+You can configure quality filters with different parameters:
 
 ```python
-from nemo_curator.stages.text.filters import FastTextQualityFilter
+from nemo_curator.stages.text.filters import QualityFilter, FastTextQualityFilter
 
-# Basic quality filter
-basic_filter = FastTextQualityFilter(
-    model_path="./quality_classifier.bin",
-    label="__label__hq",  # High quality label
-    alpha=3,              # Pareto distribution alpha parameter
-    seed=42               # Random seed for reproducibility
+# DeBERTa quality filter configurations
+basic_deberta_filter = QualityFilter(
+    model_path="nvidia/quality-classifier-deberta",
+    filter_by=["High"],          # Keep only high-quality documents
+    batch_size=256,
+    max_chars=2000
 )
 
-# More selective filter (higher alpha = more selective)
-selective_filter = FastTextQualityFilter(
+# More inclusive DeBERTa filter
+inclusive_deberta_filter = QualityFilter(
+    model_path="nvidia/quality-classifier-deberta",
+    filter_by=["Medium", "High"], # Keep medium and high-quality documents
+    batch_size=128
+)
+
+# FastText quality filter configurations
+basic_fasttext_filter = FastTextQualityFilter(
+    model_path="./quality_classifier.bin",
+    label="__label__hq",         # High quality label
+    alpha=3,                     # Pareto distribution alpha parameter
+    seed=42                      # Random seed for reproducibility
+)
+
+# More selective FastText filter
+selective_fasttext_filter = FastTextQualityFilter(
     model_path="./quality_classifier.bin",
     label="__label__hq",
-    alpha=5,              # Higher alpha for stricter filtering
+    alpha=5,                     # Higher alpha for stricter filtering
     seed=42
-)
-
-# Language identification filter
-lang_filter = FastTextLangId(
-    model_path="./lid.176.bin",  # fastText language ID model
-    language="en",               # Target language
-    score_threshold=0.8          # Minimum confidence score
 )
 ```
 
@@ -294,7 +331,18 @@ NeMo Curator's implementation includes support for Pareto-based sampling, as des
 
 This method helps maintain diversity in the dataset while still prioritizing higher-quality documents.
 
-## FastTextQualityFilter Parameters
+## Quality Filter Parameters
+
+### QualityFilter (DeBERTa)
+
+The `QualityFilter` accepts the following parameters:
+
+- `model_path` (str, required): HuggingFace model path (e.g., "nvidia/quality-classifier-deberta")
+- `filter_by` (list, default=["High"]): Quality levels to keep (options: "Low", "Medium", "High")
+- `batch_size` (int, default=256): Batch size for inference
+- `max_chars` (int, default=2000): Max characters per document for processing
+
+### FastTextQualityFilter
 
 The `FastTextQualityFilter` accepts the following parameters:
 
@@ -305,7 +353,24 @@ The `FastTextQualityFilter` accepts the following parameters:
 
 ## Configuration
 
-A typical configuration for classifier-based filtering looks like:
+Typical configurations for quality-based filtering:
+
+### DeBERTa Quality Classifier
+
+```yaml
+filters:
+  - name: ScoreFilter
+    filter:
+      name: QualityFilter
+      model_path: nvidia/quality-classifier-deberta
+      filter_by: ["High"]
+      batch_size: 256
+      max_chars: 2000
+    text_field: text
+    score_field: quality_pred
+```
+
+### FastText Quality Classifier
 
 ```yaml
 filters:
@@ -324,8 +389,9 @@ filters:
 
 For effective classifier-based filtering:
 
-1. **Training data selection**: Use truly high-quality sources for positive examples
+1. **Model selection**: Start with the DeBERTa quality classifier for general use cases; consider fastText for high-throughput scenarios
 2. **Validation**: Manually review a sample of filtered results to confirm effectiveness
-3. **Threshold tuning**: Adjust the threshold based on your quality requirements
-4. **Combination with heuristics**: Consider using heuristic filters as a pre-filter
-5. **Domain adaptation**: Train domain-specific classifiers for specialized corpora
+3. **Quality level tuning**: Adjust `filter_by` levels (DeBERTa) or `alpha` values (fastText) based on your quality requirements
+4. **Batch size optimization**: Tune `batch_size` for DeBERTa models based on your available memory
+5. **Combination with heuristics**: Consider using heuristic filters as a pre-filter to improve efficiency
+6. **Domain adaptation**: For specialized corpora, consider training custom models using domain-specific data

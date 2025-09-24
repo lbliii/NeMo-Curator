@@ -9,23 +9,68 @@ modality: "text-only"
 ---
 
 (about-concepts-text-data-acquisition)=
+
 # Data Acquisition Concepts
 
 This guide covers the core concepts for acquiring and processing text data from remote sources in NeMo Curator. Data acquisition focuses on downloading, extracting, and converting remote data sources into {ref}`DocumentDataset <documentdataset>` format for further processing.
 
 ## Overview
 
-Data acquisition in NeMo Curator follows a three-stage architecture:
+Data acquisition in NeMo Curator follows a four-stage architecture:
 
-1. **Download**: Retrieve raw data files from remote sources
-2. **Iterate**: Extract individual records from downloaded containers
-3. **Extract**: Convert raw content to clean, structured text
+1. **Generate URLs**: Discover and generate download URLs from minimal input
+2. **Download**: Retrieve raw data files from remote sources
+3. **Iterate**: Extract individual records from downloaded containers
+4. **Extract**: Convert raw content to clean, structured text
 
 This process transforms diverse remote data sources into a standardized `DocumentDataset` that can be used throughout the text curation pipeline.
 
 ## Core Components
 
-The data acquisition framework consists of three abstract base classes that define the acquisition workflow:
+The data acquisition framework consists of four abstract base classes that define the acquisition workflow:
+
+### URLGenerator
+
+Generates URLs for downloading from minimal input configuration.
+
+```{list-table}
+:header-rows: 1
+
+* - Feature
+  - Description
+* - URL Generation
+  - - Generates download URLs from configuration parameters
+    - Supports date ranges and filtering criteria
+    - Handles API calls to discover available resources
+    - Manages URL limits and pagination
+* - Configuration
+  - - Accepts minimal input parameters
+    - Supports various data source patterns
+    - Handles authentication requirements
+    - Provides URL validation and filtering
+* - Extensibility
+  - - Abstract base class for custom implementations
+    - Plugin architecture for new data sources
+    - Configurable generation parameters
+    - Integration with existing discovery systems
+```
+
+**Example Implementation**:
+
+```python
+class CustomURLGenerator(URLGenerator):
+    def __init__(self, base_urls):
+        super().__init__()
+        self._base_urls = base_urls
+    
+    def generate_urls(self):
+        # Custom URL generation logic
+        urls = []
+        for base_url in self._base_urls:
+            # Discover or construct actual download URLs
+            urls.extend(discover_files_at_url(base_url))
+        return urls
+```
 
 ### DocumentDownloader
 
@@ -54,17 +99,25 @@ Connects to and downloads data from remote repositories.
 ```
 
 **Example Implementation**:
+
 ```python
 class CustomDownloader(DocumentDownloader):
     def __init__(self, download_dir):
         super().__init__()
         self._download_dir = download_dir
     
-    def download(self, url):
+    def _get_output_filename(self, url):
+        # Extract filename from URL
+        return url.split('/')[-1]
+    
+    def _download_to_path(self, url, path):
         # Custom download logic
-        output_file = os.path.join(self._download_dir, filename)
-        # ... download implementation ...
-        return output_file
+        # Return (success_bool, error_message)
+        try:
+            # ... download implementation ...
+            return True, None
+        except Exception as e:
+            return False, str(e)
 ```
 
 ### DocumentIterator
@@ -94,6 +147,7 @@ Extracts individual records from downloaded containers.
 ```
 
 **Example Implementation**:
+
 ```python
 class CustomIterator(DocumentIterator):
     def __init__(self, log_frequency=1000):
@@ -103,7 +157,10 @@ class CustomIterator(DocumentIterator):
     def iterate(self, file_path):
         # Custom iteration logic
         for record in parse_container(file_path):
-            yield record_metadata, record_content
+            yield {"content": record_content, "metadata": record_metadata}
+    
+    def output_columns(self):
+        return ["content", "metadata"]
 ```
 
 ### DocumentExtractor
@@ -133,15 +190,23 @@ Converts raw content formats to clean, structured text.
 ```
 
 **Example Implementation**:
+
 ```python
 class CustomExtractor(DocumentExtractor):
     def __init__(self):
         super().__init__()
     
-    def extract(self, content):
+    def extract(self, record):
         # Custom extraction logic
-        cleaned_text = clean_content(content)
+        cleaned_text = clean_content(record["content"])
+        detected_lang = detect_language(cleaned_text)
         return {"text": cleaned_text, "language": detected_lang}
+    
+    def input_columns(self):
+        return ["content", "metadata"]
+    
+    def output_columns(self):
+        return ["text", "language"]
 ```
 
 ## Supported Data Sources
@@ -197,15 +262,14 @@ The data acquisition process seamlessly integrates with NeMo Curator's pipeline-
 
 ```python
 from nemo_curator.pipeline import Pipeline
-from nemo_curator.stages.text.download.base import DocumentDownloadExtractStage
+from nemo_curator.stages.text.download import DocumentDownloadExtractStage, URLGenerator
 
 # Define acquisition pipeline
 pipeline = Pipeline(name="data_acquisition")
 
 # Create download and extract stage with custom components
 download_extract_stage = DocumentDownloadExtractStage(
-    urls=data_urls,
-    output_paths=output_paths,
+    url_generator=CustomURLGenerator(data_urls),
     downloader=CustomDownloader(download_dir),
     iterator=CustomIterator(),
     extractor=CustomExtractor()
@@ -217,45 +281,40 @@ results = pipeline.run()
 
 ```
 
-### Batch Processing
+### Scaling and Parallel Processing
 
-For large-scale data acquisition, use pipeline stages with appropriate partitioning:
+The `DocumentDownloadExtractStage` automatically handles parallel processing through the distributed computing framework:
 
 ```python
-from nemo_curator.stages.file_partitioning import FilePartitioningStage
+# Simple pipeline - parallelism handled automatically
+pipeline = Pipeline(name="scalable_acquisition")
 
-# Create pipeline with file partitioning for parallel processing
-pipeline = Pipeline(name="batch_acquisition")
-
-# Add file partitioning stage for parallel downloads
-partitioning_stage = FilePartitioningStage(
-    file_paths=url_list,
-    files_per_partition=4,  # Process 4 URLs per batch
-    limit=None  # Process all URLs
+# The composite stage handles URL generation and parallel downloads internally
+download_extract_stage = DocumentDownloadExtractStage(
+    url_generator=CustomURLGenerator(base_urls),  # Generates URLs from config
+    downloader=CustomDownloader(download_dir),
+    iterator=CustomIterator(),
+    extractor=CustomExtractor(),
+    url_limit=1000  # Limit number of URLs to process
 )
-pipeline.add_stage(partitioning_stage)
+pipeline.add_stage(download_extract_stage)
 
-# Add download and extract stage
-download_stage = DocumentDownloadExtractStage(
-    downloader=downloader,
-    iterator=iterator,
-    extractor=extractor
-)
-pipeline.add_stage(download_stage)
+# Execute with distributed executor for automatic scaling
+results = pipeline.run(executor)
 ```
 
 ## Configuration and Customization
 
 ### Configuration Files
 
-Data acquisition components can be configured through YAML files:
+You can configure data acquisition components through YAML files:
 
 ```yaml
 # downloader_config.yaml
 download_module: "my_package.CustomDownloader"
 download_params:
   download_dir: "/data/downloads"
-  parallel_downloads: 4
+  verbose: true
 
 iterator_module: "my_package.CustomIterator"
 iterator_params:
@@ -287,26 +346,29 @@ downloader, iterator, extractor, format = build_downloader(
 
 ### Parallel Processing
 
-Data acquisition leverages `Dask` for distributed processing:
+Data acquisition leverages distributed computing frameworks for scalable processing:
 
-- **Parallel Downloads**: Multiple URLs downloaded simultaneously
-- **Concurrent Extraction**: Multiple files processed in parallel
+- **Parallel Downloads**: Each URL in the generated list downloads through separate workers
+- **Concurrent Extraction**: Files process in parallel across workers
 - **Memory Management**: Streaming processing for large files
 - **Fault Tolerance**: Automatic retry and recovery mechanisms
 
 ### Scaling Strategies
 
-**Single Node**: 
-- Use multiple worker processes for CPU-bound extraction
+**Single Node**:
+
+- Use worker processes for CPU-bound extraction
 - Optimize I/O operations for local storage
 - Balance download and processing throughput
 
 **Multi-Node**:
+
 - Distribute download tasks across cluster nodes
 - Use shared storage for intermediate files
-- Coordinate processing through `Dask` distributed scheduler
+- Coordinate processing through distributed scheduler
 
 **Cloud Deployment**:
+
 - Leverage cloud storage for source data
 - Use auto-scaling for variable workloads  
 - Optimize network bandwidth and storage costs

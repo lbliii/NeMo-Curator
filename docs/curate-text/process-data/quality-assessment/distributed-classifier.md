@@ -25,7 +25,11 @@ The distributed data classification in NeMo Curator works by:
 
 The `DistributedDataClassifier` is designed to run on GPU clusters with minimal code changes regardless of which specific classifier you're using. All classifiers support filtering based on classification results and storing prediction scores as metadata.
 
-## Hardware Requirements
+:::{note}
+Distributed classification requires GPU acceleration and is not supported for CPU-only processing. As long as GPU resources are available and NeMo Curator is correctly installed, GPU acceleration is handled automatically.
+::: 
+
+<!-- ## Hardware Requirements
 
 Distributed data classification requires GPU acceleration for optimal performance:
 
@@ -50,9 +54,7 @@ Distributed data classification requires GPU acceleration for optimal performanc
 | AegisClassifier | 8GB+ | Llama Guard-based, higher memory usage |
 | FineWebEduClassifier | 6GB+ | Transformer-based, variable batch sizes |
 
-:::{note}
-All classifiers require `backend="cudf"` for GPU acceleration. CPU-only processing is not supported for distributed classification.
-:::
+ -->
 
 ---
 
@@ -300,13 +302,6 @@ results = pipeline.run()
 ```python
 from nemo_curator.backends.experimental.ray_actor_pool import RayActorPoolExecutor
 
-# Run with Ray Actor Pool executor (used in production workflows)
-executor = RayActorPoolExecutor(
-    config={
-        "reserved_cpus": 0.0,    # Reserved CPU resources
-        "reserved_gpus": 0.0,    # Reserved GPU resources
-    }
-)
 results = pipeline.run()
 ```
 
