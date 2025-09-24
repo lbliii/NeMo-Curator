@@ -21,7 +21,7 @@ NeMo Curator's audio curation pipeline supports several output formats tailored 
 
 ### JSONL Manifests
 
-The primary output format for audio curation is JSONL (JSON Lines), compatible with NeMo Framework training workflows:
+The primary output format for audio curation is JSONL (JSON Lines):
 
 ```json
 {"audio_filepath": "/data/audio/sample_001.wav", "text": "hello world", "pred_text": "hello world", "wer": 0.0, "duration": 2.1}
@@ -65,24 +65,6 @@ pipeline.add_stage(
 
 :::
 
-:::{tab-item} Custom Export Options
-
-```python
-# Export with custom formatting and selected fields
-writer = JsonlWriter(
-    path="/output/processed_audio",
-    write_kwargs={
-        "force_ascii": False,
-        "double_precision": 2,
-        "indent": None  # Compact format
-    },
-    # Include only these columns in the output
-    fields=["audio_filepath", "text", "pred_text", "wer", "duration"]
-)
-```
-
-:::
-
 ::::
 
 ## Directory Structure
@@ -98,18 +80,6 @@ When `source_files` metadata exists, the writer generates deterministic hashed f
 └── ...
 ```
 
-### Organized by Language
-
-```python
-# Language-specific output directories
-for lang in ["en_us", "es_419", "hy_am"]:
-    pipeline.add_stage(
-        JsonlWriter(
-            path=f"/output/manifests/{lang}",
-            write_kwargs={"force_ascii": False}
-        )
-    )
-```
 
 ## Quality Control
 
@@ -144,118 +114,3 @@ quality_filters = [
 for filter_stage in quality_filters:
     pipeline.add_stage(filter_stage)
 ```
-
-### Export Statistics
-
-Refer to related workflows for post-export analysis and quality reporting:
-
-- Audio analysis and dataset characterization: refer to Audio Analysis workflow.
-- Quality assessment and WER/CER metrics: refer to Quality Assessment workflow.
-
-## Integration with Training Workflows
-
-### NeMo Framework Integration
-
-Exported manifests are directly compatible with NeMo Framework training:
-
-```python
-# Use in NeMo ASR training config
-train_manifest: "/output/audio_manifests/train_manifest.jsonl"
-validation_manifest: "/output/audio_manifests/dev_manifest.jsonl" 
-test_manifest: "/output/audio_manifests/test_manifest.jsonl"
-```
-
-### Cross-Modal Training
-
-```python
-# Export for multimodal training (audio + text)
-multimodal_export = {
-    "audio_path": "audio_filepath",
-    "transcription": "text", 
-    "predicted_transcription": "pred_text",
-    "quality_score": "wer",
-    "metadata": {
-        "duration": "duration",
-        "language": "language"
-    }
-}
-```
-
-## Performance Considerations
-
-::::{tab-set}
-
-:::{tab-item} Large Dataset Export
-
-For datasets with millions of audio files:
-
-```python
-# Use compression and control batch sizes upstream
-writer = JsonlWriter(
-    path="/output/large_dataset",
-    write_kwargs={"compression": "gzip"}
-)
-
-# Tip: reduce upstream batch sizes when converting/writing
-pipeline.add_stage(AudioToDocumentStage().with_(batch_size=1))
-```
-
-:::
-
-:::{tab-item}  Storage Optimization
-
-```python
-# Optimize for storage efficiency using writer options
-writer = JsonlWriter(
-    path="/output/processed_audio",
-    write_kwargs={
-        "compression": "gzip",
-        "double_precision": 2,
-        "indent": None,
-    },
-    # Select only needed columns
-    fields=["audio_filepath", "text", "pred_text", "wer", "duration"]
-)
-```
-
-:::
-
-::::
-
-## Troubleshooting
-
-### Common Export Issues
-
-::::{tab-set}
-:::{tab-item} Large file sizes
-
-Use compression and field filtering
-
-```python
-JsonlWriter(write_kwargs={"compression": "gzip"})
-```
-
-:::
-
-:::{tab-item} Unicode errors
-
-Ensure proper encoding
-
-```python
-JsonlWriter(write_kwargs={"force_ascii": False})
-```
-
-:::
-
-:::{tab-item} Memory issues
-
- Reduce upstream batch sizes
-
-```python
-# Example: write smaller batches by adjusting upstream stage
-AudioToDocumentStage().with_(batch_size=1)
-```
-
-:::
-
-::::
