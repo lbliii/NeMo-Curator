@@ -55,7 +55,7 @@ pipeline = Pipeline(name="data_processing")
 
 # Read JSONL files
 jsonl_reader = JsonlReader(
-    file_paths="data.jsonl",
+   file_paths="/path/to/jsonl_directory",
     files_per_partition=4,
     fields=["text", "id"]  # Column selection
 )
@@ -113,7 +113,7 @@ reader = JsonlReader(file_paths="data_directory/")
 
 # Performance optimization with column selection
 reader = JsonlReader(
-    file_paths="data.jsonl", 
+   file_paths="/path/to/jsonl_directory", 
     fields=["text", "id"]
 )
 ```
@@ -290,7 +290,7 @@ reader = ParquetReader(
 
 # Optimize memory usage with blocksize
 reader = JsonlReader(
-    file_paths="data.jsonl",
+   file_paths="/path/to/jsonl_directory",
     blocksize="512MB",  # Adjust based on available memory
     files_per_partition=8
 )
