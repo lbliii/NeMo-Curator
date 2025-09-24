@@ -67,51 +67,6 @@ pipeline.add_stage(wer_filter)
 
 ## Advanced WER Filtering
 
-### Multi-Tier Filtering
-
-```python
-def create_multi_tier_wer_pipeline() -> Pipeline:
-    """Create pipeline with multiple WER quality tiers."""
-    from nemo_curator.stages.function_decorators import processing_stage
-    
-    pipeline = Pipeline(name="multi_tier_wer")
-    
-    # Calculate WER
-    pipeline.add_stage(GetPairwiseWerStage())
-    
-    # Tier 1: Excellent quality (WER ≤ 10%)
-    @processing_stage(name="tier1_filter")
-    def excellent_quality_filter(audio_batch: AudioBatch) -> AudioBatch:
-        excellent_data = [
-            item for item in audio_batch.data 
-            if item.get("wer", 100) <= 10.0
-        ]
-        
-        # Mark as tier 1
-        for item in excellent_data:
-            item["quality_tier"] = "excellent"
-        
-        return AudioBatch(data=excellent_data, filepath_key=audio_batch.filepath_key)
-    
-    # Tier 2: Good quality (10% < WER ≤ 25%)  
-    @processing_stage(name="tier2_filter")
-    def good_quality_filter(audio_batch: AudioBatch) -> AudioBatch:
-        good_data = [
-            item for item in audio_batch.data
-            if 10.0 < item.get("wer", 100) <= 25.0
-        ]
-        
-        for item in good_data:
-            item["quality_tier"] = "good"
-        
-        return AudioBatch(data=good_data, filepath_key=audio_batch.filepath_key)
-    
-    # Add both tier filters to the pipeline
-    pipeline.add_stage(excellent_quality_filter)
-    pipeline.add_stage(good_quality_filter)
-    
-    return pipeline
-```
 
 ### Statistical WER Filtering
 
