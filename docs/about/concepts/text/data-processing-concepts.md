@@ -212,11 +212,12 @@ Critical for production datasets (requires Ray + GPU):
 :icon: code-square
 
 ```python
-import ray
+from nemo_curator.core.client import RayClient
 from nemo_curator.stages.deduplication.fuzzy.workflow import FuzzyDeduplicationWorkflow
 
 # Initialize Ray cluster with GPU support (required for fuzzy deduplication)
-ray.init(num_gpus=4)
+ray_client = RayClient(num_gpus=4)
+ray_client.start()
 
 # Configure fuzzy deduplication workflow (production settings)
 fuzzy_workflow = FuzzyDeduplicationWorkflow(
@@ -236,7 +237,7 @@ fuzzy_workflow = FuzzyDeduplicationWorkflow(
 fuzzy_workflow.run()
 
 # Cleanup Ray when done
-ray.shutdown()
+ray_client.stop()
 ```
 
 :::
@@ -249,11 +250,12 @@ Quick deduplication for any dataset size (requires Ray + GPU):
 :icon: code-square
 
 ```python
-import ray
+from nemo_curator.core.client import RayClient
 from nemo_curator.stages.deduplication.exact.workflow import ExactDeduplicationWorkflow
 
 # Initialize Ray cluster with GPU support (required for exact deduplication)
-ray.init(num_gpus=4)
+ray_client = RayClient(num_gpus=4)
+ray_client.start()
 
 # Configure exact deduplication workflow
 exact_workflow = ExactDeduplicationWorkflow(
@@ -269,7 +271,7 @@ exact_workflow = ExactDeduplicationWorkflow(
 exact_workflow.run()
 
 # Cleanup Ray when done
-ray.shutdown()
+ray_client.stop()
 ```
 
 :::
@@ -283,6 +285,8 @@ Most users combine these steps into a comprehensive workflow:
 
 ```python
 from nemo_curator.pipeline import Pipeline
+
+from nemo_curator.core.client import RayClient
 
 # Complete production pipeline (most common pattern)
 def build_production_pipeline():
@@ -331,8 +335,8 @@ processed_results = complete_pipeline.run()
 
 # Then apply deduplication separately for large datasets
 # For large datasets - use fuzzy deduplication
-import ray
-ray.init(num_gpus=4)
+ray_client = RayClient(num_gpus=4)
+ray_client.start()
 fuzzy_workflow = FuzzyDeduplicationWorkflow(
     input_path="/path/to/processed/data",
     cache_path="./cache",
@@ -340,7 +344,6 @@ fuzzy_workflow = FuzzyDeduplicationWorkflow(
     text_field="text"
 )
 fuzzy_workflow.run()
-ray.shutdown()
 
 # For smaller datasets - use exact deduplication
 exact_workflow = ExactDeduplicationWorkflow(
@@ -350,7 +353,8 @@ exact_workflow = ExactDeduplicationWorkflow(
     assign_id=True
 )
 exact_workflow.run()
-ray.shutdown()
+
+ray_client.stop()
 ```
 
 :::
