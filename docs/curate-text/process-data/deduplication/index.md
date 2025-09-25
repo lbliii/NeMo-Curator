@@ -22,7 +22,7 @@ NeMo Curator's deduplication framework is built around three main approaches tha
 
 ::::{tab-set}
 
-:::{tab-item} Exact Deduplication
+:::{tab-item} Exact
 
 Exact deduplication uses MD5 hashing to identify identical documents:
 
@@ -51,7 +51,7 @@ The workflow:
 
 :::
 
-:::{tab-item} Fuzzy Deduplication
+:::{tab-item} Fuzzy
 
 Fuzzy deduplication uses MinHash and LSH to find near-duplicate content:
 
@@ -65,6 +65,7 @@ fuzzy_workflow = FuzzyDeduplicationWorkflow(
     output_path="/path/to/output",
     text_field="text",
     perform_removal=False,  # Currently only identification supported
+    input_blocksize="1GiB",  # Default block size (differs from exact dedup)
     # MinHash + LSH parameters
     seed=42,
     char_ngrams=24,
@@ -84,7 +85,7 @@ The workflow:
 
 :::
 
-:::{tab-item} Semantic Deduplication
+:::{tab-item} Semantic
 
 Semantic deduplication uses embeddings to identify meaning-based duplicates:
 
@@ -115,12 +116,13 @@ The workflow:
 4. Identifies semantic duplicates based on cosine similarity threshold
 
 **Note**: Semantic deduplication offers two workflows:
+
 - `TextSemanticDeduplicationWorkflow`: For raw text input with automatic embedding generation
 - `SemanticDeduplicationWorkflow`: For pre-computed embeddings
 
 :::
 
-:::{tab-item} Step-by-Step Approach
+:::{tab-item} Step-by-Step
 
 For advanced users, semantic deduplication can be broken down into separate stages:
 
@@ -178,14 +180,22 @@ Each approach serves different use cases and offers different trade-offs between
 ::::{grid} 1 1 1 2
 :gutter: 2
 
-:::{grid-item-card} {octicon}`git-pull-request;1.5em;sd-mr-1` Hash-Based Deduplication
-:link: gpudedup
+:::{grid-item-card} {octicon}`git-pull-request;1.5em;sd-mr-1` Exact Duplicate Removal
+:link: exact
 :link-type: doc
-Remove exact and fuzzy duplicates using hashing algorithms
+Identify character-for-character duplicates using hashing
++++
+{bdg-secondary}`hashing`
+{bdg-secondary}`fast`
+:::
+
+:::{grid-item-card} {octicon}`git-compare;1.5em;sd-mr-1` Fuzzy Duplicate Removal
+:link: fuzzy
+:link-type: doc
+Identify near-duplicates using MinHash and LSH
 +++
 {bdg-secondary}`minhash`
 {bdg-secondary}`lsh`
-{bdg-secondary}`hashing`
 {bdg-secondary}`fast`
 :::
 
@@ -201,6 +211,49 @@ Remove semantically similar documents using embeddings
 :::
 
 ::::
+
+(text-process-data-dedup-common-ops)=
+
+## Common Operations
+
+### Document IDs
+
+Duplicate removal workflows require stable document identifiers.
+
+- Use `AddId` to add IDs at the start of your pipeline
+- Or use reader-based ID generation (`_generate_ids`, `_assign_ids`) backed by the ID Generator actor for stable integer IDs
+- Some workflows write an ID generator state file for later removal
+
+### Outputs and Artifacts
+
+- Exact duplicate identification:
+  - `ExactDuplicateIds/` (parquet with column `id`)
+  - `exact_id_generator.json`
+- Fuzzy duplicate identification:
+  - `FuzzyDuplicateIds/` (parquet with column `id`)
+  - `fuzzy_id_generator.json`
+- Semantic duplicate identification/removal:
+  - `output_path/duplicates/` (parquet with column `id`)
+  - `output_path/deduplicated/` (when `perform_removal=True`)
+
+### Removing Duplicates
+
+Use the Text Duplicates Removal workflow to apply a list of duplicate IDs to your original dataset.
+
+```python
+from nemo_curator.stages.text.deduplication.removal_workflow import TextDuplicatesRemovalWorkflow
+
+removal_workflow = TextDuplicatesRemovalWorkflow(
+    input_path="/path/to/input",
+    ids_to_remove_path="/path/to/duplicates",
+    output_path="/path/to/clean",
+    input_filetype="parquet",
+    input_id_field="_curator_dedup_id",
+    ids_to_remove_duplicate_id_field="id",
+)
+
+removal_workflow.run()
+```
 
 ## Usage
 
@@ -258,6 +311,7 @@ fuzzy_workflow = FuzzyDeduplicationWorkflow(
     output_path="/path/to/output",
     text_field="text",
     perform_removal=False,  # Currently only identification supported
+    input_blocksize="1GiB",  # Default block size (differs from exact dedup)
     # MinHash + LSH parameters
     seed=42,
     char_ngrams=24,
@@ -300,20 +354,20 @@ sem_workflow.run()  # Uses XennaExecutor by default
 
 ### GPU Acceleration
 
-- **Exact deduplication**: Requires Ray backend with GPU support for MD5 hashing operations. GPU acceleration provides significant speedup for large datasets
-- **Fuzzy deduplication**: Requires Ray backend with GPU support for MinHash and LSH operations. GPU acceleration is essential for processing large datasets efficiently
+- **Exact deduplication**: Requires Ray backend with GPU support for MD5 hashing operations. GPU acceleration provides significant speedup for large datasets through parallel processing
+- **Fuzzy deduplication**: Requires Ray backend with GPU support for MinHash computation and LSH operations. GPU acceleration is essential for processing large datasets efficiently
 - **Semantic deduplication**:
-  - `TextSemanticDeduplicationWorkflow`: Requires GPU backend for embedding generation, clustering, and pairwise operations
-  - `SemanticDeduplicationWorkflow`: Requires GPU backend for clustering operations when working with pre-computed embeddings
-  - GPU acceleration is critical for feasible processing times
+  - `TextSemanticDeduplicationWorkflow`: Requires GPU for embedding generation (transformer models), K-means clustering, and pairwise similarity computation
+  - `SemanticDeduplicationWorkflow`: Requires GPU for K-means clustering and pairwise similarity operations when working with pre-computed embeddings
+  - GPU acceleration is critical for feasible processing times, especially for embedding generation and similarity computations
 
 ### Hardware Requirements
 
-- **CPU-only workflows**: No deduplication workflows available (all require GPU support)
-- **GPU workflows**:
-  - Exact and fuzzy deduplication require Ray distributed computing framework with GPU support
-  - Semantic deduplication can use various executors (XennaExecutor, RayDataExecutor) with GPU support
-- **Memory considerations**: GPU memory requirements scale with dataset size and embedding dimensions
+- **GPU Requirements**: All deduplication workflows require GPU acceleration for optimal performance
+  - Exact and fuzzy deduplication require Ray distributed computing framework with GPU support for hash computations
+  - Semantic deduplication requires GPU for transformer model inference, clustering algorithms, and similarity computations
+  - Can use various executors (XennaExecutor, RayDataExecutor) with GPU support
+- **Memory considerations**: GPU memory requirements scale with dataset size, batch sizes, and embedding dimensions (for semantic deduplication)
 
 ### Backend Setup
 
@@ -372,6 +426,7 @@ The ID Generator ensures that the same documents receive identical IDs across di
 :titlesonly:
 :hidden:
 
-Hash-Based Deduplication <gpudedup>
+Exact Duplicate Removal <exact>
+Fuzzy Duplicate Removal <fuzzy>
 Semantic Deduplication <semdedup>
 ```

@@ -84,10 +84,19 @@ Remove duplicate and near-duplicate documents efficiently from your text dataset
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2
 
-:::{grid-item-card} {octicon}`git-pull-request;1.5em;sd-mr-1` GPU Deduplication
-:link: deduplication/gpudedup
+:::{grid-item-card} {octicon}`git-pull-request;1.5em;sd-mr-1` Exact Duplicate Removal
+:link: deduplication/exact
 :link-type: doc
-Remove exact and fuzzy duplicates using GPU acceleration
+Identify character-for-character duplicates using hashing
++++
+{bdg-secondary}`hashing`
+{bdg-secondary}`fast`
+:::
+
+:::{grid-item-card} {octicon}`git-compare;1.5em;sd-mr-1` Fuzzy Duplicate Removal
+:link: deduplication/fuzzy
+:link-type: doc
+Identify near-duplicates using MinHash and LSH
 +++
 {bdg-secondary}`minhash`
 {bdg-secondary}`lsh`
@@ -100,8 +109,8 @@ Remove exact and fuzzy duplicates using GPU acceleration
 Remove semantically similar documents using embeddings
 +++
 {bdg-secondary}`embeddings`
-{bdg-secondary}`similarity`
 {bdg-secondary}`meaning-based`
+{bdg-secondary}`gpu-accelerated`
 :::
 
 ::::
