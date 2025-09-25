@@ -67,13 +67,9 @@ pipeline = Pipeline(name="parquet_data_processing")
 
 # Read Parquet files with PyArrow engine
 reader = ParquetReader(
-    file_paths="/path/to/data/*.parquet",
+    file_paths="/path/to/data",
     files_per_partition=4,
-    fields=["text", "metadata"],  # Only read specific columns
-    read_kwargs={
-        "engine": "pyarrow",
-        "dtype_backend": "pyarrow"
-    }
+    fields=["text", "metadata"]  # Only read specific columns
 )
 pipeline.add_stage(reader)
 
