@@ -133,8 +133,8 @@ NeMo Curator provides several installation extras to install only the components
 * - **cuda12x**
   - `pip install --extra-index-url https://pypi.nvidia.com nemo-curator[cuda12x]`
   - CPU + GPU text curation with RAPIDS
-* - **image**
-  - `pip install --extra-index-url https://pypi.nvidia.com nemo-curator[image]`
+* - **image_cuda12**
+  - `pip install --extra-index-url https://pypi.nvidia.com nemo-curator[image_cuda12]`
   - CPU + GPU text and image curation
 * - **bitext**
   - `pip install --extra-index-url https://pypi.nvidia.com nemo-curator[bitext]`
@@ -142,22 +142,6 @@ NeMo Curator provides several installation extras to install only the components
 * - **all**
   - `pip install --extra-index-url https://pypi.nvidia.com nemo-curator[all]`
   - All stable modules (recommended)
-```
-
-### Nightly Dependencies
-
-For cutting-edge RAPIDS features, use nightly builds:
-
-```bash
-# Nightly RAPIDS with all modules
-pip install --extra-index-url https://pypi.nvidia.com nemo-curator[all_nightly]
-
-# Nightly RAPIDS with image modules
-pip install --extra-index-url https://pypi.nvidia.com nemo-curator[image_nightly]
-```
-
-```{warning}
-Nightly builds may be unstable and are not recommended for production use.
 ```
 
 ---
