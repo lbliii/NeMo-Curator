@@ -16,7 +16,7 @@ The `AddId` module provides a reliable way to add unique identifiers to each doc
 
 ## Overview
 
-The `AddId` stage generates unique identifiers by combining a task UUID with sequential indices, ensuring uniqueness across distributed processing environments. This approach guarantees that each document receives a distinct ID even when processing large datasets across distributed workers.
+Generate unique document identifiers for tracking and duplicate removal workflows.
 
 ### Key Features
 
@@ -38,33 +38,12 @@ The `AddId` stage generates unique identifiers by combining a task UUID with seq
 
 ### Basic Usage
 
-Add unique IDs to documents using default settings:
+Minimal configuration for adding IDs:
 
 ```python
 from nemo_curator.stages.text.modules import AddId
-from nemo_curator.pipeline import Pipeline
-from nemo_curator.stages.text.io.reader import JsonlReader
 
-# Create pipeline
-pipeline = Pipeline(
-    name="add_document_ids",
-    description="Add unique IDs to documents"
-)
-
-# Add reader stage
-pipeline.add_stage(
-    JsonlReader(
-        file_paths="./data/*.jsonl",
-        files_per_partition=2
-    )
-)
-
-# Add ID generation stage
-pipeline.add_stage(
-    AddId(
-        id_field="doc_id"  # Field name where IDs will be stored
-    )
-)
+pipeline.add_stage(AddId(id_field="doc_id"))
 ```
 
 ### Advanced Configuration
@@ -84,27 +63,90 @@ add_id_stage = AddId(
 pipeline.add_stage(add_id_stage)
 ```
 
+### ID Generation Format
+
+Generated IDs follow this pattern:
+
+- Without prefix: `{task_uuid}_{sequential_index}`
+- With prefix: `{id_prefix}_{task_uuid}_{sequential_index}`
+
+Example:
+
+```text
+a1b2c3d4-e5f6-7890-abcd-ef1234567890_0
+corpus_v1_a1b2c3d4-e5f6-7890-abcd-ef1234567890_1
+```
+
 ### Integration with Duplicate Removal
 
-Use `AddId` before duplicate removal workflows that require document identifiers:
+Use `AddId` before duplicate removal workflows that require document identifiers. For exact duplicate removal, NeMo Curator provides a workflow that can automatically assign IDs, or you can add them explicitly with `AddId`:
 
 ```python
 from nemo_curator.stages.text.modules import AddId
-from nemo_curator.stages.text.filters import ExactDuplicateFilter
+from nemo_curator.stages.text.deduplication.removal import TextDuplicatesRemovalStage
 
-# Add IDs before duplicate removal
+# Add IDs before duplicate identification/removal
 pipeline.add_stage(
     AddId(id_field="doc_id")
 )
 
-# Use IDs in duplicate removal
+# Later, when applying a removal list of duplicate IDs (written by a prior
+# identification workflow), use the TextDuplicatesRemovalStage:
 pipeline.add_stage(
-    ExactDuplicateFilter(
+    TextDuplicatesRemovalStage(
+        ids_to_remove_path="/path/to/duplicate_ids.parquet",
         id_field="doc_id",
-        text_field="text"
+        duplicate_id_field="id"
     )
 )
 ```
+
+See also: {ref}`text-process-data-dedup`.
+
+You can also use the exact duplicate workflow, which can assign IDs for you:
+
+```python
+from nemo_curator.stages.deduplication.exact.workflow import ExactDeduplicationWorkflow
+
+exact_workflow = ExactDeduplicationWorkflow(
+    input_path="/path/to/input",
+    output_path="/path/to/output",
+    text_field="text",
+    assign_id=True,   # Automatically assign unique IDs if not present
+    id_field="doc_id"
+)
+
+exact_workflow.run()
+```
+
+### Advanced: Using Reader-Based ID Generation (ID Generator)
+
+NeMo Curator readers can generate or assign monotonically increasing IDs during load using an ID Generator actor. This is useful when preparing datasets for duplicate removal workflows that require stable integer IDs.
+
+```python
+from nemo_curator.stages.text.io.reader import JsonlReader, ParquetReader
+from nemo_curator.stages.deduplication.id_generator import create_id_generator_actor, write_id_generator_to_disk
+
+# Start a detached ID Generator actor (optionally from a saved state)
+create_id_generator_actor()  # or create_id_generator_actor(filepath="/path/to/id_state.json")
+
+# Configure readers to generate or assign IDs
+jsonl_reader = JsonlReader(
+    file_paths="/data/*.jsonl",
+    _generate_ids=True  # set _assign_ids=True to reuse previously generated ranges
+)
+
+# ... run your pipeline that uses jsonl_reader ...
+
+# Optionally persist the IdGenerator state for later reuse
+write_id_generator_to_disk("/path/to/id_state.json")
+```
+
+Notes:
+
+- `JsonlReader` and `ParquetReader` support `_generate_ids` (create new IDs) and `_assign_ids` (reassign using saved state).
+- These flags add the `_curator_dedup_id` field to outputs. Duplicate-removal stages depend on this field.
+- Refer to the step-by-step semantic duplicate removal tutorial for end-to-end usage.
 
 ---
 
