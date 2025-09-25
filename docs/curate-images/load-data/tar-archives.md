@@ -268,7 +268,6 @@ pipeline.add_stage(FilePartitioningStage(
 
 ## Customization Options & Performance Tips
 
-- **Cloud Storage Support**: You can use local paths or cloud storage URLs (for example, S3, GCS, Azure) in `file_paths`. Make sure your environment is configured with the appropriate credentials.
 - **GPU Acceleration**: Use a GPU-enabled environment for optimal performance. The stage automatically detects CUDA availability and uses GPU decoding when possible.
 - **Parallelism Control**: Adjust `files_per_partition` to control how many tar files are processed together. Lower values increase parallelism but may increase overhead.
 - **Batch Size Tuning**: Increase `task_batch_size` for better throughput, but ensure sufficient memory is available.

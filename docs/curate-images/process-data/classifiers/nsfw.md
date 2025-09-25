@@ -17,6 +17,7 @@ The NSFW (Not Safe For Work) Classifier detects the likelihood that an image con
 ## Model Details
 
 - **Architecture:** MLP trained on CLIP ViT-L/14 image embeddings
+- **Source**: [CLIP-based NSFW Detector](https://github.com/LAION-AI/CLIP-based-NSFW-Detector)
 - **Output Field:** `nsfw_score`
 - **Score Range:** 0–1 (higher scores show NSFW content)
 - **Embeddings:** Requires CLIP ViT-L/14 (see {ref}`image-process-data-embeddings`)
