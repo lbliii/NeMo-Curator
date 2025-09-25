@@ -49,13 +49,38 @@ pip install --extra-index-url https://pypi.nvidia.com nemo-curator[image_cuda12]
 
 :::{tab-item} Source Installation
 
-Install the latest version directly from GitHub:
+Install the latest version directly from GitHub using uv:
 
 ```bash
 git clone https://github.com/NVIDIA/NeMo-Curator.git
 cd NeMo-Curator
-pip install --extra-index-url https://pypi.nvidia.com ".[image_cuda12]"
+uv sync --extra image_cuda12
 ```
+
+Activate the environment and run your code:
+
+```bash
+source .venv/bin/activate
+python your_script.py
+```
+
+:::{note}
+**Optional: Video Processing with InternVideo2**
+
+If you plan to use video processing features that require InternVideo2, install the additional dependency after the basic installation:
+
+```bash
+# Clone and patch InternVideo2
+git clone https://github.com/OpenGVLab/InternVideo.git
+cd InternVideo
+git checkout 09d872e5093296c6f36b8b3a91fc511b76433bf7
+patch -p1 < ../external/intern_video2_multimodal.patch
+cd ..
+
+# Add InternVideo2 to the environment
+uv add InternVideo/InternVideo2/multi_modality
+```
+:::
 
 :::
 

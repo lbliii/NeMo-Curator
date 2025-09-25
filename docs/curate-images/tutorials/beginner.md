@@ -265,24 +265,47 @@ if __name__ == "__main__":
 
 ### Batch Size Guidelines
 
-The batch sizes used in this workflow are conservative limits set for typical GPUs with 24-48 GB of VRAM (such as RTX 4090, A6000, RTX A5000). You can tune these based on your available GPU memory:
+The `model_inference_batch_size` parameter controls the number of images that the model processes at once, directly affecting GPU memory usage and performance. Higher batch sizes improve throughput but require more GPU memory, while lower batch sizes prevent out-of-memory (OOM) errors.
 
-- **High-memory GPUs (80+ GB)** like H100, B200, or A100 80GB: Increase batch sizes for better performance:
+#### Memory Requirements and Actor Allocation
+
+For the embedding stage (which uses the most GPU memory), each actor requires 0.25 GPU allocation, corresponding to about 20GB of GPU memory on an 80GB GPU (0.25 × 80GB = 20GB). When adjusting batch sizes, ensure memory usage stays below this 20GB threshold per actor.
+
+#### Recommended Batch Sizes by GPU Memory
+
+- **High-memory GPUs (80+ GB)** like H100, A100 80GB, or B200:
+
   ```python
-  model_inference_batch_size=500
+  model_inference_batch_size=512  # to 1024 for maximum throughput
   ```
 
-- **Lower-memory GPUs (16 GB or less)**: Reduce batch sizes:
+- **Mid-range GPUs (24-48 GB)** like RTX 4090, A6000, RTX A5000:
+
   ```python
-  model_inference_batch_size=16
+  model_inference_batch_size=32   # Default conservative setting
   ```
+
+- **Lower-memory GPUs (16 GB or less)** like RTX 3080, RTX 4060:
+
+  ```python
+  model_inference_batch_size=16   # Prevent OOM errors
+  ```
+
+#### Performance vs Memory Trade-offs
+
+- **Higher batch sizes**: Better GPU usage and faster processing, but risk OOM errors
+- **Lower batch sizes**: Safer memory usage and OOM prevention, but slower processing
+- **Rule of thumb**: Start with the recommended batch size for your GPU, then increase gradually while monitoring memory usage
 
 ### GPU Allocation
 
-Adjust `num_gpus_per_worker` based on your cluster setup:
-- **Single GPU**: Set to `1.0` for each stage
-- **Multi-GPU systems**: Use fractional values like `0.25` to run several workers per GPU
-- **CPU-only**: Set to `0` (embedding and filtering stages require GPUs for optimal performance)
+The default `num_gpus_per_worker=0.25` works well for most scenarios and allows 4 workers per GPU. You typically don't need to change this unless you have specific requirements:
+
+- **Default (recommended)**: `0.25` allows multiple workers per GPU for better utilization
+- **Single worker per GPU**: Set to `1.0` if you want exclusive GPU access per worker
+- **CPU processing**: Set to `0` (embedding and filtering stages require GPUs for optimal performance)
+
+The system automatically calculates the optimal number of actors based on available resources and the `num_gpus_per_worker` setting.
 
 ## Next Steps
 

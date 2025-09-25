@@ -225,29 +225,6 @@ The DALI-based `ImageReaderStage` provides performance benefits over traditional
 - **Memory Efficiency**: Streams images in batches without loading entire datasets into memory
 - **I/O Optimization**: DALI's webdataset reader is optimized for tar file processing
 
-**Recommended Batch Sizes by Hardware:**
-
-```{list-table} Batch Size Guidelines
-:header-rows: 1
-:widths: 40 30 30
-
-* - Hardware Configuration
-  - Recommended Batch Size
-  - GPU Memory Allocation
-* - **Single GPU (16GB+)**
-  - 256-512
-  - 0.5-1.0
-* - **Multi-GPU Setup**
-  - 128-256
-  - 0.25-0.5
-* - **CPU Only (32GB+ RAM)**
-  - 32-64
-  - 0
-* - **CPU Only (16GB RAM)**
-  - 16-32
-  - 0
-```
-
 ### Advanced Performance Tuning
 
 **Parallelism Configuration**
