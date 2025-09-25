@@ -86,6 +86,26 @@ NeMo Curator uses these fundamental building blocks that users combine into pipe
   - Core processing components
 ```
 
+## Key Architecture Distinctions
+
+Understanding these core concepts helps you design effective text curation workflows:
+
+**Tasks**
+: The unit of data flowing through pipelines. In text processing, this is typically a `DocumentBatch` containing multiple documents with their metadata.
+
+**Stages** 
+: Individual processing units that perform a single operation (reading, filtering, modifying, writing). Stages transform tasks and can be chained together.
+
+**Pipelines**
+: Generic orchestration containers that execute stages in sequence. You build pipelines by adding stages: `pipeline.add_stage(reader)`, `pipeline.add_stage(filter)`.
+
+**Workflows**
+: Pre-built, specialized classes for complex multi-stage operations. Examples include `FuzzyDeduplicationWorkflow` and `ExactDeduplicationWorkflow` that encapsulate entire deduplication processes.
+
+:::{seealso}
+For more detailed information about these abstractions and their technical implementation, refer to [Key Abstractions](about-concepts-video-abstractions), which provides comprehensive coverage of NeMo Curator's core architecture patterns across all modalities.
+:::
+
 ## Implementation Examples
 
 ### Complete Quality Filtering Pipeline
