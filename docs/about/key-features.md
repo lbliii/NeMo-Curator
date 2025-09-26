@@ -95,32 +95,36 @@ Set up your environment and install NeMo Curator's image modules.
 
 ## Audio Data Curation
 
-NeMo Curator provides speech and audio curation capabilities designed for preparing high-quality speech datasets for ASR model training and multimodal applications. Audio curation follows a **Load** → **Process** → **Save & Export** workflow: load audio files and manifests, perform ASR inference and quality assessment, then export curated datasets and transcriptions.
+NeMo Curator provides speech and audio curation capabilities designed for preparing high-quality speech datasets for ASR model training and multimodal applications. It leverages NeMo Framework's pretrained ASR models for transcription, quality assessment through Word Error Rate (WER) calculation, and seamless integration with text curation workflows.
 
-### Load Data
+::::{grid} 1 1 2 2
+:gutter: 2
 
-- **[Audio Manifest Loading](../curate-audio/load-data/index.md)** - Load speech datasets with audio file paths and transcriptions
-- **[FLEURS Dataset Integration](../curate-audio/load-data/fleurs-dataset.md)** - Built-in support for the multilingual FLEURS speech dataset
+:::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Data Loading
+:link: about-concepts-audio-manifests-ingest
+:link-type: ref
+Load and manage audio datasets with manifests, file paths, and transcriptions for curation workflows.
+:::
 
-### Process Data
+:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` ASR Processing
+:link: about-concepts-audio-asr-pipeline
+:link-type: ref
+Automatic speech recognition inference, quality assessment, and transcription using NeMo Framework models.
+:::
 
-- **ASR Inference & Transcription**
-  - [NeMo ASR Model Integration](../curate-audio/process-data/asr-inference/nemo-models.md) - Leverage NeMo Framework's pretrained ASR models for transcription
+:::{grid-item-card} {octicon}`shield-check;1.5em;sd-mr-1` Quality Assessment
+:link: about-concepts-audio-quality-metrics
+:link-type: ref
+Word Error Rate (WER) calculation, duration analysis, and quality-based filtering for speech data.
+:::
 
-- **Quality Assessment & Filtering**
-  - [Word Error Rate (WER) Filtering](../curate-audio/process-data/quality-assessment/wer-filtering.md) - Filter based on transcription accuracy
-  - [Duration-based Filtering](../curate-audio/process-data/quality-assessment/duration-filtering.md) - Remove audio files outside duration thresholds
+:::{grid-item-card} {octicon}`rocket;1.5em;sd-mr-1` Audio Curation Quickstart
+:link: gs-audio
+:link-type: ref
+Set up your environment and run your first audio curation pipeline with NeMo Curator.
+:::
 
-- **Audio Analysis**
-  - [Duration Calculation](../curate-audio/process-data/audio-analysis/duration-calculation.md) - Extract precise audio duration using soundfile
-  - [Format Validation](../curate-audio/process-data/audio-analysis/format-validation.md) - Check audio file integrity and format
-
-- **Text Integration**
-  - [Audio-to-Text Conversion](../curate-audio/process-data/text-integration/index.md) - Convert processed audio data to text processing pipeline
-
-### Save & Export
-
-- **[Save & Export](../curate-audio/save-export.md)** - Export curated audio datasets with transcriptions and quality metrics for downstream training
+::::
 
 ---
 
