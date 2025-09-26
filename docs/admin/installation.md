@@ -133,12 +133,13 @@ NeMo Curator provides several installation extras to install only the components
 * - **cuda12x**
   - `pip install --extra-index-url https://pypi.nvidia.com nemo-curator[cuda12x]`
   - CPU + GPU text curation with RAPIDS
-* - **image_cuda12**
-  - `pip install --extra-index-url https://pypi.nvidia.com nemo-curator[image_cuda12]`
+* - **audio_cpu**
+  - `pip install nemo-curator[audio_cpu]`
+  - CPU-only audio curation with NeMo Toolkit ASR
+* - **audio_cuda12**
+  - `pip install --extra-index-url https://pypi.nvidia.com nemo-curator[audio_cuda12]`
+  - GPU-accelerated audio curation with NeMo Toolkit ASR
   - CPU + GPU text and image curation
-* - **bitext**
-  - `pip install --extra-index-url https://pypi.nvidia.com nemo-curator[bitext]`
-  - Bilingual text curation modules
 * - **all**
   - `pip install --extra-index-url https://pypi.nvidia.com nemo-curator[all]`
   - All stable modules (recommended)
