@@ -4,7 +4,40 @@
 
 Welcome to the NeMo Curator documentation.
 
-## Getting Started
+## Introduction to Curator
+
+Learn about the Curator, how it works at a high-level, and the key features.
+
+::::{grid} 1 2 2 2
+:gutter: 1 1 1 2
+
+:::{grid-item-card} {octicon}`book;1.5em;sd-mr-1` About Curator
+:link: about-overview
+:link-type: ref
+Overview of NeMo Curator and its capabilities.
++++
+{bdg-secondary}`target-users` {bdg-secondary}`how-it-works`
+:::
+
+:::{grid-item-card} {octicon}`image;1.5em;sd-mr-1` Key Features
+:link: about-key-features
+:link-type: ref
+Discover the main features of NeMo Curator for data curation.
++++
+{bdg-secondary}`features` {bdg-secondary}`capabilities` {bdg-secondary}`deployments`
+:::
+
+:::{grid-item-card} {octicon}`book;1.5em;sd-mr-1` Concepts
+:link: about-concepts
+:link-type: ref
+Explore the core concepts for each modality in NeMo Curator.
++++
+{bdg-secondary}`data-loading` {bdg-secondary}`data-processing` {bdg-secondary}`data-generation`
+:::
+
+::::
+
+## Quickstarts
 
 Install and run NeMo Curator for specific modalities.
 
@@ -35,39 +68,6 @@ Set up and run video curation workflows.
 :link: gs-audio
 :link-type: ref
 Set up and run audio curation workflows.
-:::
-
-::::
-
-## Introduction to Curator
-
-Learn about the Curator, how it works at a high-level, and the key features.
-
-::::{grid} 1 2 2 2
-:gutter: 1 1 1 2
-
-:::{grid-item-card} {octicon}`book;1.5em;sd-mr-1` About Curator
-:link: about-overview
-:link-type: ref
-Overview of NeMo Curator and its capabilities.
-+++
-{bdg-secondary}`target-users` {bdg-secondary}`how-it-works`
-:::
-
-:::{grid-item-card} {octicon}`image;1.5em;sd-mr-1` Key Features
-:link: about-key-features
-:link-type: ref
-Discover the main features of NeMo Curator for data curation.
-+++
-{bdg-secondary}`features` {bdg-secondary}`capabilities` {bdg-secondary}`deployments`
-:::
-
-:::{grid-item-card} {octicon}`book;1.5em;sd-mr-1` Concepts
-:link: about-concepts
-:link-type: ref
-Explore the core concepts for each modality in NeMo Curator.
-+++
-{bdg-secondary}`data-loading` {bdg-secondary}`data-processing` {bdg-secondary}`data-generation`
 :::
 
 ::::
