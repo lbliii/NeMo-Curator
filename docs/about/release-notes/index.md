@@ -82,20 +82,19 @@ Learn more about [image curation](../../curate-images/index.md).
 - **Backend adapters**: Stage adaptation layer for different Ray orchestration systems
 - **Input/output validation**: Enhanced type checking and data validation
 
-## Tutorial Refactors
+## Tutorials
 
-### Refactored Tutorials
+### Refactored
 
-- **Text tutorials**: Updated all [text curation tutorials](../../curate-text/tutorials/index.md) to use new Ray-based API
-- **Image tutorials**: Migrated [image processing tutorials](../../curate-images/tutorials/index.md) to unified backend
-- **Audio tutorials**: New comprehensive [audio curation tutorial suite](../../curate-audio/tutorials/index.md)
-- **Video tutorials**: Complete [video processing tutorial documentation](../../curate-video/tutorials/index.md)
+- **Text tutorials**: Updated all [text curation tutorials](https://github.com/NVIDIA-NeMo/Curator/tree/main/tutorials/text) to use new Ray-based API
+- **Image tutorials**: Migrated [image processing tutorials](https://github.com/NVIDIA-NeMo/Curator/tree/main/tutorials/image) to unified backend
 
-### New Tutorial Categories
+## Net-New
 
-- **Multimodal workflows**: Cross-modality data curation examples
-- **Pipeline customization**: Advanced configuration and customization guides
-- **Performance optimization**: Best practices for large-scale processing
+- **Audio tutorials**: New [audio curation tutorials](https://github.com/NVIDIA-NeMo/Curator/tree/main/tutorials/audio)
+- **Video tutorials**: New [video processing tutorials](https://github.com/NVIDIA-NeMo/Curator/tree/main/tutorials/video)
+
+For all tutorial content, refer to the [tutorials directory](https://github.com/NVIDIA-NeMo/Curator/tree/main/tutorials) in the NeMo Curator GitHub repository.
 
 ## Known Limitations (Pending Refactor in Future Release)
 
