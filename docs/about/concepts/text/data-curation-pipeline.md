@@ -28,7 +28,6 @@ NeMo Curator's text curation pipeline consists of several key stages that work t
 ### 1. Data Sources
 Multiple input sources provide the foundation for text curation:
 - **Cloud storage** (S3, GCS, Azure)
-- **Internet sources** (Common Crawl, ArXiv, Wikipedia)
 - **Local workstation** files
 
 ### 2. Data Acquisition & Processing
@@ -40,8 +39,7 @@ Raw data is downloaded, extracted, and converted into standardized formats:
 ### 3. Quality Assessment & Filtering
 Multiple filtering stages ensure data quality:
 - **Heuristic Quality Filtering**: Rule-based filters for basic quality checks
-- **Model-based Quality Filtering**: AI-powered content assessment
-- **PII Removal**: Privacy-preserving data cleaning
+- **Model-based Quality Filtering**: ML classifier-based content assessment
 
 ### 4. Deduplication
 Remove duplicate and near-duplicate content:

@@ -26,7 +26,7 @@ The system provides two primary readers for text data:
 Both readers support optimization through:
 
 - **Field selection** - Reading specified columns to reduce memory usage
-- **Partitioning control** - Using `block_size` or `files_per_partition` to optimize distributed processing
+- **Partitioning control** - Using `blocksize` or `files_per_partition` to optimize distributed processing
 - **Recommended block size** - Use ~128MB for optimal object store performance with smaller data chunks
 
 ```python
@@ -48,11 +48,7 @@ pipeline.add_stage(jsonl_reader)
 parquet_reader = ParquetReader(
     file_paths="data.parquet",
     files_per_partition=4,  # Alternative to blocksize
-    fields=["text", "metadata"],
-    read_kwargs={
-        "engine": "pyarrow",
-        "dtype_backend": "pyarrow"
-    }
+    fields=["text", "metadata"]
 )
 
 # Execute pipeline
@@ -131,8 +127,7 @@ reader = ParquetReader(
 
 - **Block size**: Use ~128MB for optimal object store performance - smaller objects improve distributed data exchange
 - **Field selection**: Specify `fields` parameter to read required columns
-- **Engine choice**: ParquetReader defaults to PyArrow with `dtype_backend="pyarrow"` for GPU compatibility
-- **Partition sizing**: Match `files_per_partition` to your available CPU/GPU count
+- **Engine choice**: ParquetReader defaults to PyArrow with `dtype_backend="pyarrow"` but in case that gives you trouble you can override read_kwargs
 
 ## Data Export Options
 
@@ -161,42 +156,24 @@ Writers automatically generate deterministic filenames based on source files pro
 ### Multi-Source Data
 
 ```python
-# Combine multiple directories
+# Combine multiple directories with same reader type
 reader = JsonlReader(file_paths=[
     "dataset_v1/",
     "dataset_v2/", 
     "additional_data/"
 ])
 
-# For different file types, use separate readers in the same pipeline
-pipeline = Pipeline(name="multi_format_processing")
-pipeline.add_stage(JsonlReader(file_paths="text_data.jsonl"))
-pipeline.add_stage(ParquetReader(file_paths="structured_data.parquet"))
+# Note: You cannot combine different reader types (JsonlReader + ParquetReader) 
+# in the same pipeline stage. For different file types, you would need to create 
+# a new BaseReader that can read based on different extensions provided.
 ```
 
-### Large-Scale Processing
-
-```python
-# Efficient processing for massive datasets
-reader = ParquetReader(
-    file_paths="massive_dataset/",
-    blocksize="128MB",  # Optimal chunk size for distributed processing
-    fields=["text", "id"]  # Memory efficiency through column selection
-)
-
-pipeline = Pipeline(name="large_dataset_processing")
-pipeline.add_stage(reader)
-
-# Add processing stages
-from nemo_curator.stages.text.modules import ScoreFilter
-pipeline.add_stage(ScoreFilter(...))
-
-results = pipeline.run()
-```
 
 ## Remote Data Acquisition
 
-For users who need to download and process data from remote sources, NeMo Curator provides a comprehensive data acquisition framework. {ref}`Data Acquisition Concepts <about-concepts-text-data-acquisition>` covers this in detail, including:
+Remote Data Acquisition in technical sense refers to our JsonlReader + ParquetReader working with s3/gcs and not ArXiv/Common Crawl which is a separate topic covered in {ref}`Data Acquisition Concepts <about-concepts-text-data-acquisition>`.
+
+For downloading and processing data from remote sources like ArXiv, Common Crawl, and Wikipedia, see the {ref}`Data Acquisition Concepts <about-concepts-text-data-acquisition>` page which covers:
 
 - **DocumentDownloader, DocumentIterator, DocumentExtractor** components
 - **Built-in support** for Common Crawl, ArXiv, Wikipedia, and custom sources  

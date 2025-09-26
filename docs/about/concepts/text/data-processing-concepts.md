@@ -29,17 +29,7 @@ Most users start with basic quality filtering using heuristic filters to remove 
 - `PunctuationFilter` - Ensure proper sentence structure
 - `BoilerPlateStringFilter` - Remove template/boilerplate text
 
-### 2. Fuzzy Deduplication
-
-For production datasets, fuzzy deduplication is essential to remove near-duplicate content across sources:
-
-**Key Components:**
-
-- `FuzzyDeduplicationWorkflow` - End-to-end fuzzy deduplication pipeline
-- Ray distributed computing framework for scalability
-- Connected components clustering for duplicate identification
-
-### 3. Content Cleaning
+### 2. Content Cleaning and Modification
 
 Basic text normalization and cleaning operations:
 
@@ -48,16 +38,30 @@ Basic text normalization and cleaning operations:
 - `UnicodeReformatter` - Normalize Unicode characters
 - `NewlineNormalizer` - Standardize line breaks
 - Basic HTML/markup removal
-- Note: PII removal requires specialized processing tools (see PII documentation)
 
-### 4. Exact Deduplication
+### 3. Deduplication
 
+Remove duplicate and near-duplicate content:
+
+#### Fuzzy Deduplication
+For production datasets, fuzzy deduplication is essential to remove near-duplicate content across sources:
+
+**Key Components:**
+
+- `FuzzyDeduplicationWorkflow` - End-to-end fuzzy deduplication pipeline
+- Ray distributed computing framework for scalability
+- Connected components clustering for duplicate identification
+
+#### Exact Deduplication
 Remove identical documents, especially useful for smaller datasets:
 
 **Implementation:**
 
 - `ExactDuplicates` - Hash-based exact matching
 - MD5 or SHA-256 hashing for document identification
+
+#### Semantic Deduplication
+Remove semantically similar content using embeddings for more sophisticated duplicate detection.
 
 ## Core Processing Architecture
 
@@ -86,25 +90,6 @@ NeMo Curator uses these fundamental building blocks that users combine into pipe
   - Core processing components
 ```
 
-## Key Architecture Distinctions
-
-Understanding these core concepts helps you design effective text curation workflows:
-
-**Tasks**
-: The unit of data flowing through pipelines. In text processing, this is typically a `DocumentBatch` containing multiple documents with their metadata.
-
-**Stages** 
-: Individual processing units that perform a single operation (reading, filtering, modifying, writing). Stages transform tasks and can be chained together.
-
-**Pipelines**
-: Generic orchestration containers that execute stages in sequence. You build pipelines by adding stages: `pipeline.add_stage(reader)`, `pipeline.add_stage(filter)`.
-
-**Workflows**
-: Pre-built, specialized classes for complex multi-stage operations. Examples include `FuzzyDeduplicationWorkflow` and `ExactDeduplicationWorkflow` that encapsulate entire deduplication processes.
-
-:::{seealso}
-For more detailed information about these abstractions and their technical implementation, refer to [Key Abstractions](about-concepts-video-abstractions), which provides comprehensive coverage of NeMo Curator's core architecture patterns across all modalities.
-:::
 
 ## Implementation Examples
 

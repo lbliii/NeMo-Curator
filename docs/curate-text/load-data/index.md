@@ -10,7 +10,7 @@ modality: "text-only"
 
 (text-load-data)=
 
-# Text Data Loading
+# Download Data
 
 Load text data from ArXiv, Common Crawl, Wikipedia, and custom sources using Curator.
 

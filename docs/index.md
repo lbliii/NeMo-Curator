@@ -4,6 +4,41 @@
 
 Welcome to the NeMo Curator documentation.
 
+## Getting Started
+
+Install and run NeMo Curator for specific modalities.
+
+::::{grid} 1 2 2 2
+:gutter: 1 1 1 2
+
+:::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Text Curation Quickstart
+:link: gs-text
+:link-type: ref
+Set up and run text curation workflows.
+:::
+
+:::{grid-item-card} {octicon}`image;1.5em;sd-mr-1` Image Curation Quickstart
+:link: gs-image
+:link-type: ref
+Set up and run image curation workflows.
+
+:::
+
+:::{grid-item-card} {octicon}`video;1.5em;sd-mr-1` Video Curation Quickstart
+:link: gs-video
+:link-type: ref
+Set up and run video curation workflows.
+
+:::
+
+:::{grid-item-card} {octicon}`unmute;1.5em;sd-mr-1` Audio Curation Quickstart
+:link: gs-audio
+:link-type: ref
+Set up and run audio curation workflows.
+:::
+
+::::
+
 ## Introduction to Curator
 
 Learn about the Curator, how it works at a high-level, and the key features.
@@ -77,41 +112,6 @@ Curate and process videos with GPU-accelerated pipelines and sharding.
 Transcribe, filter, and curate speech and audio datasets with ASR models.
 +++
 {bdg-secondary}`asr` {bdg-secondary}`transcription` {bdg-secondary}`quality-filtering`
-:::
-
-::::
-
-## Quickstart Guides
-
-Install and run NeMo Curator for specific modalities.
-
-::::{grid} 1 2 2 2
-:gutter: 1 1 1 2
-
-:::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Text Curation Quickstart
-:link: gs-text
-:link-type: ref
-Set up and run text curation workflows.
-:::
-
-:::{grid-item-card} {octicon}`image;1.5em;sd-mr-1` Image Curation Quickstart
-:link: gs-image
-:link-type: ref
-Set up and run image curation workflows.
-
-:::
-
-:::{grid-item-card} {octicon}`video;1.5em;sd-mr-1` Video Curation Quickstart
-:link: gs-video
-:link-type: ref
-Set up and run video curation workflows.
-
-:::
-
-:::{grid-item-card} {octicon}`unmute;1.5em;sd-mr-1` Audio Curation Quickstart
-:link: gs-audio
-:link-type: ref
-Set up and run audio curation workflows.
 :::
 
 ::::

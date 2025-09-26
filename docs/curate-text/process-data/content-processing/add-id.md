@@ -83,22 +83,15 @@ Use `AddId` before duplicate removal workflows that require document identifiers
 
 ```python
 from nemo_curator.stages.text.modules import AddId
-from nemo_curator.stages.text.deduplication.removal import TextDuplicatesRemovalStage
 
 # Add IDs before duplicate identification/removal
 pipeline.add_stage(
     AddId(id_field="doc_id")
 )
 
-# Later, when applying a removal list of duplicate IDs (written by a prior
-# identification workflow), use the TextDuplicatesRemovalStage:
-pipeline.add_stage(
-    TextDuplicatesRemovalStage(
-        ids_to_remove_path="/path/to/duplicate_ids.parquet",
-        id_field="doc_id",
-        duplicate_id_field="id"
-    )
-)
+# Note: TextDuplicatesRemovalStage doesn't exist.
+# For deduplication workflows, refer to the step-by-step deduplication tutorials 
+# where we discuss id generator approaches using _generate_ids + _assign_ids in depth.
 ```
 
 See also: {ref}`text-process-data-dedup`.
