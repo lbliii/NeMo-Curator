@@ -1,5 +1,5 @@
 ---
-description: "Overview of NeMo Curator, an open-source platform for scalable data curation across text, image, and video modalities for AI training"
+description: "Overview of NeMo Curator, an open-source platform for scalable data curation across text, image, video, and audio modalities for AI training"
 categories: ["getting-started"]
 tags: ["overview", "platform", "multimodal", "enterprise", "getting-started"]
 personas: ["data-scientist-focused", "mle-focused", "admin-focused", "devops-focused"]
@@ -9,9 +9,10 @@ modality: "universal"
 ---
 
 (about-overview)=
+
 # Overview of NeMo Curator
 
-NeMo Curator is an open-source, enterprise-grade platform for scalable, privacy-aware data curation across text, image, and video modalities.
+NeMo Curator is an open-source, enterprise-grade platform for scalable, privacy-aware data curation across text, image, video, and audio modalities.
 
 NeMo Curator, part of the NVIDIA NeMo software suite for managing the AI agent lifecycle, helps you prepare high-quality, compliant datasets for large language model (LLM) and generative artificial intelligence (AI) training. Whether you work in the cloud, on-premises, or in a hybrid environment, NeMo Curator supports your workflow.
 
@@ -24,14 +25,16 @@ NeMo Curator, part of the NVIDIA NeMo software suite for managing the AI agent l
 
 ## How It Works
 
-NeMo Curator speeds up data curation by using modern hardware and distributed computing frameworks. You can process data efficiently—from a single laptop to a multi-node GPU cluster. With modular pipelines, advanced filtering, and easy integration with machine learning operations (MLOps) tools, NeMo Curator is trusted by leading organizations.
+NeMo Curator speeds up data curation by using modern hardware and distributed computing frameworks. You can process data efficiently—from a single laptop to a multi-node GPU cluster. With modular pipelines, advanced filtering, and easy integration with machine learning operations (MLOps) tools, leading organizations trust NeMo Curator.
 
-- **Text Curation**: Data flows through loaders and processors (cleaning, filtering, deduplication), and exporters, all built atop Dask for distributed execution.
-- **Image Curation**: Uses WebDataset sharding, NVIDIA Data Loading Library (DALI) for GPU-accelerated loading, and modular steps for embedding, classification, filtering, and export.
+- **Text Curation**: Uses a pipeline-based architecture with modular processing stages running on Ray. Data flows through acquisition, loading, processing (quality assessment, deduplication, content cleaning), and export stages for scalable distributed execution.
+- **Image Curation**: Uses pipeline-based architecture with modular stages for loading, embedding generation, classification (aesthetic, NSFW), filtering, and export workflows. Supports distributed processing with optional GPU acceleration.
+- **Video Curation**: Employs Ray-based pipelines to split long videos into clips using fixed stride or scene-change detection, with optional encoding, filtering, embedding generation, and deduplication for large-scale video processing.
+- **Audio Curation**: Provides ASR inference using NeMo Framework models, quality assessment through Word Error Rate (WER) calculation, duration analysis, and integration with text curation workflows for speech data processing.
 
 ### Key Technologies
 
-- **Graphics Processing Units (GPUs)**: Accelerate data processing for large-scale workloads.
+- **Graphics Processing Units (GPUs)**: Speed up data processing for large-scale workloads.
 - **Distributed Computing**: Supports frameworks like Dask, RAPIDS, and Ray for scalable, parallel processing.
 - **Modular Pipelines**: Build, customize, and scale curation workflows to fit your needs.
 - **MLOps Integration**: Seamlessly connects with modern MLOps environments for production-ready workflows.
@@ -62,6 +65,13 @@ Explore key concepts for image data curation, including scalable loading, proces
 :link-type: ref
 
 Discover video data curation concepts, such as distributed processing, pipeline stages, execution modes, and efficient data flow.
+:::
+
+:::{grid-item-card} {octicon}`unmute;1.5em;sd-mr-1` Audio Curation Concepts
+:link: about-concepts-audio
+:link-type: ref
+
+Learn about speech data curation, ASR inference, quality assessment, and audio-text integration workflows.
 :::
 
 ::::
