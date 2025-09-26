@@ -9,82 +9,112 @@ modality: "universal"
 ---
 
 (about-release-notes)=
-# Release Notes 25.07
+# Release Notes 25.09
 
-## 🚀 Major Features and Enhancements
+This major release represents a fundamental architecture shift from Dask to Ray, expanding NeMo Curator to support multimodal data curation with new video and audio capabilities. This refactor enables unified backend processing, better heterogeneous computing support, and enhanced autoscaling for dynamic workloads.
 
-### New How-to Data Recipes (Tutorials)
+## Installation Updates
 
-- [**Multimodal DAPT Curation w/ PDF Extraction**](https://github.com/NVIDIA-NeMo/Curator/tree/main/tutorials/multimodal_dapt_curation): New tutorial showcasing PDF data extraction using NV-Ingest for multimodal data curation workflows
-- [**Llama Nemotron Data Curation**](https://github.com/NVIDIA-NeMo/Curator/tree/main/tutorials/llama-nemotron-data-curation): Step-by-step guide for curating data specifically for Llama Nemotron model training
-- [**LLM NIM - PII Redaction**](https://github.com/NVIDIA-NeMo/Curator/tree/main/tutorials/curator-llm-pii): Tutorial demonstrating PII (Personally Identifiable Information) redaction capabilities using LLM NIM
+### New Docker Container
+- **Net-new Docker container**: Updated Docker infrastructure with CUDA 12.8.1 and Ubuntu 24.04 base
+- **UV source installations**: Integrated UV package manager (v0.8.22) for faster dependency management
+- **PyPI improvements**: Enhanced PyPI installation with modular extras (`[cuda12x]`, `[all]`, `[image]`, `[audio]`, `[video]`)
+- **Docker file to build own image**: Simplified Dockerfile structure for custom container builds with FFmpeg support
 
-### Container and Deployment Improvements
+## Video Modality
 
-- **Docker Container Build**: New docker container for text/image curator with Dask support, matching the current OSS implementation
-- Streamlined deployment process for both text and image curation workflows
+NeMo Curator now supports comprehensive video data curation with distributed processing capabilities:
 
-### Performance and Code Optimizations
+- **Ray-based distributed architecture**: Scalable video processing with autoscaling support
+- **Pipeline stages**: Modular video processing stages with configurable resources
+- **Execution modes**: Support for both streaming and batch processing modes
+- **High-throughput processing**: Optimized for large-scale video corpora with efficient data flow
 
-- **Simplified Clustering Logic**: Significantly improved semantic deduplication clustering performance
-  - Removed convoluted backend switching logic that caused performance issues
-  - Eliminated expensive length assertions that could cause timeouts on large datasets
-  - Improved GPU utilization during KMeans clustering operations
-  - Tested on 37M embedding dataset (80GB) across 7 GPUs with substantial performance gains
+## Audio Modality
 
-## 🐛 Bug Fixes
+New audio curation capabilities for speech data processing:
 
-### FastText Download URL Fix
+- **ASR inference**: Automatic speech recognition using NeMo Framework pretrained models
+- **Quality assessment**: Word Error Rate (WER) and Character Error Rate (CER) calculation
+- **Speech metrics**: Duration analysis and speech rate metrics (words/characters per second)
+- **Text integration**: Seamless integration with text curation workflows via `AudioToDocumentStage`
+- **Manifest support**: JSONL manifest format for audio file management
 
-- **Fix**: Corrected the `fasttext` model download URL in nemotron-cc tutorial
-- Changed from `dl.fbaipublicfiles.com/fastText/` to `dl.fbaipublicfiles.com/fasttext/`
-- Ensures reliable model downloads for language identification
+## Text & Image Refactors
 
-### NeMo Retriever Tutorial Bug Fix
+### Text Refactors
+- **Ray backend migration**: Complete transition from Dask to Ray for distributed text processing
+- **Task-centric architecture**: New `Task`-based processing model for finer-grained control
+- **Pipeline redesign**: Updated `ProcessingStage` and `Pipeline` architecture with resource specification
+- **Fuzzy deduplication improvements**: Enhanced `FuzzyDeduplicationWorkflow` with Ray integration
 
-- **Fix**: Fixed lambda function bug in `RetrieverEvalSetGenerator`
-- Corrected score assignment: `df["score"] = df["question"].apply(lambda: 1)` → `df["score"] = 1`
-- Improved synthetic data generation reliability
+### Image Refactors  
+- **Pipeline-based architecture**: Transitioned from legacy `ImageTextPairDataset` to modern stage-based processing with `ImageReaderStage`, `ImageEmbeddingStage`, and filter stages
+- **DALI-based image loading**: New `ImageReaderStage` uses NVIDIA DALI for high-performance WebDataset tar shard processing with GPU/CPU fallback
+- **Modular processing stages**: Separate stages for embedding generation (`ImageEmbeddingStage`), aesthetic filtering (`ImageAestheticFilterStage`), and NSFW filtering (`ImageNSFWFilterStage`)
+- **Task-based data flow**: Images processed as `ImageBatch` tasks containing `ImageObject` instances with metadata, embeddings, and classification scores
 
-### API Usage Updates
+## Core Refactors
 
-- **Fix**: Updated examples and tutorials to use correct DocumentDataset API
-- Key changes:
-  - Replaced deprecated `write_to_disk(result, output_dir, output_type="parquet")` with `result.to_parquet(output_dir)`
-  - Updated exact deduplication workflows: `deduplicator.remove()` now returns `DocumentDataset` directly
-  - Removed unnecessary `DocumentDataset` wrapper in deduplication examples
-  - Fixed `read_json` calls to remove deprecated `add_filename` parameter where appropriate
-- Files updated:
-  - `examples/exact_deduplication.py`
-  - `examples/fuzzy_deduplication.py`
-  - `tutorials/dapt-curation/code/utils.py`
-  - `tutorials/multimodal_dapt_curation/curator/utils.py`
-  - `tutorials/tinystories/main.py`
+### Pipelines
+- **New Pipeline API**: Ray-based pipeline execution with `BaseExecutor` interface
+- **Multiple backends**: Support for Xenna, Ray Actor Pool, and Ray Data execution backends
+- **Resource specification**: Configurable CPU and GPU memory requirements per stage
+- **Stage composition**: Improved stage validation and execution orchestration
+
+### Stages
+- **ProcessingStage redesign**: Generic `ProcessingStage[X, Y]` base class with type safety
+- **Resource requirements**: Built-in resource specification for CPU and GPU memory
+- **Backend adapters**: Stage adaptation layer for different Ray orchestration systems
+- **Input/output validation**: Enhanced type checking and data validation
+
+## Tutorial Refactors
+
+### Refactored Tutorials
+- **Text tutorials**: Updated all text curation tutorials to use new Ray-based API
+- **Image tutorials**: Migrated image processing tutorials to unified backend
+- **Audio tutorials**: New comprehensive audio curation tutorial suite
+- **Video tutorials**: Complete video processing tutorial documentation
+
+### New Tutorial Categories
+- **Multimodal workflows**: Cross-modality data curation examples
+- **Pipeline customization**: Advanced configuration and customization guides
+- **Performance optimization**: Best practices for large-scale processing
+
+## Known Limitations (Pending Refactor in Future Release)
+
+### Generation
+- **Synthetic data generation**: Synthetic text generation features are being refactored for Ray compatibility
+- **Hard negative mining**: Retrieval-based data generation workflows under development
+
+### PII
+- **PII processing**: Personal Identifiable Information removal tools are being updated for Ray backend
+- **Privacy workflows**: Enhanced privacy-preserving data curation capabilities in development
+
+### Blending & Shuffling
+- **Data blending**: Multi-source dataset blending functionality being refactored
+- **Dataset shuffling**: Large-scale data shuffling operations under development
+
+## Docs Refactor
+
+### Enhanced Documentation
+- **Local preview capability**: Improved documentation build system with local preview support
+- **Modality-specific guides**: Comprehensive documentation for each supported modality
+- **API reference**: Complete API documentation with type annotations and examples
+- **Deployment guides**: Updated installation and deployment documentation for all environments
+
+### New Documentation Features
+- **Interactive examples**: Enhanced code examples with executable snippets
+- **Performance benchmarks**: Detailed performance metrics and scaling guidelines
+- **Troubleshooting guides**: Comprehensive troubleshooting and FAQ sections
 
 ---
 
-## 🔄 Migration Guide
+## Migration Guide
 
-### For Users of Exact Deduplication Examples
+For users upgrading from previous versions, see our [Migration Guide](../migration-guide.md) for detailed instructions on updating your existing pipelines to the new Ray-based architecture.
 
-```python
-# Old approach
-from nemo_curator.utils.distributed_utils import write_to_disk
-result = exact_dup.remove(input_dataset, duplicates)
-write_to_disk(result, output_dir, output_type="parquet")
+## What's Next
 
-# New approach  
-result = exact_dup.remove(input_dataset, duplicates)
-result.to_parquet(output_dir)
-```
+The next release will focus on completing the refactor of Generation, PII, and Blending & Shuffling features, along with additional performance optimizations and new modality support.
 
-### For FastText Users
-
-- Update any manual `fasttext` model downloads to use the corrected URL:
-  ```bash
-  # Old URL
-  wget https://dl.fbaipublicfiles.com/fastText/supervised-models/lid.176.bin
-  
-  # New URL  
-  wget https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin
-  ```
