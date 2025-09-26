@@ -10,22 +10,52 @@ modality: "universal"
 
 (about-release-notes)=
 
-# Release Notes 25.09
+# NeMo Curator Release Notes: {{ current_release }}
 
-This major release represents a fundamental architecture shift from Dask to Ray, expanding NeMo Curator to support multimodal data curation with new [video](../../curate-video/index.md) and [audio](../../curate-audio/index.md) capabilities. This refactor enables unified backend processing, better heterogeneous computing support, and enhanced autoscaling for dynamic workloads.
+This major release represents a fundamental architecture shift from [Dask](https://www.dask.org/) to [Ray](https://www.ray.io/), expanding NeMo Curator to support multimodal data curation with new [video](../../curate-video/index.md) and [audio](../../curate-audio/index.md) capabilities. This refactor enables unified backend processing, better heterogeneous computing support, and enhanced autoscaling for dynamic workloads.
 
 ## Installation Updates
 
-### New Docker Container
-
-- **New Docker container**: Updated Docker infrastructure with CUDA 12.8.1 and Ubuntu 24.04 base
+- **New Docker container**: Updated Docker infrastructure with CUDA 12.8.1 and Ubuntu 24.04 base; obtainable through the [NGC Catalog](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/nemo-curator) (`nvcr.io/nvidia/nemo-curator:{{ current_release }}`)
+- **Docker file to build own image**: Simplified [Dockerfile](https://github.com/NVIDIA-NeMo/Curator/blob/main/docker/Dockerfile) structure for custom container builds with FFmpeg support
 - **UV source installations**: Integrated UV package manager (v0.8.22) for faster dependency management
-- **PyPI improvements**: Enhanced PyPI installation with modular extras (`[cuda12x]`, `[all]`, `[image]`, `[audio]`, `[video]`)
-- **Docker file to build own image**: Simplified Dockerfile structure for custom container builds with FFmpeg support
+- **PyPI improvements**: Enhanced PyPI installation with modular extras for targeted functionality:
 
-For complete installation instructions, see [Installation](../../admin/installation.md).
+  ```{list-table} Available Installation Extras
+  :header-rows: 1
+  :widths: 25 35 40
 
-## Video Modality
+  * - Extra
+    - Installation Command
+    - Description
+  * - **All Modalities**
+    - `nemo-curator[all]`
+    - Complete installation with all modalities and GPU support
+  * - **Text Curation**
+    - `nemo-curator[text_cuda12]`
+    - GPU-accelerated text processing with RAPIDS
+  * - **Image Curation**
+    - `nemo-curator[image_cuda12]`
+    - Image processing with NVIDIA DALI
+  * - **Audio Curation**
+    - `nemo-curator[audio_cuda12]`
+    - Speech recognition with NeMo ASR models
+  * - **Video Curation**
+    - `nemo-curator[video_cuda12]`
+    - Video processing with GPU acceleration
+  * - **Basic GPU**
+    - `nemo-curator[cuda12]`
+    - CUDA utilities without modality-specific dependencies
+  ```
+
+  All GPU installations require the NVIDIA PyPI index:
+  ```bash
+  pip install --extra-index-url https://pypi.nvidia.com nemo-curator[EXTRA]
+  ```
+
+## New Modalities
+
+### Video
 
 NeMo Curator now supports comprehensive [video data curation](../../curate-video/index.md) with distributed processing capabilities:
 
@@ -34,9 +64,7 @@ NeMo Curator now supports comprehensive [video data curation](../../curate-video
 - **Execution modes**: Support for both streaming and batch processing modes
 - **High-throughput processing**: Optimized for large-scale video corpora with efficient data flow
 
-Get started with [video curation tutorials](../../curate-video/tutorials/index.md).
-
-## Audio Modality
+### Audio
 
 New [audio curation capabilities](../../curate-audio/index.md) for speech data processing:
 
@@ -46,18 +74,16 @@ New [audio curation capabilities](../../curate-audio/index.md) for speech data p
 - **Text integration**: Seamless integration with [text curation workflows](../../curate-audio/process-data/text-integration/index.md) via `AudioToDocumentStage`
 - **Manifest support**: JSONL manifest format for audio file management
 
-Explore [audio curation tutorials](../../curate-audio/tutorials/index.md).
+## Modality Refactors
 
-## Text & Image Refactors
-
-### Text Refactors
+### Text
 
 - **Ray backend migration**: Complete transition from Dask to Ray for distributed [text processing](../../curate-text/index.md)
 - **Task-centric architecture**: New `Task`-based processing model for finer-grained control
 - **Pipeline redesign**: Updated `ProcessingStage` and `Pipeline` architecture with resource specification
-- **Fuzzy deduplication improvements**: Enhanced [fuzzy deduplication workflow](../../curate-text/process-data/fuzzy-deduplication.md) with Ray integration
+- **Fuzzy deduplication improvements**: Enhanced [fuzzy deduplication workflow](../../curate-text/process-data/deduplication/fuzzy.md) with Ray integration
 
-### Image Refactors
+### Image
 
 - **Pipeline-based architecture**: Transitioned from legacy `ImageTextPairDataset` to modern [stage-based processing](../../curate-images/index.md) with `ImageReaderStage`, `ImageEmbeddingStage`, and filter stages
 - **DALI-based image loading**: New `ImageReaderStage` uses NVIDIA DALI for high-performance WebDataset tar shard processing with GPU/CPU fallback
@@ -84,19 +110,16 @@ Learn more about [image curation](../../curate-images/index.md).
 
 ## Tutorials
 
-### Refactored
-
 - **Text tutorials**: Updated all [text curation tutorials](https://github.com/NVIDIA-NeMo/Curator/tree/main/tutorials/text) to use new Ray-based API
 - **Image tutorials**: Migrated [image processing tutorials](https://github.com/NVIDIA-NeMo/Curator/tree/main/tutorials/image) to unified backend
-
-## Net-New
-
 - **Audio tutorials**: New [audio curation tutorials](https://github.com/NVIDIA-NeMo/Curator/tree/main/tutorials/audio)
 - **Video tutorials**: New [video processing tutorials](https://github.com/NVIDIA-NeMo/Curator/tree/main/tutorials/video)
 
 For all tutorial content, refer to the [tutorials directory](https://github.com/NVIDIA-NeMo/Curator/tree/main/tutorials) in the NeMo Curator GitHub repository.
 
-## Known Limitations (Pending Refactor in Future Release)
+## Known Limitations
+
+> (Pending Refactor in Future Release)
 
 ### Generation
 
@@ -118,7 +141,6 @@ For all tutorial content, refer to the [tutorials directory](https://github.com/
 - **Local preview capability**: Improved documentation build system with local preview support
 - **Modality-specific guides**: Comprehensive documentation for each supported modality ([text](../../curate-text/index.md), [image](../../curate-images/index.md), [audio](../../curate-audio/index.md), [video](../../curate-video/index.md))
 - **API reference**: Complete [API documentation](../../apidocs/index.rst) with type annotations and examples
-- **Deployment guides**: Updated [installation](../../admin/installation.md) and [deployment documentation](../../admin/deployment/index.md) for all environments
 
 ---
 

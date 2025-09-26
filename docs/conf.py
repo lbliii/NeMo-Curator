@@ -120,6 +120,7 @@ myst_substitutions = {
     "support_email": "nemo-curator-support@nvidia.com",
     "min_python_version": "3.8",
     "recommended_cuda": "12.0+",
+    "current_release": release,
 }
 
 # Enable figure numbering

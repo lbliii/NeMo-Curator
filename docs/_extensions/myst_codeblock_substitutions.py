@@ -1,14 +1,18 @@
 """
-Custom Sphinx extension to enable MyST substitutions in standard code blocks.
+Custom Sphinx extension to enable MyST substitutions in code blocks and inline code.
 
 This extension pre-processes MyST markdown files to replace {{ variable }} substitutions
-inside standard ``` code blocks before MyST parses the content.
+inside both triple-backtick code blocks (```...```) and single-backtick inline code (`...`)
+before MyST parses the content.
 
 Usage in any .md file:
 ```bash
 helm install my-release oci://nvcr.io/nvidia/nemo-curator --version {{ version }}
 kubectl get pods -n {{ product_name_short }}-namespace
 ```
+
+Or in inline code:
+Use `nvcr.io/nvidia/nemo-curator:{{ current_release }}` for the Docker image.
 
 The substitutions will be replaced with their values from myst_substitutions in conf.py.
 """
@@ -46,11 +50,11 @@ def process_myst_source(app: Sphinx, docname: str, source: list[str]) -> None:
 
 def process_codeblock_substitutions(content: str, substitutions: dict) -> str:
     """
-    Process MyST substitutions inside code blocks.
+    Process MyST substitutions inside code blocks and inline code.
 
-    This finds code blocks (```...```) and replaces {{ variable }} patterns
-    with their values from myst_substitutions, but skips languages that
-    commonly use {{ }} syntax natively.
+    This finds code blocks (```...```) and inline code (`...`) and replaces 
+    {{ variable }} patterns with their values from myst_substitutions, but 
+    skips languages that commonly use {{ }} syntax natively.
     """
     # Languages that commonly use {{ }} syntax and should be skipped
     template_languages = {
@@ -98,8 +102,29 @@ def process_codeblock_substitutions(content: str, substitutions: dict) -> str:
         # Return the code block with processed content
         return f"```{language}\n{processed_code}\n```"
 
-    # Process all code blocks
-    return re.sub(code_block_pattern, replace_in_code_block, content, flags=re.DOTALL)
+    # Pattern to match inline code: `code`
+    # This pattern handles single backtick inline code
+    inline_code_pattern = r"`([^`]+)`"
+
+    def replace_in_inline_code(match: re.Match[str]) -> str:
+        code_content = match.group(1)
+
+        # Skip if the content looks like template syntax
+        if is_likely_template_syntax(code_content):
+            logger.debug("Skipping substitutions for inline code with template-like syntax")
+            return match.group(0)  # Return original unchanged
+
+        # Replace substitutions in the inline code content
+        processed_code = replace_substitutions(code_content, substitutions)
+
+        # Return the inline code with processed content
+        return f"`{processed_code}`"
+
+    # Process all code blocks first, then inline code
+    content = re.sub(code_block_pattern, replace_in_code_block, content, flags=re.DOTALL)
+    content = re.sub(inline_code_pattern, replace_in_inline_code, content)
+    
+    return content
 
 
 def is_likely_template_syntax(content: str) -> bool:
