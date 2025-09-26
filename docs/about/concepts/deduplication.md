@@ -30,7 +30,7 @@ NeMo Curator implements three main deduplication strategies, each with different
 
 ### Exact Deduplication
 
-- **Method**: Hash-based matching (MD5, SHA-256)
+- **Method**: Hash-based matching (MD5)
 - **Best For**: Identical copies and character-for-character matches
 - **Speed**: Very fast
 - **GPU Required**: Yes (for distributed processing)
@@ -80,11 +80,11 @@ Text deduplication can handle web-scale datasets and is commonly used for:
 
 ### Video Deduplication
 
-Video deduplication focuses on semantic approaches using clip-level embeddings:
+Video deduplication uses the semantic deduplication workflow with video embeddings:
 
-- **Semantic Clustering**: Uses K-means clustering on video embeddings
-- **Pairwise Similarity**: Computes within-cluster similarity on GPU
-- **Representative Selection**: Keeps diverse clips while removing redundant content
+- **Semantic Clustering**: Uses the general K-means clustering workflow on video embeddings
+- **Pairwise Similarity**: Computes within-cluster similarity using the semantic deduplication pipeline
+- **Representative Selection**: Leverages the semantic workflow to identify and remove redundant content
 
 Video deduplication is particularly effective for:
 
@@ -94,11 +94,10 @@ Video deduplication is particularly effective for:
 
 ### Image Deduplication
 
-Image deduplication capabilities are designed for visual content:
+Image deduplication capabilities focus on removing duplicate images from datasets:
 
-- **Perceptual Hashing**: Identifies visually similar images
-- **Feature-Based Matching**: Uses deep learning features for similarity
-- **Metadata Deduplication**: Removes images with identical metadata
+- **Duplicate Removal**: Filters out images identified as duplicates from previous deduplication stages
+- **Integration Support**: Works with image processing pipelines through `ImageBatch` tasks
 
 ## Architecture and Performance
 
