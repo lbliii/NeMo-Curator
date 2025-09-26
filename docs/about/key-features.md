@@ -95,7 +95,7 @@ Set up your environment and install NeMo Curator's image modules.
 
 ## Audio Data Curation
 
-NeMo Curator provides speech and audio curation capabilities designed for preparing high-quality speech datasets for ASR model training and multimodal applications. It leverages NeMo Framework's pretrained ASR models for transcription, quality assessment through Word Error Rate (WER) calculation, and seamless integration with text curation workflows.
+NeMo Curator provides speech and audio curation capabilities designed for preparing high-quality speech datasets for ASR model training and multimodal applications. It leverages pretrained `.nemo` model checkpoints via the NeMo Framework for transcription, quality assessment through Word Error Rate (WER) calculation, and seamless integration with text curation workflows.
 
 ::::{grid} 1 1 2 2
 :gutter: 2
