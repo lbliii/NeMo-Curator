@@ -151,8 +151,8 @@ Remove duplicate and near-duplicate documents efficiently
 Clean, normalize, and transform text content
 +++
 {bdg-secondary}`cleaning`
-{bdg-secondary}`pii-removal`
 {bdg-secondary}`normalization`
+{bdg-secondary}`formatting`
 :::
 
 :::{grid-item-card} {octicon}`globe;1.5em;sd-mr-1` Language Management

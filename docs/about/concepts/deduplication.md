@@ -19,6 +19,7 @@ This guide covers deduplication techniques available across all modalities in Ne
 Deduplication is a critical step in data curation that removes duplicate and near-duplicate content to improve model training efficiency. NeMo Curator provides sophisticated deduplication capabilities that work across text, image, and video modalities.
 
 Removing duplicates offers several benefits:
+
 - **Improved Training Efficiency**: Prevents overrepresentation of repeated content
 - **Reduced Dataset Size**: Significantly reduces storage and processing requirements
 - **Better Model Performance**: Eliminates redundant examples that can bias training
@@ -29,10 +30,10 @@ NeMo Curator implements three main deduplication strategies, each with different
 
 ### Exact Deduplication
 
-**Method**: Hash-based matching (MD5, SHA-256)
-**Best For**: Identical copies and character-for-character matches
-**Speed**: Very fast
-**GPU Required**: Yes (for distributed processing)
+- **Method**: Hash-based matching (MD5, SHA-256)
+- **Best For**: Identical copies and character-for-character matches
+- **Speed**: Very fast
+- **GPU Required**: Yes (for distributed processing)
 
 Exact deduplication identifies documents or media files that are completely identical by computing cryptographic hashes of their content.
 
@@ -40,10 +41,10 @@ Exact deduplication identifies documents or media files that are completely iden
 
 ### Fuzzy Deduplication
 
-**Method**: MinHash and Locality-Sensitive Hashing (LSH)
-**Best For**: Near-duplicates with minor changes (reformatting, small edits)
-**Speed**: Fast
-**GPU Required**: Yes
+- **Method**: MinHash and Locality-Sensitive Hashing (LSH)
+- **Best For**: Near-duplicates with minor changes (reformatting, small edits)
+- **Speed**: Fast
+- **GPU Required**: Yes
 
 Fuzzy deduplication uses statistical fingerprinting to identify content that is nearly identical but may have small variations like formatting changes or minor edits.
 
@@ -51,10 +52,10 @@ Fuzzy deduplication uses statistical fingerprinting to identify content that is 
 
 ### Semantic Deduplication
 
-**Method**: Embedding-based similarity using neural networks
-**Best For**: Content with similar meaning but different expression
-**Speed**: Moderate (requires embedding generation)
-**GPU Required**: Yes
+- **Method**: Embedding-based similarity using neural networks
+- **Best For**: Content with similar meaning but different expression
+- **Speed**: Moderate (requires embedding generation)
+- **GPU Required**: Yes
 
 Semantic deduplication leverages deep learning embeddings to identify content that conveys similar meaning despite using different words, visual elements, or presentation.
 
@@ -71,6 +72,7 @@ Text deduplication is the most mature implementation, offering all three approac
 - **Semantic**: Remove semantically similar content using embeddings
 
 Text deduplication can handle web-scale datasets and is commonly used for:
+
 - Web crawl data (Common Crawl)
 - Academic papers (ArXiv)
 - Code repositories
@@ -85,6 +87,7 @@ Video deduplication focuses on semantic approaches using clip-level embeddings:
 - **Representative Selection**: Keeps diverse clips while removing redundant content
 
 Video deduplication is particularly effective for:
+
 - Educational content with similar presentations
 - News clips covering the same events
 - Entertainment content with repeated segments
@@ -163,33 +166,7 @@ from nemo_curator.stages.deduplication.semantic.identify_duplicates import Ident
 
 Deduplication integrates seamlessly with NeMo Curator's pipeline-based architecture:
 
-1. **Input Compatibility**: Works with DocumentBatch tasks from any data loading stage
+1. **Input Compatibility**: Works with `DocumentBatch` tasks from any data loading stage
 2. **Output Integration**: Produces standardized outputs for downstream processing
 3. **Chaining Support**: Can be combined with filtering and cleaning stages
 4. **Executor Support**: Compatible with all distributed execution backends
-
-## Best Practices
-
-### Choosing the Right Approach
-
-- **Start with Exact**: Always begin with exact deduplication to remove obvious duplicates
-- **Add Fuzzy for Scale**: Use fuzzy deduplication for large web-scale datasets
-- **Consider Semantic Carefully**: Semantic deduplication requires careful threshold tuning
-
-### Performance Optimization
-
-- **Batch Processing**: Process data in appropriately-sized batches for your hardware
-- **GPU Memory Management**: Monitor GPU memory usage during embedding generation
-- **Storage Planning**: Plan for intermediate outputs and caching requirements
-
-### Quality Assurance
-
-- **Threshold Validation**: Test similarity thresholds on representative data samples
-- **Manual Review**: Inspect identified duplicates to validate detection quality
-- **Preserve Metadata**: Maintain document lineage for downstream analysis
-
----
-
-For modality-specific implementation details, refer to:
-- {ref}`Text Deduplication <text-process-data-dedup>`
-- {ref}`Video Deduplication <video-process-dedup>`

@@ -1,7 +1,7 @@
 ---
 description: "Text processing workflows including quality filtering, fuzzy deduplication, content cleaning, and pipeline design"
 categories: ["concepts-architecture"]
-tags: ["data-processing", "quality-filtering", "deduplication", "pipeline", "pii-removal", "distributed"]
+tags: ["data-processing", "quality-filtering", "deduplication", "pipeline", "distributed"]
 personas: ["data-scientist-focused", "mle-focused"]
 difficulty: "intermediate"
 content_type: "concept"
@@ -196,8 +196,7 @@ unicode_modifier = Modify(
 )
 pipeline.add_stage(unicode_modifier)
 
-# Note: For PII removal, use dedicated PII processing tools
-# See the PII processing documentation for specialized workflows
+# Additional processing steps can be added as needed
 
 # Write cleaned data
 writer = JsonlWriter(path="cleaned_data/")
