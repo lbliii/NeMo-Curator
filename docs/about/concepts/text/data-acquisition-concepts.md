@@ -225,8 +225,6 @@ Data acquisition leverages distributed computing frameworks for scalable process
 - **Concurrent Extraction**: Files process in parallel across workers
 - **Memory Management**: Streaming processing for large files
 
-Note: The curator pipelines are not fault tolerant.
-
 ## Integration with Data Loading
 
 Data acquisition produces standardized output that integrates seamlessly with {ref}`Data Loading Concepts <about-concepts-text-data-loading>`:
