@@ -41,9 +41,10 @@ Basic text normalization and cleaning operations:
 
 ### 3. Deduplication
 
-Remove duplicate and near-duplicate content:
+Remove duplicate and near-duplicate content. For comprehensive coverage of all deduplication approaches, refer to [Deduplication Concepts](about-concepts-deduplication).
 
 #### Fuzzy Deduplication
+
 For production datasets, fuzzy deduplication is essential to remove near-duplicate content across sources:
 
 **Key Components:**
@@ -53,6 +54,7 @@ For production datasets, fuzzy deduplication is essential to remove near-duplica
 - Connected components clustering for duplicate identification
 
 #### Exact Deduplication
+
 Remove identical documents, especially useful for smaller datasets:
 
 **Implementation:**
@@ -61,6 +63,7 @@ Remove identical documents, especially useful for smaller datasets:
 - MD5 or SHA-256 hashing for document identification
 
 #### Semantic Deduplication
+
 Remove semantically similar content using embeddings for more sophisticated duplicate detection.
 
 ## Core Processing Architecture
@@ -89,7 +92,6 @@ NeMo Curator uses these fundamental building blocks that users combine into pipe
   - Transform DocumentBatch tasks
   - Core processing components
 ```
-
 
 ## Implementation Examples
 

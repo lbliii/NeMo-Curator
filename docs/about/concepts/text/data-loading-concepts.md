@@ -164,20 +164,21 @@ reader = JsonlReader(file_paths=[
     "additional_data/"
 ])
 
-# Note: You cannot combine different reader types (JsonlReader + ParquetReader) 
-# in the same pipeline stage. For different file types, you would need to create 
-# a new BaseReader that can read based on different extensions provided.
 ```
 
-## Remote Data Acquisition
+:::{note}
+You cannot combine different reader types (`JsonlReader` + `ParquetReader`)  in the same pipeline stage. For different file types, you would need to create a new `BaseReader` that can read based on different extensions provided.
+:::
 
-Remote Data Acquisition in technical sense refers to our JsonlReader + ParquetReader working with s3/gcs and not ArXiv/Common Crawl which is a separate topic covered in {ref}`Data Acquisition Concepts <about-concepts-text-data-acquisition>`.
+## Remote Data Sources
 
-For downloading and processing data from remote sources like ArXiv, Common Crawl, and Wikipedia, see the {ref}`Data Acquisition Concepts <about-concepts-text-data-acquisition>` page which covers:
+This page focuses on loading text data from **local files** using `JsonlReader` and `ParquetReader`. Both readers support remote storage locations (Amazon S3, Google Cloud Storage) when you provide remote file paths.
+
+For downloading and processing data from **remote sources** like ArXiv, Common Crawl, and Wikipedia, refer to the {ref}`Data Acquisition Concepts <about-concepts-text-data-acquisition>` page which covers:
 
 - **DocumentDownloader, DocumentIterator, DocumentExtractor** components
 - **Built-in support** for Common Crawl, ArXiv, Wikipedia, and custom sources  
 - **Integration patterns** with pipeline-based processing
 - **Configuration and scaling** strategies
 
-The data acquisition process produces `DocumentBatch` tasks that integrate seamlessly with the pipeline-based processing concepts on this page.
+The data acquisition process produces standardized output that integrates seamlessly with the pipeline-based loading concepts described on this page.
