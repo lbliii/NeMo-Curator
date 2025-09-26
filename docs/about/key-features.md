@@ -31,7 +31,7 @@ NeMo Curator is an enterprise-grade platform for scalable, privacy-aware data cu
 
 ## Text Data Curation
 
-NeMo Curator offers advanced tools for text data loading, cleaning, filtering, deduplication, classification, and synthetic data generation using pipeline-based architecture. Built-in modules support language identification, quality estimation, domain and safety classification, and both rule-based and LLM-based PII removal. Pipelines run on Ray for distributed execution and are fully modular and customizable for diverse NLP and LLM training needs.
+NeMo Curator offers advanced tools for text data loading, cleaning, filtering, deduplication, and classification using pipeline-based architecture. Built-in modules support language identification, quality estimation, and domain and safety classification. Pipelines run on Ray for distributed execution and are fully modular and customizable for diverse NLP and LLM training needs.
 
 ::::{grid} 1 1 2 2
 :gutter: 2
