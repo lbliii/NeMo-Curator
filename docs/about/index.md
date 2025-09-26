@@ -30,7 +30,7 @@ NeMo Curator speeds up data curation by using modern hardware and distributed co
 - **Text Curation**: Uses a pipeline-based architecture with modular processing stages running on Ray. Data flows through acquisition, loading, processing (quality assessment, deduplication, content cleaning), and export stages for scalable distributed execution.
 - **Image Curation**: Uses pipeline-based architecture with modular stages for loading, embedding generation, classification (aesthetic, NSFW), filtering, and export workflows. Supports distributed processing with optional GPU acceleration.
 - **Video Curation**: Employs Ray-based pipelines to split long videos into clips using fixed stride or scene-change detection, with optional encoding, filtering, embedding generation, and deduplication for large-scale video processing.
-- **Audio Curation**: Provides ASR inference using NeMo Framework models, quality assessment through Word Error Rate (WER) calculation, duration analysis, and integration with text curation workflows for speech data processing.
+- **Audio Curation**: Provides ASR inference using models, quality assessment through Word Error Rate (WER) calculation, duration analysis, and integration with text curation workflows for speech data processing.
 
 ### Key Technologies
 
