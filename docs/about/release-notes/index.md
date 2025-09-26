@@ -59,10 +59,11 @@ This major release represents a fundamental architecture shift from [Dask](https
 
 NeMo Curator now supports comprehensive [video data curation](../../curate-video/index.md) with distributed processing capabilities:
 
+- **Video splitting**: [Fixed-stride](../../curate-video/process-data/clipping.md) and [scene-change detection (TransNetV2)](../../curate-video/process-data/clipping.md) for clip extraction
+- **Semantic deduplication**: [K-means clustering and pairwise similarity](../../curate-video/process-data/dedup.md) for near-duplicate clip removal
+- **Content filtering**: [Motion-based filtering](../../curate-video/process-data/filtering.md) and [aesthetic filtering](../../curate-video/process-data/filtering.md) for quality improvement
+- **Embedding generation**: InternVideo2 and Cosmos-Embed1 models for clip-level embeddings
 - **Ray-based distributed architecture**: Scalable video processing with [autoscaling support](../concepts/video/architecture.md)
-- **Pipeline stages**: Modular [video processing stages](../../curate-video/process-data/index.md) with configurable resources
-- **Execution modes**: Support for both streaming and batch processing modes
-- **High-throughput processing**: Optimized for large-scale video corpora with efficient data flow
 
 ### Audio
 
@@ -79,9 +80,9 @@ New [audio curation capabilities](../../curate-audio/index.md) for speech data p
 ### Text
 
 - **Ray backend migration**: Complete transition from Dask to Ray for distributed [text processing](../../curate-text/index.md)
+- **Improved model-based classifier throughput**: Better overlapping of compute between tokenization and inference through [length-based sequence sorting](../../curate-text/process-data/quality-assessment/distributed-classifier.md) for optimal GPU memory utilization
 - **Task-centric architecture**: New `Task`-based processing model for finer-grained control
 - **Pipeline redesign**: Updated `ProcessingStage` and `Pipeline` architecture with resource specification
-- **Fuzzy deduplication improvements**: Enhanced [fuzzy deduplication workflow](../../curate-text/process-data/deduplication/fuzzy.md) with Ray integration
 
 ### Image
 
@@ -91,6 +92,14 @@ New [audio curation capabilities](../../curate-audio/index.md) for speech data p
 - **Task-based data flow**: Images processed as `ImageBatch` tasks containing `ImageObject` instances with metadata, embeddings, and classification scores
 
 Learn more about [image curation](../../curate-images/index.md).
+
+## Deduplication Improvements
+
+Enhanced deduplication capabilities across all modalities with improved performance and flexibility:
+
+- **Exact and Fuzzy deduplication**: Updated [rapidsmpf-based shuffle backend](../../reference/infrastructure/gpu-processing.md) for more efficient GPU-to-GPU data transfer and better spilling capabilities
+- **Semantic deduplication**: Support for deduplicating [text](../../curate-text/process-data/deduplication/semdedup.md), [image](../../curate-images/process-data/deduplication.md), and [video](../../curate-video/process-data/dedup.md) datasets using unified embedding-based workflows
+- **New ranking strategies**: Added [metadata-based ranking](../../curate-text/process-data/deduplication/semdedup.md) to prioritize specific datasets or inputs during duplicate removal
 
 ## Core Refactors
 
