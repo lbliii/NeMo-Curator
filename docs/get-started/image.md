@@ -64,26 +64,6 @@ source .venv/bin/activate
 python your_script.py
 ```
 
-:::{note}
-**Optional: Video Processing with InternVideo2**
-
-If you plan to use video processing features that require InternVideo2, install the additional dependency after the basic installation:
-
-```bash
-# Clone and patch InternVideo2
-git clone https://github.com/OpenGVLab/InternVideo.git
-cd InternVideo
-git checkout 09d872e5093296c6f36b8b3a91fc511b76433bf7
-patch -p1 < ../external/intern_video2_multimodal.patch
-cd ..
-
-# Add InternVideo2 to the environment
-uv add InternVideo/InternVideo2/multi_modality
-```
-:::
-
-:::
-
 :::{tab-item} Docker Container
 
 You can build and run NeMo Curator in a container environment using the provided Dockerfile:
