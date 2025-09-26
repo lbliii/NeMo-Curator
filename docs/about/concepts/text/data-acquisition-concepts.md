@@ -12,7 +12,7 @@ modality: "text-only"
 
 # Data Acquisition Concepts
 
-This guide covers the core concepts for acquiring and processing text data from remote sources in NeMo Curator. Data acquisition focuses on downloading, extracting, and converting remote data sources into {ref}`DocumentDataset <documentdataset>` format for further processing.
+This guide covers the core concepts for acquiring and processing text data from remote sources in NeMo Curator. Data acquisition focuses on downloading, extracting, and converting remote data sources into `DocumentBatch` format for further processing.
 
 ## Overview
 
@@ -23,7 +23,7 @@ Data acquisition in NeMo Curator follows a four-stage architecture:
 3. **Iterate**: Extract individual records from downloaded containers
 4. **Extract**: Convert raw content to clean, structured text
 
-This process transforms diverse remote data sources into a standardized `DocumentDataset` that can be used throughout the text curation pipeline.
+This process transforms diverse remote data sources into a standardized `DocumentBatch` that can be used throughout the text curation pipeline.
 
 ## Core Components
 
@@ -52,7 +52,7 @@ class CustomURLGenerator(URLGenerator):
 
 ### DocumentDownloader
 
-Connects to and downloads data from remote repositories. You must override `get_output_filename` and `download_to_path` which are called by function called `download` which tries to be idempotent.
+Connects to and downloads data from remote repositories. You must override `_get_output_filename` and `_download_to_path` which are called by function called `download` which tries to be idempotent.
 
 **Example Implementation**:
 
@@ -62,11 +62,11 @@ class CustomDownloader(DocumentDownloader):
         super().__init__()
         self._download_dir = download_dir
     
-    def get_output_filename(self, url):
+    def _get_output_filename(self, url):
         # Extract filename from URL
         return url.split('/')[-1]
     
-    def download_to_path(self, url, path):
+    def _download_to_path(self, url, path):
         # Custom download logic
         # Return (success_bool, error_message)
         try:

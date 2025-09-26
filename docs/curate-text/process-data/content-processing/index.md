@@ -19,7 +19,7 @@ Content processing involves transforming your text data while preserving essenti
 
 Content processing transformations typically modify documents in place or create new versions with specific changes. Most processing tools follow this pattern:
 
-1. Load your dataset using `DocumentDataset`
+1. Load your dataset using pipeline readers (JsonlReader, ParquetReader)
 2. Configure and apply the appropriate processor
 3. Save the transformed dataset for further processing
 

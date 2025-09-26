@@ -1,5 +1,5 @@
 ---
-description: "Core concepts for loading and managing text datasets including DocumentDataset, ParallelDataset, and supported file formats"
+description: "Core concepts for loading and managing text datasets using pipeline-based readers and DocumentBatch tasks"
 categories: ["concepts-architecture"]
 tags: ["data-loading", "document-dataset", "parallel-dataset", "distributed", "gpu-accelerated", "local-files"]
 personas: ["data-scientist-focused", "mle-focused"]
@@ -125,9 +125,16 @@ reader = ParquetReader(
 
 ### Performance Recommendations
 
-- **Block size**: Use ~128MB for optimal object store performance - smaller objects improve distributed data exchange
+- **Block size and files per partition**: Use ~128MB for optimal performance. Very large batches lead to memory overheads when passing data between stages through the object store, while very small batches induce overhead from processing many more tasks. We recommend ~128MB as a good balance. Try to avoid going below 32MB or above 1GiB partition sizes.
 - **Field selection**: Specify `fields` parameter to read required columns
-- **Engine choice**: ParquetReader defaults to PyArrow with `dtype_backend="pyarrow"` but in case that gives you trouble you can override read_kwargs
+- **Engine choice**: ParquetReader defaults to PyArrow with `dtype_backend="pyarrow"` for optimal performance and memory efficiency. If you encounter compatibility issues with certain data types or schemas, you can override these defaults through `read_kwargs`:
+  ```python
+  # Remove PyArrow dtype backend if compatibility issues arise
+  reader = ParquetReader(
+      file_paths="data.parquet",
+      read_kwargs={"dtype_backend": None}  # Falls back to pandas default behavior
+  )
+  ```
 
 ## Data Export Options
 
@@ -143,12 +150,6 @@ pipeline.add_stage(ParquetWriter(path="output_directory/"))
 
 # Execute pipeline to write results
 results = pipeline.run()
-```
-
-```{note}
-**Deterministic File Naming**
-
-Writers automatically generate deterministic filenames based on source files processed by readers, ensuring consistent and reproducible output across pipeline runs.
 ```
 
 ## Common Loading Patterns
@@ -168,7 +169,6 @@ reader = JsonlReader(file_paths=[
 # a new BaseReader that can read based on different extensions provided.
 ```
 
-
 ## Remote Data Acquisition
 
 Remote Data Acquisition in technical sense refers to our JsonlReader + ParquetReader working with s3/gcs and not ArXiv/Common Crawl which is a separate topic covered in {ref}`Data Acquisition Concepts <about-concepts-text-data-acquisition>`.
@@ -177,7 +177,7 @@ For downloading and processing data from remote sources like ArXiv, Common Crawl
 
 - **DocumentDownloader, DocumentIterator, DocumentExtractor** components
 - **Built-in support** for Common Crawl, ArXiv, Wikipedia, and custom sources  
-- **Integration patterns** with DocumentDataset
+- **Integration patterns** with pipeline-based processing
 - **Configuration and scaling** strategies
 
 The data acquisition process produces `DocumentBatch` tasks that integrate seamlessly with the pipeline-based processing concepts on this page.
