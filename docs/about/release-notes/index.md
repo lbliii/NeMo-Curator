@@ -99,7 +99,7 @@ Enhanced deduplication capabilities across all modalities with improved performa
 
 - **Exact and Fuzzy deduplication**: Updated [rapidsmpf-based shuffle backend](../../reference/infrastructure/gpu-processing.md) for more efficient GPU-to-GPU data transfer and better spilling capabilities
 - **Semantic deduplication**: Support for deduplicating [text](../../curate-text/process-data/deduplication/semdedup.md), [image](../../curate-images/process-data/deduplication.md), and [video](../../curate-video/process-data/dedup.md) datasets using unified embedding-based workflows
-- **New ranking strategies**: Added [metadata-based ranking](../../curate-text/process-data/deduplication/semdedup.md) to prioritize specific datasets or inputs during duplicate removal
+- **New ranking strategies**: Added `RankingStrategy` which allows you to rank elements within cluster centers to decide which point to prioritize during duplicate removal, supporting [metadata-based ranking](../../curate-text/process-data/deduplication/semdedup.md) to prioritize specific datasets or inputs
 
 ## Core Refactors
 
