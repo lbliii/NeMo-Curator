@@ -52,8 +52,8 @@ def process_codeblock_substitutions(content: str, substitutions: dict) -> str:
     """
     Process MyST substitutions inside code blocks and inline code.
 
-    This finds code blocks (```...```) and inline code (`...`) and replaces 
-    {{ variable }} patterns with their values from myst_substitutions, but 
+    This finds code blocks (```...```) and inline code (`...`) and replaces
+    {{ variable }} patterns with their values from myst_substitutions, but
     skips languages that commonly use {{ }} syntax natively.
     """
     # Languages that commonly use {{ }} syntax and should be skipped
@@ -122,9 +122,7 @@ def process_codeblock_substitutions(content: str, substitutions: dict) -> str:
 
     # Process all code blocks first, then inline code
     content = re.sub(code_block_pattern, replace_in_code_block, content, flags=re.DOTALL)
-    content = re.sub(inline_code_pattern, replace_in_inline_code, content)
-    
-    return content
+    return re.sub(inline_code_pattern, replace_in_inline_code, content)
 
 
 def is_likely_template_syntax(content: str) -> bool:
@@ -182,7 +180,9 @@ def replace_substitutions_carefully(text: str, substitutions: dict) -> str:
         var_name = match.group(1).strip()
 
         # Only replace if it's an exact match for one of our MyST variables
-        if var_name in substitutions and not re.search(r"[.|\-+]", full_match):  # No dots, pipes, or whitespace control
+        if var_name in substitutions and not re.search(
+            r"[.|\-+]", full_match
+        ):  # No dots, pipes, or whitespace control
             replacement = str(substitutions[var_name])
             logger.debug(f"Carefully replacing {{ {var_name} }} with '{replacement}' in template language")
             return replacement
