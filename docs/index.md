@@ -247,7 +247,6 @@ admin/index.md
 Install Curator <admin/installation.md>
 Configure Curator <admin/config/index.md>
 Deploy Curator <admin/deployment/index.md>
-Integrations <admin/integrations/index.md>
 ::::
 
 ::::{toctree}
