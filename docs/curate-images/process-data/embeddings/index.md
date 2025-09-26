@@ -34,13 +34,7 @@ The embedding stage integrates seamlessly into NeMo Curator's pipeline architect
 :::{grid-item-card} {octicon}`image;1.5em;sd-mr-1` ImageEmbeddingStage
 :link: clip-embedder
 :link-type: doc
-Generate CLIP embeddings using OpenAI's ViT-L/14 model for high-quality image representations
-:::
-
-:::{grid-item-card} {octicon}`terminal;1.5em;sd-mr-1` Custom Embedding Stage
-:link: custom
-:link-type: doc
-Implement your own image embedding logic by subclassing the base ProcessingStage
+Generate CLIP embeddings using OpenAI's ViT-L/14 model for high-quality image representations. Also supports custom embedding models through subclassing.
 :::
 
 ::::
@@ -53,5 +47,4 @@ Implement your own image embedding logic by subclassing the base ProcessingStage
 :hidden:
 
 CLIP ImageEmbeddingStage <clip-embedder.md>
-Custom Embedding Stage <custom.md>
 ```

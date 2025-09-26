@@ -67,14 +67,6 @@ Generate image embeddings using CLIP models with GPU acceleration. Supports vari
 {bdg-secondary}`ImageEmbeddingStage` {bdg-secondary}`CLIP` {bdg-secondary}`GPU-accelerated`
 :::
 
-::: {grid-item-card} Custom Embedding Stage
-:link: image-process-data-embeddings-custom
-:link-type: ref
-
-Create your own image embedding logic by extending `ProcessingStage`. Useful for research models or custom pipelines.
-+++
-{bdg-secondary}`ProcessingStage` {bdg-secondary}`custom` {bdg-secondary}`advanced`
-:::
 
 ::::
 

@@ -392,12 +392,6 @@ if __name__ == "__main__":
 
 ## Performance Considerations
 
-### Memory Usage
-
-- **Embedding storage**: Each image embedding requires ~3KB (768 floats × 4 bytes)
-- **For 1M images**: Expect ~3GB of embedding storage
-- **Clustering memory**: Scales with number of embeddings and clusters
-
 ### Processing Time
 
 - **Embedding generation**: Processing time varies by GPU and batch size

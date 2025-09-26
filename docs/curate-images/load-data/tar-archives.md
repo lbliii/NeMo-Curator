@@ -33,13 +33,10 @@ dataset/
 │   ├── 000001000.jpg
 │   ├── 000001001.jpg
 │   ├── ...
-├── 00000.idx  # optional index file
-├── 00001.idx  # optional index file
 ```
 
 **What gets processed:**
 - **JPEG images**: All `.jpg` files within tar archives
-- **Index files**: Optional `.idx` files for faster DALI loading
 
 **What gets ignored:**
 - Text files (`.txt`), JSON files (`.json`), and other non-JPEG content within tar archives
@@ -91,7 +88,7 @@ The `ImageReaderStage` is the core component that handles tar archive loading wi
 ### DALI Integration
 
 - **Automatic Device Selection**: Uses GPU decoding when CUDA is available, CPU decoding otherwise
-- **Tar Archive Reader**: Leverages DALI's webdataset reader to process tar files
+- **Tar Archive Reader**: Leverages DALI's tar archive reader to process tar files
 - **Batch Processing**: Processes images in configurable batch sizes for memory efficiency
 - **JPEG-Only Processing**: Extracts only JPEG files (`ext=["jpg"]`) from tar archives
 
@@ -169,26 +166,6 @@ ImageObject(
 
 ---
 
-## Key Features
-
-### DALI-Powered Performance
-
-- **GPU Acceleration**: Automatically uses DALI GPU decoding when CUDA is available, falls back to CPU decoding otherwise
-- **High Throughput**: Optimized for processing large-scale image datasets with minimal I/O overhead
-- **Memory Efficient**: Streams images in batches without loading entire datasets into memory
-
-### Flexible Processing
-
-- **Automatic Fallback**: Works in both GPU and CPU environments
-- **Batch Processing**: Configurable batch sizes for optimal memory usage and throughput
-- **Parallel Loading**: Supports multiple tar files processed in parallel via `FilePartitioningStage`
-
-### Format Support
-
-- **Tar Archive Processing**: Uses DALI's webdataset reader to process tar files efficiently
-- **JPEG-Only**: Supports only JPEG images (`.jpg` extension) within tar files
-- **Metadata Extraction**: Generates image IDs and preserves file paths for downstream processing
-
 ## Performance Optimization
 
 ### Hardware-Specific Configuration
@@ -223,7 +200,7 @@ The DALI-based `ImageReaderStage` provides performance benefits over traditional
 
 - **GPU Acceleration**: Uses GPU decoding when CUDA is available for improved throughput
 - **Memory Efficiency**: Streams images in batches without loading entire datasets into memory
-- **I/O Optimization**: DALI's webdataset reader is optimized for tar file processing
+- **I/O Optimization**: DALI's tar archive reader is optimized for tar file processing
 
 ### Advanced Performance Tuning
 

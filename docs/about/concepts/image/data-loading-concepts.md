@@ -18,7 +18,7 @@ This page covers the core concepts for loading and managing image datasets in Ne
 
 ## Input Data Format and Directory Structure
 
-NeMo Curator loads image datasets from tar archives for scalable, distributed image curation. The `ImageReaderStage` reads only JPEG images from input `.tar` files, ignoring other content. Optionally, `.idx` index files can be provided for fast DALI-based loading.
+NeMo Curator loads image datasets from tar archives for scalable, distributed image curation. The `ImageReaderStage` reads only JPEG images from input `.tar` files, ignoring other content.
 
 **Example input directory structure:**
 
@@ -31,14 +31,11 @@ input_dataset/
 │   ├── ...
 ├── 00001.tar
 │   ├── ...
-├── 00000.idx  # optional
-├── 00001.idx  # optional
 ```
 
 **Input file types:**
 
 - `.tar` files: Contain images (`.jpg`), captions (`.txt`), and metadata (`.json`) - only images are loaded
-- `.idx` files: (Optional) Index files for fast DALI-based loading
 
 :::{note} While tar archives may contain captions (`.txt`) and metadata (`.json`) files, the `ImageReaderStage` only extracts JPEG images. Other file types are ignored during the loading process.
 :::
@@ -50,9 +47,7 @@ Each record is identified by a unique ID (e.g., `000000031`), used as the prefix
 - **Sharding:** Datasets are split into multiple `.tar` files (shards) for efficient distributed processing.
 - **Metadata:** Each record has a unique ID, and metadata is stored in `.json` files (per record) within the tar archives.
 
-## Loading from Local Disk and Cloud Storage
-
-NeMo Curator supports loading datasets from both local disk and cloud storage (S3, GCS, Azure) using the [fsspec](https://filesystem-spec.readthedocs.io/en/latest/) library. This allows you to use the same API regardless of where your data is stored.
+## Loading from Local Disk
 
 **Example:**
 
@@ -66,9 +61,9 @@ pipeline = Pipeline(name="image_loading")
 
 # Partition tar files
 pipeline.add_stage(FilePartitioningStage(
-    file_paths="/path/to/tar_dataset",  # or "s3://bucket/tar_dataset"
+    file_paths="/path/to/tar_dataset",
     files_per_partition=1,
-    file_extensions=[".tar"],
+    file_extensions=[".tar"],  # Required for ImageReaderStage
 ))
 
 # Load images with DALI
@@ -89,18 +84,8 @@ The `ImageReaderStage` uses [NVIDIA DALI](https://docs.nvidia.com/deeplearning/d
 - **Tar Archive Processing:** Built-in support for tar archive format
 - **Memory Efficiency:** Streams images without loading entire datasets into memory
 
-## Index Files
-
-For large datasets, DALI can use `.idx` index files for each `.tar` to enable even faster loading. These index files are generated using DALI's `wds2idx` tool and must be placed alongside the corresponding `.tar` files.
-
-- **How to generate:** See [DALI documentation](https://docs.nvidia.com/deeplearning/dali/user-guide/docs/examples/general/data_loading/dataloading_webdataset.html#Creating-an-index)
-- **Naming:** Each index file must match its `.tar` file (e.g., `00000.tar` → `00000.idx`)
-- **Usage:** Index files must be manually generated and placed alongside tar files. DALI will use them when present to optimize loading performance.
-
 ## Best Practices and Troubleshooting
 
 - Use sharding to enable distributed and parallel processing.
-- For cloud storage, ensure your environment is configured with the appropriate credentials.
-- Use `.idx` files for large datasets to maximize DALI performance.
 - Watch GPU memory and adjust batch size as needed.
 - If you encounter loading errors, check for missing or mismatched files in your dataset structure.

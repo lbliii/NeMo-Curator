@@ -47,7 +47,7 @@ pipeline = Pipeline(name="filter_and_export")
 
 # Load and process images
 pipeline.add_stage(FilePartitioningStage(
-    file_paths="/input/webdataset",
+    file_paths="/input/tar_archives",
     files_per_partition=1,
     file_extensions=[".tar"],
 ))

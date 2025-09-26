@@ -1,7 +1,7 @@
 ---
-description: "Load image data for curation using WebDataset format with distributed processing and GPU acceleration"
+description: "Load image data for curation using tar archives with distributed processing and GPU acceleration"
 categories: ["workflows"]
-tags: ["data-loading", "webdataset", "distributed", "dali", "gpu-accelerated"]
+tags: ["data-loading", "tar-archives", "distributed", "dali", "gpu-accelerated"]
 personas: ["data-scientist-focused", "mle-focused"]
 difficulty: "intermediate"
 content_type: "workflow"
@@ -11,23 +11,21 @@ modality: "image-only"
 (image-load-data)=
 # Image Data Loading
 
-Load image data for curation using NeMo Curator. The primary supported format is WebDataset, which enables efficient distributed processing and annotation of large-scale image-text datasets.
+Load image data for curation using NeMo Curator. The primary supported format is tar archives containing JPEG images, which enables efficient distributed processing of large-scale image datasets.
 
 ## How it Works
 
 NeMo Curator's image data loading uses a pipeline-based approach optimized for large-scale, distributed curation workflows:
 
-1. **File Partitioning**: `FilePartitioningStage` distributes WebDataset `.tar` files across workers for parallel processing.
+1. **File Partitioning**: `FilePartitioningStage` distributes `.tar` files across workers for parallel processing.
 
 2. **High-Performance Reading**: `ImageReaderStage` uses NVIDIA DALI to accelerate image loading, decoding, and batching on GPU with CPU fallback.
 
-3. **WebDataset Format**: Processes sharded `.tar` archives containing image, caption, and metadata files with unified record identification.
+3. **Tar Archive Format**: Processes sharded `.tar` archives containing JPEG images (other file types are ignored during loading).
 
-4. **Automatic Index Usage**: Optional `.idx` index files are automatically detected and used for optimized data access.
+4. **Cloud and Local Storage**: Supports loading from local disk or cloud storage (S3, GCS, Azure) using the same pipeline stages.
 
-5. **Cloud and Local Storage**: Supports loading from local disk or cloud storage (S3, GCS, Azure) using the same pipeline stages.
-
-6. **Batch Processing**: Images are processed in `ImageBatch` objects containing decoded images, metadata, and processing results.
+5. **Batch Processing**: Images are processed in `ImageBatch` objects containing decoded images, metadata, and processing results.
 
 The result is a stream of `ImageBatch` objects ready for embedding, classification, and filtering in downstream pipeline stages.
 
@@ -55,5 +53,5 @@ Load and process JPEG images from tar archives using `FilePartitioningStage` and
 :titlesonly:
 :hidden:
 
-Webdataset <webdataset>
+Tar Archives <tar-archives>
 ```

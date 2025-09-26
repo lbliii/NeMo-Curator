@@ -1,7 +1,7 @@
 ---
 description: "Overview of image data curation with NeMo Curator including loading, processing, classification, and export workflows"
 categories: ["workflows"]
-tags: ["image-curation", "webdataset", "classification", "embedding", "workflows"]
+tags: ["image-curation", "tar-archives", "classification", "embedding", "workflows"]
 personas: ["data-scientist-focused", "mle-focused"]
 difficulty: "beginner"
 content_type: "workflow"
@@ -29,7 +29,7 @@ NeMo Curator's image curation follows a modular pipeline architecture where data
 
 ```{mermaid}
 flowchart LR
-    A[WebDataset Input] --> B[File Partitioning]
+    A[Tar Archive Input] --> B[File Partitioning]
     B --> C[Image Reader<br/>DALI GPU-accelerated]
     C --> D[CLIP Embeddings<br/>ViT-L/14]
     D --> E[Aesthetic Classification<br/>Quality scoring]
@@ -86,7 +86,7 @@ Learn prerequisites, setup instructions, and initial configuration for image cur
 
 ### Load Data
 
-Load and process large-scale image datasets from local storage or cloud sources using the WebDataset format with GPU-accelerated DALI for efficient distributed processing.
+Load and process large-scale image datasets from local storage or cloud sources using tar archives with GPU-accelerated DALI for efficient distributed processing.
 
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2
@@ -174,7 +174,7 @@ Export your curated image datasets with metadata preservation, custom resharding
 
 Save metadata to Parquet and export filtered datasets with custom resharding.
 +++
-{bdg-secondary}`parquet` {bdg-secondary}`webdataset` {bdg-secondary}`resharding`
+{bdg-secondary}`parquet` {bdg-secondary}`tar-archives` {bdg-secondary}`resharding`
 
 :::
 

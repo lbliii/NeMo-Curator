@@ -1,7 +1,7 @@
 ---
 description: "Step-by-step guide to setting up and running your first image curation pipeline with NeMo Curator"
 categories: ["getting-started"]
-tags: ["image-curation", "installation", "quickstart", "gpu-accelerated", "embedding", "classification", "webdataset"]
+tags: ["image-curation", "installation", "quickstart", "gpu-accelerated", "embedding", "classification", "tar-archives"]
 personas: ["data-scientist-focused", "mle-focused"]
 difficulty: "beginner"
 content_type: "tutorial"
@@ -86,14 +86,14 @@ NeMo Curator provides a working image curation example in the [Image Curation Tu
 Create directories to store your image datasets and models:
 
 ```bash
-mkdir -p ~/nemo_curator/data/webdataset
+mkdir -p ~/nemo_curator/data/tar_archives
 mkdir -p ~/nemo_curator/data/curated
 mkdir -p ~/nemo_curator/models
 ```
 
 For this example, you'll need:
 
-* **WebDataset**: Image-text pairs in WebDataset format (`.tar` files containing `.jpg`, `.txt`, and `.json` files)
+* **Tar Archives**: JPEG images in `.tar` files (text and JSON files are ignored during loading)
 * **Model Directory**: CLIP and classifier model weights (downloaded automatically on first run)
 
 ## Basic Image Curation Example
@@ -113,14 +113,14 @@ from nemo_curator.stages.image.io.image_writer import ImageWriterStage
 # Create image curation pipeline
 pipeline = Pipeline(name="image_curation", description="Basic image curation with quality filtering")
 
-# Stage 1: Partition WebDataset tar files for parallel processing
+# Stage 1: Partition tar files for parallel processing
 pipeline.add_stage(FilePartitioningStage(
-    file_paths="~/nemo_curator/data/webdataset",  # Path to your WebDataset directory
+    file_paths="~/nemo_curator/data/tar_archives",  # Path to your tar archive directory
     files_per_partition=1,
     file_extensions=[".tar"],
 ))
 
-# Stage 2: Read images from WebDataset tar files using DALI
+# Stage 2: Read images from tar files using DALI
 pipeline.add_stage(ImageReaderStage(
     task_batch_size=100,
     verbose=True,
@@ -155,7 +155,7 @@ pipeline.add_stage(ImageNSFWFilterStage(
     verbose=True,
 ))
 
-# Stage 6: Save curated images to new WebDataset
+# Stage 6: Save curated images to new tar archives
 pipeline.add_stage(ImageWriterStage(
     output_dir="~/nemo_curator/data/curated",
     images_per_tar=1000,
@@ -174,16 +174,19 @@ After running the pipeline, you'll have:
 
 ```text
 ~/nemo_curator/data/curated/
-├── 00000.tar              # Curated images (first shard)
-├── 00001.tar              # Curated images (second shard)
-├── ...                    # Additional shards as needed
+├── images-{hash}-000000.tar     # Curated images (first shard)
+├── images-{hash}-000000.parquet # Metadata for corresponding tar
+├── images-{hash}-000001.tar     # Curated images (second shard)
+├── images-{hash}-000001.parquet # Metadata for corresponding tar
+├── ...                          # Additional shards as needed
 ```
 
-Each output tar file contains:
+**Output Format Details:**
 
-* **Images**: High-quality `.jpg` files that passed both aesthetic and NSFW filtering
-* **Metadata**: Corresponding `.txt` (captions) and `.json` (metadata with scores) files
-* **Scores**: Each image has `aesthetic_score` and `nsfw_score` in its metadata
+* **Tar Files**: Contain high-quality `.jpg` files that passed both aesthetic and NSFW filtering
+* **Parquet Files**: Contain metadata for each corresponding tar file, including image paths, IDs, and processing scores
+* **Naming Convention**: Files use hash-based prefixes (e.g., `images-a1b2c3d4e5f6-000000.tar`) for uniqueness across distributed processing
+* **Scores**: Processing metadata includes `aesthetic_score` and `nsfw_score` stored in the Parquet files
 
 ## Alternative: Using the Complete Tutorial
 
@@ -195,7 +198,7 @@ wget -O ~/nemo_curator/image_curation_example.py https://raw.githubusercontent.c
 
 # Run with your data
 python ~/nemo_curator/image_curation_example.py \
-    --input-wds-dataset-dir ~/nemo_curator/data/webdataset \
+    --input-tar-dataset-dir ~/nemo_curator/data/tar_archives \
     --output-dataset-dir ~/nemo_curator/data/curated \
     --model-dir ~/nemo_curator/models \
     --aesthetic-threshold 0.5 \

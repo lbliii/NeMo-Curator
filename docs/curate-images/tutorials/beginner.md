@@ -67,7 +67,7 @@ from nemo_curator.stages.image.filters.nsfw_filter import ImageNSFWFilterStage
 from nemo_curator.stages.image.io.image_reader import ImageReaderStage
 from nemo_curator.stages.image.io.image_writer import ImageWriterStage
 
-INPUT_WDS_DIR = "/path/to/input/webdataset"
+INPUT_TAR_DIR = "/path/to/input/tar_archives"
 OUTPUT_DIR = "/path/to/output/dataset"
 MODEL_DIR = "/path/to/models"
 ```
@@ -101,7 +101,7 @@ pipeline.add_stage(FilePartitioningStage(
 
 ### Read Images
 
-Load images from WebDataset tar files and extract metadata.
+Load images from tar archives and extract metadata.
 
 ```python
 pipeline.add_stage(ImageReaderStage(
@@ -198,7 +198,7 @@ def create_image_curation_pipeline():
     """Create image curation pipeline with quality filtering."""
     
     # Define paths
-    INPUT_WDS_DIR = "/path/to/input/webdataset"
+    INPUT_TAR_DIR = "/path/to/input/tar_archives"
     OUTPUT_DIR = "/path/to/output/dataset" 
     MODEL_DIR = "/path/to/models"
     
@@ -270,26 +270,6 @@ The `model_inference_batch_size` parameter controls the number of images that th
 #### Memory Requirements and Actor Allocation
 
 For the embedding stage (which uses the most GPU memory), each actor requires 0.25 GPU allocation, corresponding to about 20GB of GPU memory on an 80GB GPU (0.25 × 80GB = 20GB). When adjusting batch sizes, ensure memory usage stays below this 20GB threshold per actor.
-
-#### Recommended Batch Sizes by GPU Memory
-
-- **High-memory GPUs (80+ GB)** like H100, A100 80GB, or B200:
-
-  ```python
-  model_inference_batch_size=512  # to 1024 for maximum throughput
-  ```
-
-- **Mid-range GPUs (24-48 GB)** like RTX 4090, A6000, RTX A5000:
-
-  ```python
-  model_inference_batch_size=32   # Default conservative setting
-  ```
-
-- **Lower-memory GPUs (16 GB or less)** like RTX 3080, RTX 4060:
-
-  ```python
-  model_inference_batch_size=16   # Prevent OOM errors
-  ```
 
 #### Performance vs Memory Trade-offs
 
