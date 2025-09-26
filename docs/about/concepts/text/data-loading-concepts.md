@@ -26,7 +26,7 @@ The system provides two primary readers for text data:
 Both readers support optimization through:
 
 - **Field selection** - Reading specified columns to reduce memory usage
-- **Partitioning control** - Using `blocksize` or `files_per_partition` to optimize distributed processing
+- **Partitioning control** - Using `blocksize` or `files_per_partition` to optimize `DocumentBatch` sizes during distributed processing
 - **Recommended block size** - Use ~128MB for optimal object store performance with smaller data chunks
 
 ```python
