@@ -59,14 +59,13 @@ Remove duplicate and near-duplicate content:
 
 Prepare the curated dataset for training:
 
-- **Blending/Shuffling**: Combine and randomize data sources
 - **Format Standardization**: Ensure consistent output format
 
 ## Infrastructure Foundation
 
 The entire pipeline runs on a robust, scalable infrastructure:
 
-- **Dask**: Distributed computing framework for parallelization
+- **Ray**: Distributed computing framework for parallelization
 - **RAPIDS**: GPU-accelerated data processing (cuDF, cuGraph, cuML)
 - **Flexible Deployment**: CPU and GPU acceleration support
 
