@@ -44,11 +44,27 @@ def corresponding_output_path(input_path: str) -> str:
 
 remaining_inputs = [f for f in input_files if corresponding_output_path(f) not in output_files]
 
-# Process remaining inputs
+# Process remaining inputs using Pipeline API
+from nemo_curator.pipeline import Pipeline
+from nemo_curator.stages.text.io.reader import JsonlReader
+from nemo_curator.stages.text.io.writer import JsonlWriter
+
 for chunk in chunk_list(remaining_inputs, chunk_size=64):
-    dataset = DocumentDataset.read_json(chunk, add_filename=True)
-    processed = my_processor(dataset)
-    processed.to_json("output_directory/", write_to_filename=True)
+    pipeline = Pipeline(name=f"resumable_chunk_{hash(tuple(chunk))}")
+    
+    # Read chunk files
+    reader = JsonlReader(file_paths=chunk, fields=["text", "id"])
+    pipeline.add_stage(reader)
+    
+    # Add your processing stages
+    pipeline.add_stage(my_processor)
+    
+    # Write results
+    writer = JsonlWriter(path="output_directory/", write_to_filename=True)
+    pipeline.add_stage(writer)
+    
+    # Execute pipeline
+    pipeline.run()
 ```
 
 ### 2. Batch processing of remaining files
@@ -60,9 +76,16 @@ def chunk_list(items: list[str], chunk_size: int) -> list[list[str]]:
     return [items[i:i+chunk_size] for i in range(0, len(items), chunk_size)]
 
 for file_batch in chunk_list(remaining_inputs, chunk_size=64):
-    dataset = DocumentDataset.read_json(file_batch, add_filename=True)
-    out = my_processor(dataset)
-    out.to_json("output_directory/", write_to_filename=True)
+    pipeline = Pipeline(name=f"batch_{hash(tuple(file_batch))}")
+    
+    reader = JsonlReader(file_paths=file_batch, fields=["text", "id"])
+    pipeline.add_stage(reader)
+    pipeline.add_stage(my_processor)
+    
+    writer = JsonlWriter(path="output_directory/", write_to_filename=True)
+    pipeline.add_stage(writer)
+    
+    pipeline.run()
 ```
 
 ## How Resumable Processing Works

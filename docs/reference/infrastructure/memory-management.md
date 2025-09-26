@@ -70,12 +70,12 @@ dedup = ExactDeduplication(
 
 #### Classification
 ```python
-from nemo_curator.classifiers import QualityClassifier
+from nemo_curator.stages.text.classifiers import QualityClassifier
 
 # Manage classifier memory
 classifier = QualityClassifier(
-    batch_size=32,  # Smaller batches use less memory
-    device="cuda:0"  # Control GPU device
+    model_inference_batch_size=32,  # Smaller batches use less memory
+    max_chars=1000  # Limit text length to reduce memory usage
 )
 ```
 
