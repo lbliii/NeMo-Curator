@@ -43,18 +43,26 @@ or another installed filesystem protocol. The iterator resolves the filesystem
 with `fsspec.url_to_fs`, opens the file in binary read mode, and passes that
 stream to `warcio`. It does not download the whole file into memory first.
 
-The filename portion of the input becomes `source_id`. Each response record
-produces these fields:
+The final slash-delimited component of the input becomes `source_id` exactly
+as provided. Query strings and fragments are retained, so avoid query-bearing
+URLs (including presigned URLs) when you need a stable source identifier. Each
+response record produces these fields:
 
 | Field | Value |
 | --- | --- |
 | `url` | The WARC-Target-URI header |
 | `warc_id` | The WARC-Record-ID without its surrounding `urn:uuid:` marker and angle brackets |
-| `source_id` | The input path's basename |
+| `source_id` | The final slash-delimited component of the input, including any query string or fragment |
 | `content` | The response body as bytes |
 
 Pass filesystem-specific credentials and options with `storage_options`. For
-example, an S3 URL can use a configured profile and region:
+example, install the S3 filesystem implementation before using an S3 URL:
+
+```bash
+pip install s3fs
+```
+
+An S3 URL can then use a configured profile and region:
 
 ```python
 from nemo_curator.stages.text.download.common_crawl.warc_iterator import CommonCrawlWarcIterator
