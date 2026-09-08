@@ -34,6 +34,68 @@ For pipelines that already have WARC metadata (such as `warc_filename`, `warc_re
 - **HTTPS** (default): Fetches records from `data.commoncrawl.org` using the `requests` library. No AWS credentials required.
 - **S3**: Fetches records from the `commoncrawl` S3 bucket using `boto3` range requests. Activate with `use_s3=True` or by setting the `CC_USE_S3=1` environment variable. Credentials are resolved through boto3's standard chain (environment variables, `~/.aws/config`, instance profiles).
 
+### WARC File Iterator
+
+Use `CommonCrawlWarcIterator` when you have complete WARC files and want to
+stream every response record. It accepts a local path or any URL supported by
+[fsspec](https://filesystem-spec.readthedocs.io/), such as `https://`, `s3://`,
+or another installed filesystem protocol. The iterator resolves the filesystem
+with `fsspec.url_to_fs`, opens the file in binary read mode, and passes that
+stream to `warcio`. It does not download the whole file into memory first.
+
+The filename portion of the input becomes `source_id`. Each response record
+produces these fields:
+
+| Field | Value |
+| --- | --- |
+| `url` | The WARC-Target-URI header |
+| `warc_id` | The WARC-Record-ID without its surrounding `urn:uuid:` marker and angle brackets |
+| `source_id` | The input path's basename |
+| `content` | The response body as bytes |
+
+Pass filesystem-specific credentials and options with `storage_options`. For
+example, an S3 URL can use a configured profile and region:
+
+```python
+from nemo_curator.stages.text.download.common_crawl.warc_iterator import CommonCrawlWarcIterator
+
+iterator = CommonCrawlWarcIterator(
+    storage_options={
+        "profile": "commoncrawl",
+        "client_kwargs": {"region_name": "us-east-1"},
+    }
+)
+
+for record in iterator.iterate("s3://my-bucket/path/to/file.warc.gz"):
+    print(record["url"], record["warc_id"], len(record["content"]))
+```
+
+For local files, pass a filesystem path and omit `storage_options`:
+
+```python
+iterator = CommonCrawlWarcIterator()
+records = iterator.iterate("./downloads/example.warc.gz")
+first_record = next(records)
+```
+
+Remote access requires the corresponding fsspec implementation and working
+network access. Object stores also require credentials accepted by that
+filesystem; configure them through its normal environment or profile
+mechanism, or pass them in `storage_options`. The iterator does not define a
+timeout or retry policy. Errors while opening or reading a file are raised by
+the filesystem/stream. When used by Curator's iterate-extract stage, a file
+error is logged and that file is skipped. Errors while parsing an individual
+record are logged and iteration attempts to continue with the next record, so
+a malformed record can be omitted without discarding previously yielded
+records. A failed remote read is not automatically retried; rerun the stage or
+provide retry behavior through the filesystem or job orchestration layer.
+
+This iterator is different from `CommonCrawlWARCReader`: the iterator reads a
+complete file sequentially through fsspec, while the reader uses WARC metadata
+and HTTP or S3 byte-range requests to fetch individual records. Use the reader
+for indexed offset/length lookups; do not pass those lookup columns to the
+iterator.
+
 ## Before You Start
 
 Choose your download method and ensure you have the prerequisites:
@@ -194,7 +256,7 @@ The pipeline processes Common Crawl data through several stages, ultimately prod
 ```json
 {
   "url": "http://example.com/page.html",
-  "warc_id": "a515a7b6-b6ec-4bed-998b-8be2f86f8eac", 
+  "warc_id": "a515a7b6-b6ec-4bed-998b-8be2f86f8eac",
   "source_id": "CC-MAIN-20201123153826-20201123183826-00000.warc.gz",
   "language": "ENGLISH",
   "text": "Extracted web page content..."
@@ -242,7 +304,7 @@ cc_stage = CommonCrawlDownloadExtractStage(
 
 # Or use Trafilatura with custom parameters
 cc_stage = CommonCrawlDownloadExtractStage(
-    start_snapshot="2020-50", 
+    start_snapshot="2020-50",
     end_snapshot="2020-50",
     download_dir="./downloads",
     html_extraction=TrafilaturaExtractor(
@@ -265,7 +327,7 @@ stop_lists = {
 
 cc_stage = CommonCrawlDownloadExtractStage(
     start_snapshot="2020-50",
-    end_snapshot="2020-50", 
+    end_snapshot="2020-50",
     download_dir="./downloads",
     stop_lists=stop_lists
 )
