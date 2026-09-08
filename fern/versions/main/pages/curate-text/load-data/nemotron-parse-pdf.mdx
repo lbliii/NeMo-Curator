@@ -30,6 +30,7 @@ Choose your PDF source and confirm the prerequisites:
 - **GPU**: Required. Nemotron-Parse runs on GPU via vLLM (recommended) or Hugging Face Transformers.
 - **vLLM**: Strongly recommended for throughput. Falls back to HF Transformers if `backend="hf"` is set.
 - **`pypdfium2`**: Required Python dependency for PDF rendering. Installed automatically with the `interleaved_cpu` or `interleaved_cuda12` extras (e.g., `uv sync --extra interleaved_cuda12`).
+- **OpenCV**: Required for PDF rendering plus the postprocessing color conversion and resizing paths. Install the optional extra with `uv pip install "nemo-curator[cv2]"` (or add `--extra cv2` to a source checkout).
 - **Manifest**: A JSONL file listing the PDFs to process. Each line should specify the PDF location relative to the source directory you choose.
 
 ### Choosing a PDF Source
