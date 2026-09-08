@@ -86,6 +86,14 @@ model_stage = ModelStage(model_path="path/to/model").with_(resources=Resources(g
 
 This is useful for inference stages where the model fits in a fraction of GPU memory, allowing you to increase parallelism without requiring more hardware. Note that `gpu_memory_gb` sets GPU memory for a single GPU.
 
+### Ray Actor Pool Sizing
+
+`RayActorPoolExecutor` sizes each stage from a CPU and GPU availability snapshot. It divides available CPUs by `stage.resources.cpus` and available GPUs by `stage.resources.gpus` (when a requirement is greater than zero), then uses the smaller limit. Automatic sizing is also bounded by the number of task batches. A positive `stage.num_workers()` requests that exact count when it fits; otherwise the executor caps the count to the available resource limit and logs a warning.
+
+Between stages, the executor keeps a high-water baseline: it retains the maximum CPU and GPU availability observed after subtracting `reserved_cpus` and `reserved_gpus`. It uses that baseline to determine the intended pool, then waits for the complete pool to fit the current snapshot. This accounts for temporary resource dips while Ray asynchronously cleans up actors from the preceding stage. A timeout raises an error; it does not create a smaller partial pool.
+
+For this wait behavior, `resource_wait_timeout_s` defaults to `5.0` seconds and must be non-negative. `resource_wait_interval_s` defaults to `0.2` seconds and must be positive. The executor polls both CPU and GPU availability at that interval. Set `ignore_head_node=True` to exclude the head node from the availability calculation; reservations and head-node exclusion apply to both baseline and polling snapshots.
+
 ## Best Practices
 
 - **Start with defaults.** Most stages have sensible default resource declarations. Override only when you observe resource contention or underutilization.

@@ -67,19 +67,19 @@ executor = XennaExecutor(
         # Execution mode: 'streaming' (default) or 'batch'
         # Batch processes all data for a stage before moving to the next; streaming runs stages concurrently.
         "execution_mode": "streaming",
-        
+
         # Logging interval: seconds between status logs (default: 60)
         # Controls how frequently progress updates are printed
         "logging_interval": 60,
-        
+
         # Ignore failures: whether to continue on failures (default: False)
         # When True, the pipeline continues execution instead of failing fast when stages raise errors.
         "ignore_failures": False,
-        
+
         # CPU allocation percentage: ratio of CPU to allocate (0-1, default: 0.95)
         # Fraction of available CPU resources to use for pipeline execution
         "cpu_allocation_percentage": 0.95,
-        
+
         # Autoscale interval: seconds between auto-scaling checks (default: 180)
         # How often to run the stage auto-scaler.
         "autoscale_interval_s": 180,
@@ -134,8 +134,34 @@ results = pipeline.run(executor)
 | `ignore_head_node` | `bool` | `False` | Exclude head node from task scheduling |
 | `show_progress` | `bool` | `True` | Display tqdm progress bars during stage execution and shuffle inserts |
 | `progress_interval` | `float` | `10.0` | Minimum interval in seconds between progress bar updates |
+| `resource_wait_timeout_s` | `float` | `5.0` | Maximum time to wait for the intended actor pool between stages |
+| `resource_wait_interval_s` | `float` | `0.2` | Interval in seconds between resource availability checks |
 
 A positive stage `num_workers()` requests an exact actor count when resources fit. If fewer actors fit, this executor warns and caps the request to available CPU/GPU capacity. See [Stage Worker Sizing](/reference/infra/stage-worker-sizing#ray-actor-pool-resource-capping).
+
+#### Inter-stage Resource Waits
+
+Before the first stage, the executor records the CPU and GPU capacity currently available to the actor pool. Before every stage, it refreshes that snapshot as a high-water mark, retaining the maximum capacity observed so far. This avoids sizing a stage from a temporary dip while Ray finishes cleaning up actors from the previous stage.
+
+The intended actor count is calculated once from that high-water mark, the stage's CPU and GPU requirements, the number of tasks, and any `num_workers()` setting. The executor then polls current availability until the complete intended pool fits. Each poll checks both CPU and GPU capacity, logs current and required values, and sleeps for `resource_wait_interval_s`; the final sleep is shortened when it would pass the timeout.
+
+The defaults are a five-second timeout and a 0.2-second polling interval. Configure them through the executor's `config` dictionary:
+
+```python
+executor = RayActorPoolExecutor(
+    config={
+        "resource_wait_timeout_s": 30.0,
+        "resource_wait_interval_s": 0.5,
+        "reserved_cpus": 2.0,
+        "reserved_gpus": 1.0,
+    },
+    ignore_head_node=True,
+)
+```
+
+`resource_wait_timeout_s` must be non-negative, and `resource_wait_interval_s` must be greater than zero. Values are converted to floating-point numbers when execution starts. If the complete intended pool does not fit before the deadline, execution raises `TimeoutError` with the stage name and required versus available CPU and GPU values. The executor does not fall back to a smaller partial pool.
+
+The resource snapshot honors `reserved_cpus` and `reserved_gpus` by subtracting them from availability, never below zero. When `ignore_head_node=True`, the head node's total CPU and GPU capacity is also excluded from the snapshot. Ray's asynchronous actor termination can therefore make resources appear unavailable briefly between stages; the polling window is intended to cover that cleanup period.
 
 <Accordion title="Example: Fuzzy Deduplication">
 
@@ -207,7 +233,7 @@ For worker counts, resources, and backend-specific `with_()` overrides, see [Sta
 Ray-based executors provide enhanced scalability and performance for large-scale data processing tasks. These executors are beneficial for:
 
 - **Large-scale classification tasks**: Distributed inference across multi-GPU setups
-- **Deduplication workflows**: Parallel processing of document similarity computations  
+- **Deduplication workflows**: Parallel processing of document similarity computations
 - **Resource-intensive stages**: Automatic scaling based on computational demands
 
 ## Choosing a Backend

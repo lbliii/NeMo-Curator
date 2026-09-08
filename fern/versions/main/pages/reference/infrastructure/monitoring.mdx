@@ -102,3 +102,16 @@ To stop Prometheus and Grafana, use the PID files written to your metrics direct
 kill $(cat /shared/metrics/user_a/prometheus.pid)
 kill $(cat /shared/metrics/user_a/grafana.pid)
 ```
+
+## Troubleshoot Ray Actor Pool Resource Waits
+
+When `RayActorPoolExecutor` moves between stages, watch the executor logs for messages such as `Waiting for resources for <stage>` and `Timed out ... waiting for the intended <N>-actor pool`. These messages report the current and required CPU and GPU capacity. A successful wait is followed by a log that the actor pool is being created.
+
+The executor sizes the intended pool from a high-water resource baseline, then waits for that complete pool to become available. A temporary dip can occur while Ray asynchronously finishes terminating actors from the prior stage. If the wait reaches `resource_wait_timeout_s` (default `5.0` seconds), execution raises `TimeoutError`; it does not proceed with a smaller partial pool.
+
+Use the following checks when a wait times out:
+
+- Confirm that the cluster has enough CPU and GPU capacity for the stage's per-actor `Resources` multiplied by the intended actor count.
+- Check whether `reserved_cpus` or `reserved_gpus` leaves too little capacity after reservations.
+- If `ignore_head_node=True`, account for the head node's CPU and GPU capacity being excluded.
+- Increase `resource_wait_timeout_s` when actor termination or cluster scheduling needs more time. Increase `resource_wait_interval_s` to reduce polling frequency; it must remain greater than zero. A timeout of zero performs an immediate availability check.
