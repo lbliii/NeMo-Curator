@@ -94,10 +94,12 @@ from nemo_curator.stages.interleaved.io import InterleavedLanceReader
 reader = InterleavedLanceReader(path="./interleaved.lance")
 ```
 
-Keep the required interleaved columns when selecting `fields`. Refer to the text Lance reader for
-dataset and storage options.
+Keep the required interleaved columns when selecting `fields`. Refer to the [text Lance reader](/curate-text/load-data/read-existing)
+for dataset and storage options.
 
 ### Reader Parameters
+
+The Parquet and WebDataset readers use these parameters:
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
