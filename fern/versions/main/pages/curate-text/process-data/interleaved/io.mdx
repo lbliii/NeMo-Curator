@@ -85,8 +85,9 @@ Configurable file extensions for image, JSON, and texts members (`image_extensio
 ### Lance Reader
 
 `InterleavedLanceReader` reads rows using the interleaved schema into validated
-`InterleavedBatch` objects and groups them by `sample_id`. Install the optional Lance dependency
-with `pip install "nemo-curator[lance]"`.
+`InterleavedBatch` objects. Input rows for each `sample_id` must be consecutive. The reader does
+not reorder rows, and it does not regroup samples across fragment partitions. Install the optional
+Lance dependency with `pip install "nemo-curator[lance]"`.
 
 ```python
 from nemo_curator.stages.interleaved.io import InterleavedLanceReader
