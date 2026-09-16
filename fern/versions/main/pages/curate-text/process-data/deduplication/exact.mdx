@@ -132,7 +132,7 @@ result = removal_workflow.run()
 - `id_generator_path` not required
 </Accordion>
 
-To control the fields written by `TextDuplicatesRemovalWorkflow`, use `output_fields`. The default `drop_id_field=False` preserves the deduplication ID. Set it to `True` to omit the ID. The workflow rejects configurations that include the ID in `output_fields` while dropping it.
+To control the fields written by `TextDuplicatesRemovalWorkflow`, use `output_fields`. Keep `drop_id_field=False` (the default) and include `id_field` when specifying `output_fields` to retain the ID. Set it to `True` to omit the ID. The workflow rejects configurations that include the ID in `output_fields` while dropping it.
 
 ## Output Format
 
