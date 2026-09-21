@@ -7,7 +7,7 @@ Hands-on tutorials for curating data across all modalities with NeMo Curator. Co
 **New to NeMo Curator?**
 
 1. [Install and run a modality quickstart](https://docs.nvidia.com/nemo/curator/latest/get-started/) from the [documentation](https://docs.nvidia.com/nemo/curator/latest/)
-2. Read [Core Concepts](https://docs.nvidia.com/nemo/curator/latest/about/concepts) to learn the pipeline architecture
+2. Read [Core Concepts](https://docs.nvidia.com/nemo/curator/latest/about/concepts/index.html) to learn the pipeline architecture
 3. Run [`quickstart.py`](quickstart.py) for a hands-on example of Tasks, Stages, and Pipelines
 
 ## Tutorials by Modality
