@@ -25,12 +25,12 @@ checkpoint path for each independent run because a completed checkpoint is skipp
 from nemo_curator.stages.text.io.writer import LanceWriter, commit_lance_checkpoint
 
 dataset_path = "./curated.lance"
-checkpoint_path = "./curated.lance-checkpoint"
+commit_path = "./curated.lance-commit"
 
-pipeline.add_stage(LanceWriter(path=dataset_path, commit_path=checkpoint_path))
+pipeline.add_stage(LanceWriter(path=dataset_path, commit_path=commit_path))
 pipeline.run()
 
-version = commit_lance_checkpoint(dataset_path, checkpoint_path)
+version = commit_lance_checkpoint(dataset_path, commit_path)
 print(f"Published Lance dataset version {version}")
 ```
 
