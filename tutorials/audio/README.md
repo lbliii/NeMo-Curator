@@ -32,24 +32,25 @@ PIPELINE COMPLETE
   [alm_data_overlap] output_windows (after overlap): 25
 ```
 
-**With a GPU?** Try the FLEURS pipeline — it auto-downloads data and runs ASR:
+**With a GPU?** Run FastConformer on the bundled two-file manifest:
 
 ```bash
 uv sync --extra audio_cuda12 && source .venv/bin/activate
 
-python tutorials/audio/fleurs/main.py \
-  --config-path . --config-name pipeline \
-  raw_data_dir=./example_audio/fleurs \
-  lang=en_us \
-  stages.1.model_name=nvidia/parakeet-tdt-0.6b-v2 \
-  stages.1.resources.gpus=1
+python nemo_curator/config/run.py \
+  --config-path ../../tutorials/audio/nemo_fastconformer \
+  manifest_path=tests/fixtures/audio/tagging/sample_input.jsonl
 ```
 
 ## Which tutorial should I use?
 
 | I want to... | Tutorial | GPU | Data |
 |---|---|---|---|
+| Transcribe a manifest with NeMo FastConformer through the shared ASR adapter | [**nemo_fastconformer/**](nemo_fastconformer/) | Recommended (1 per ASR actor) | Bundled sample or your own manifest |
 | Curate multilingual ASR data (download, transcribe, filter by WER) | [**fleurs/**](fleurs/) | Yes (~4 GB VRAM) | Auto-downloads from HuggingFace |
+| Transcribe a manifest in-process with Qwen3-Omni and vLLM | [**qwen_omni_inprocess/**](qwen_omni_inprocess/) | Yes (2 per ASR actor) | Bundled sample or your own manifest |
+| Transcribe a manifest with Qwen3-ASR through the generic ASR adapter | [**qwen_asr/**](qwen_asr/) | Yes (1 per ASR actor) | Bundled sample or your own manifest |
+| Transcribe a manifest with Faster-Whisper Large-v3 through the generic ASR adapter | [**faster_whisper/**](faster_whisper/) | Recommended (1 per ASR actor) or CPU | Bundled sample or your own manifest |
 | Build training windows for Audio Language Models from diarized manifests | [**alm/**](alm/) | No (CPU-only) | Bundled sample fixtures |
 | Label raw audio for TTS/ASR/ALM via diarization, alignment, and quality metrics | [**tagging/**](tagging/) | Yes (~8 GB VRAM) | Bring your own audio manifest |
 | Evaluate speaker diarization (DER) on a benchmark dataset | [**callhome_diar/**](callhome_diar/) | Yes (~8 GB VRAM) | Requires [LDC license](https://catalog.ldc.upenn.edu/LDC97S42) |
@@ -60,7 +61,11 @@ python tutorials/audio/fleurs/main.py \
 
 | Tutorial | Auto-download | Size | Notes |
 |---|---|---|---|
+| `nemo_fastconformer/` | Model only | Two bundled audio files | Downloads the configured NeMo ASR checkpoint on first use |
 | `fleurs/` | Yes | ~50 MB per language split | Downloads from HuggingFace `google/fleurs` |
+| `qwen_omni_inprocess/` | Model only | Two bundled audio files | Downloads Qwen3-Omni weights on first use |
+| `qwen_asr/` | Model only | Two bundled audio files | Downloads Qwen3-ASR weights on first use |
+| `faster_whisper/` | Model only | Two bundled audio files | Downloads the configured Faster-Whisper checkpoint on first use |
 | `alm/` | N/A | Bundled | Uses `tests/fixtures/audio/alm/sample_input.jsonl` (5 entries) |
 | `tagging/` | No | Varies | Bring your own NeMo-style JSONL manifest with audio paths |
 | `callhome_diar/` | No | ~1 GB | Requires LDC membership and license ([LDC97S42](https://catalog.ldc.upenn.edu/LDC97S42)) |
@@ -69,16 +74,25 @@ python tutorials/audio/fleurs/main.py \
 
 ## System dependencies
 
-Audio pipelines require `ffmpeg` for resampling and format conversion. Install it before running any audio tutorial:
+Most audio pipelines use the `ffmpeg` command-line tool for resampling and format conversion. The audio Python extras do not install it. Without root access, install FFmpeg in a user-owned Conda or Micromamba prefix:
 
 ```bash
-# Ubuntu / Debian
-sudo apt-get install -y ffmpeg
+conda create -y -p /path/to/curator-ffmpeg -c conda-forge ffmpeg
+# Or: micromamba create -y -p /path/to/curator-ffmpeg -c conda-forge ffmpeg
+export PATH="/path/to/curator-ffmpeg/bin:$PATH"
+command -v ffmpeg
+ffmpeg -hide_banner -version
 ```
+
+For multi-node Ray or Xenna runs, make FFmpeg available on every executor node and configure `PATH` before starting the cluster so workers inherit it. A site-provided FFmpeg environment module is also suitable. See the [installation guide](https://docs.nvidia.com/nemo/curator/latest/get-started/installation.html#install-ffmpeg-and-encoders-required-for-video) for the system-wide video build and verification details.
 
 | Tutorial | System packages | Pip extras |
 |---|---|---|
+| `nemo_fastconformer/` | `ffmpeg` | `audio_cpu` or `audio_cuda12` |
 | `fleurs/` | `ffmpeg` | `audio_cpu` or `audio_cuda12` |
+| `qwen_omni_inprocess/` | `ffmpeg` | `audio_cuda12`, `vllm` |
+| `qwen_asr/` | `ffmpeg` | `audio_cuda12`, `vllm` |
+| `faster_whisper/` | `ffmpeg` | `audio_cuda12` (GPU) or `audio_cpu` (CPU) |
 | `alm/` | `ffmpeg` | `audio_cpu` |
 | `tagging/` | `ffmpeg` | `audio_cuda12` |
 | `callhome_diar/` | `ffmpeg`, `sox` | `audio_cuda12` |
