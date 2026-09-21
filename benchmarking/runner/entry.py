@@ -31,6 +31,38 @@ _curator_repo_path = Path(__file__).parent.parent.parent
 _entry_script_base_path = _curator_repo_path / "benchmarking/scripts"
 
 
+def normalize_environment(environment: dict[str, Any] | None, context: str) -> dict[str, str]:
+    """Validate an environment config block and return values suitable for subprocess."""
+    if environment is None:
+        return {}
+    if not isinstance(environment, dict):
+        msg = f"Invalid environment for {context}: expected dict, got {type(environment).__name__}"
+        raise TypeError(msg)
+
+    normalized = {}
+    for key, value in environment.items():
+        if not isinstance(key, str) or not key:
+            msg = f"Invalid environment variable name for {context}: {key!r}; must be a non-empty string."
+            raise ValueError(msg)
+        if "=" in key:
+            msg = f"Invalid environment variable name for {context}: {key!r}; cannot contain '='."
+            raise ValueError(msg)
+        if "\0" in key:
+            msg = f"Invalid environment variable name for {context}: {key!r}; cannot contain NUL."
+            raise ValueError(msg)
+        if not isinstance(value, str):
+            msg = (
+                f"Invalid environment variable value for {context}.{key}: "
+                f"{value!r}; must be a string. Quote YAML values that should be strings."
+            )
+            raise TypeError(msg)
+        if "\0" in value:
+            msg = f"Invalid environment variable value for {context}.{key}: cannot contain NUL."
+            raise ValueError(msg)
+        normalized[key] = value
+    return normalized
+
+
 @dataclass
 class Entry:
     name: str
@@ -47,12 +79,27 @@ class Entry:
     object_store_size: int | float | str | None = None
     # If set, overrides the session-level delete_scratch setting for this entry
     delete_scratch: bool | None = None
+    # If set, overrides the session-level gpu_mem_use_warning_threshold for this entry
+    gpu_mem_use_warning_threshold: float | None = None
+    # Environment variables to add to this benchmark subprocess. Session-level
+    # values are applied before entry-level values, so entries override by name.
+    environment: dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:  # noqa: C901, PLR0912
         """Post-initialization checks and updates for dataclass."""
+        self.environment = normalize_environment(self.environment, f"entry '{self.name}'")
+
         # Process object_store_size by converting values representing fractions of system memory to bytes.
         if isinstance(self.object_store_size, float):
             self.object_store_size = int(get_total_memory_bytes() * self.object_store_size)
+
+        # Validate the warning threshold range, if set.
+        if self.gpu_mem_use_warning_threshold is not None and not (0 <= self.gpu_mem_use_warning_threshold <= 1):
+            msg = (
+                f"Invalid gpu_mem_use_warning_threshold for entry '{self.name}': "
+                f"{self.gpu_mem_use_warning_threshold}; must be between 0 and 1 inclusive."
+            )
+            raise ValueError(msg)
 
         # Convert the sink_data list of dicts to a dict of dicts for easier lookup with key from "name".
         # sink_data typically starts as a list of dicts from reading YAML, like this:
@@ -140,7 +187,7 @@ class Entry:
         if self.script:
             script = self.script
             script = self.substitute_reserved_placeholders(script, session_entry_path, dataset_resolver)
-            script = self.substitute_container_or_host_paths(script, path_resolver, allow_other_placeholders=False)
+            script = self.substitute_container_or_host_paths(script, path_resolver)
 
             # Using the Path "/" operator means that if script is an abs path here then
             # self.script_base_path will be ignored automatically.
@@ -148,7 +195,7 @@ class Entry:
             cmd = f"python {script_path} {self.args or ''}"
 
             cmd = self.substitute_reserved_placeholders(cmd, session_entry_path, dataset_resolver)
-            cmd = self.substitute_container_or_host_paths(cmd, path_resolver, allow_other_placeholders=False)
+            cmd = self.substitute_container_or_host_paths(cmd, path_resolver)
         else:
             msg = f"Entry {self.name} must specify a script to run"
             raise ValueError(msg)
@@ -159,30 +206,22 @@ class Entry:
         return self.sink_data.get(sink_name, {})
 
     @staticmethod
-    def substitute_container_or_host_paths(
-        cmd: str, path_resolver: PathResolver, allow_other_placeholders: bool = True
-    ) -> str:
+    def substitute_container_or_host_paths(cmd: str, path_resolver: PathResolver) -> str:
         """
         Substitute paths in the command string that are intended to be resolved by PathResolver.
 
         This replaces placeholders in the form {path_name} with their corresponding host or container path.
-        If the placeholder does not correspond to a known path (as defined in PathResolver), it is left unchanged.
-        If allow_other_placeholders is False, then ValueError is raised if the placeholder does not correspond to a recognized path type.
+        ValueError is raised if a placeholder does not correspond to a name defined in PathResolver.
         """
         path_pattern = re.compile(r"\{([a-zA-Z_][a-zA-Z0-9_]*)\}")
 
         def _replace_path(match: re.Match[str]) -> str:
             path_name = match.group(1).strip()
-            # PathResolver.resolve() only matches specific paths intended to be mapped between host and container.
-            # ValueError is raised if the placeholder (word inside {}) is not one of those paths.
             try:
                 return str(path_resolver.resolve(path_name))
             except ValueError as e:
-                if allow_other_placeholders:
-                    return match.group(0)
-                else:
-                    msg = f"Unknown path placeholder: {path_name}"
-                    raise ValueError(msg) from e
+                msg = f"Unknown path placeholder: {path_name}"
+                raise ValueError(msg) from e
 
         return path_pattern.sub(_replace_path, cmd)
 

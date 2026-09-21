@@ -39,7 +39,7 @@ from data_designer.interface import DataDesigner
 
 
 def _model_configs() -> list:
-    return [dd.ModelConfig(alias="test_model", model="test/model")]
+    return [dd.ModelConfig(alias="test_model", model="test/model", provider="openai")]
 
 
 def _make_stage(**kwargs: object) -> NDDBaseSyntheticStage:
@@ -143,10 +143,12 @@ class TestNDDBaseSyntheticStage:
         stage = _make_stage()
         stage.setup()
 
-        output_df = pd.DataFrame([
-            {"text": "a", _FORMATTED_PROMPT_COL: "Rephrase: a", "result": "out_a"},
-            {"text": "b", _FORMATTED_PROMPT_COL: "Rephrase: b", "result": "out_b"},
-        ])
+        output_df = pd.DataFrame(
+            [
+                {"text": "a", _FORMATTED_PROMPT_COL: "Rephrase: a", "result": "out_a"},
+                {"text": "b", _FORMATTED_PROMPT_COL: "Rephrase: b", "result": "out_b"},
+            ]
+        )
         stage.data_designer.preview = MagicMock(
             return_value=PreviewResults(config_builder=stage.config_builder, dataset=output_df)
         )
@@ -156,14 +158,12 @@ class TestNDDBaseSyntheticStage:
         batch = DocumentBatch(
             data=pd.DataFrame([{"text": "a"}, {"text": "b"}]),
             dataset_name="ds",
-            task_id="t1",
             _metadata=original_metadata,
             _stage_perf=original_stage_perf,
         )
         out = stage.process(batch)
 
         assert isinstance(out, DocumentBatch)
-        assert out.task_id == "t1_DataDesignerStage"
         assert out.dataset_name == "ds"
         assert out.data["result"].tolist() == ["out_a", "out_b"]
         assert _FORMATTED_PROMPT_COL not in out.data.columns
@@ -179,7 +179,7 @@ class TestNDDBaseSyntheticStage:
         stage.data_designer.preview = MagicMock(
             return_value=PreviewResults(config_builder=stage.config_builder, dataset=output_df)
         )
-        batch = DocumentBatch(data=pd.DataFrame([{"text": "hello"}]), dataset_name="ds", task_id="t1")
+        batch = DocumentBatch(data=pd.DataFrame([{"text": "hello"}]), dataset_name="ds")
         out = stage.process(batch)
 
         assert isinstance(out, DocumentBatch)
@@ -215,7 +215,7 @@ class TestNDDBaseSyntheticStage:
         )
         stage.setup()
 
-        batch = DocumentBatch(data=pd.DataFrame([{"text": "hello"}]), dataset_name="ds", task_id="t1")
+        batch = DocumentBatch(data=pd.DataFrame([{"text": "hello"}]), dataset_name="ds")
         out = stage.process(batch)
 
         assert isinstance(out, DocumentBatch)
@@ -267,9 +267,7 @@ class TestNDDBaseSyntheticStagePipelineIntegration:
             description="NDDBaseSyntheticStage via pipeline.run()",
             stages=[stage],
         )
-        initial_tasks = [
-            DocumentBatch(data=pd.DataFrame([{"text": "hello"}]), dataset_name="integration", task_id="e2e-1")
-        ]
+        initial_tasks = [DocumentBatch(data=pd.DataFrame([{"text": "hello"}]), dataset_name="integration")]
         executor = XennaExecutor(config={"execution_mode": "streaming"})
         result_tasks = pipeline.run(executor, initial_tasks=initial_tasks)
 

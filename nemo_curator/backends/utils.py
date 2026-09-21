@@ -12,18 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import math
 import os
 import time
+from collections.abc import Mapping
 from copy import deepcopy
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import ray
 from loguru import logger
-from ray.util.scheduling_strategies import NodeAffinitySchedulingStrategy
 
 from nemo_curator.backends.base import NodeInfo, WorkerMetadata
 from nemo_curator.stages.base import ProcessingStage
+from nemo_curator.utils.ray_utils import get_alive_ray_nodes, get_head_node_id, submit_on_each_node
 
 if TYPE_CHECKING:
     import loguru
@@ -121,35 +123,6 @@ def warn_on_env_var_override(existing_config: dict | None, merged_config: dict |
         )
 
 
-# Global variable to cache head node ID
-_HEAD_NODE_ID_CACHE = None
-
-
-def is_head_node(node: dict[str, Any]) -> bool:
-    """Check if a node is the head node."""
-    return "node:__internal_head__" in node.get("Resources", {})
-
-
-def get_head_node_id() -> str | None:
-    """Get the head node ID from the Ray cluster, with lazy evaluation and caching.
-
-    Returns:
-        The head node ID if a head node exists, otherwise None.
-    """
-    global _HEAD_NODE_ID_CACHE  # noqa: PLW0603
-
-    if _HEAD_NODE_ID_CACHE is not None:
-        return _HEAD_NODE_ID_CACHE
-
-    # Compute head node ID
-    for node in ray.nodes():
-        if is_head_node(node):
-            _HEAD_NODE_ID_CACHE = node["NodeID"]
-            return _HEAD_NODE_ID_CACHE
-
-    return None
-
-
 class RayStageSpecKeys(str, Enum):
     """String enum of different flags that define keys inside ray_stage_spec."""
 
@@ -159,7 +132,51 @@ class RayStageSpecKeys(str, Enum):
     IS_LSH_STAGE = "is_lsh_stage"
     IS_SHUFFLE_STAGE = "is_shuffle_stage"
     MAX_CALLS_PER_WORKER = "max_calls_per_worker"
+    MIN_WORKERS = "min_workers"
+    MAX_WORKERS = "max_workers"
+    INITIAL_WORKERS = "initial_workers"
     RAY_REMOTE_ARGS = "ray_remote_args"
+    RAY_NUM_CPUS = "ray_num_cpus"
+
+
+ACTOR_POOL_SIZING_KEYS = (
+    RayStageSpecKeys.MIN_WORKERS,
+    RayStageSpecKeys.MAX_WORKERS,
+    RayStageSpecKeys.INITIAL_WORKERS,
+)
+
+
+def get_configured_actor_pool_sizing_keys(ray_stage_spec: Mapping[str, object]) -> list[str]:
+    """Return actor-pool sizing keys configured in a Ray stage spec."""
+    stage_spec_keys = {key.value if isinstance(key, RayStageSpecKeys) else key for key in ray_stage_spec}
+    return [key.value for key in ACTOR_POOL_SIZING_KEYS if key.value in stage_spec_keys]
+
+
+def validate_num_workers_per_node(value: object, stage_name: str) -> int | float | None:
+    """Validate a per-node worker request."""
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        msg = f"num_workers_per_node for stage {stage_name} must be a positive number."
+        raise TypeError(msg)
+    if value <= 0 or (isinstance(value, float) and not math.isfinite(value)):
+        msg = f"num_workers_per_node for stage {stage_name} must be finite and > 0."
+        raise ValueError(msg)
+    return value
+
+
+def get_stage_num_workers_per_node(stage: ProcessingStage) -> int | float | None:
+    """Return a stage's validated per-node worker request."""
+    return validate_num_workers_per_node(stage.num_workers_per_node(), stage.name)
+
+
+def get_num_workers_for_nodes(num_workers_per_node: float, node_count: int, stage_name: str) -> int:
+    """Convert a per-node request to a finite cluster-wide worker count."""
+    total = num_workers_per_node * node_count
+    if isinstance(total, float) and not math.isfinite(total):
+        msg = f"num_workers_per_node for stage {stage_name} is too large for {node_count} nodes."
+        raise ValueError(msg)
+    return max(1, math.ceil(total))
 
 
 def get_worker_metadata_and_node_id() -> tuple[NodeInfo, WorkerMetadata]:
@@ -199,8 +216,23 @@ def get_available_cpu_gpu_resources(
     return (available_cpus, available_gpus)
 
 
+def check_total_gpu_capacity(gpus_needed: int, *, ignore_head_node: bool = False) -> None:
+    """Raise if the cluster doesn't have enough GPUs to satisfy aggregate demand.
+
+    Intended as a coarse pre-check before submitting placement groups: Ray's
+    PG scheduler can hang indefinitely on ``pg.ready()`` when demand exceeds
+    capacity, so a fast, explicit error with the actual numbers is friendlier
+    than waiting on a timeout.
+    """
+    _, available_gpus = get_available_cpu_gpu_resources(ignore_head_node=ignore_head_node)
+    available = int(available_gpus)
+    if gpus_needed > available:
+        msg = f"Need {gpus_needed} GPUs but cluster has {available} available."
+        raise RuntimeError(msg)
+
+
 @ray.remote
-def _setup_stage_on_node(stage: ProcessingStage, node_info: NodeInfo, worker_metadata: WorkerMetadata) -> None:
+def _setup_stage_on_node(stage: ProcessingStage) -> None:
     """Ray remote function to execute setup_on_node for a stage.
 
     This runs as a Ray remote task (not an actor).
@@ -210,29 +242,31 @@ def _setup_stage_on_node(stage: ProcessingStage, node_info: NodeInfo, worker_met
     We explicitly set the environment variable to spawn to prevent this.
     """
     os.environ.setdefault("VLLM_WORKER_MULTIPROC_METHOD", "spawn")
-    stage.setup_on_node(node_info, worker_metadata)
+    node_id = ray.get_runtime_context().get_node_id()
+    stage.setup_on_node(NodeInfo(node_id=node_id), WorkerMetadata(worker_id="", allocation=None))
 
 
 def execute_setup_on_node(stages: list[ProcessingStage], ignore_head_node: bool = False) -> None:
-    """Execute setup on node for a stage."""
-    head_node_id = get_head_node_id()
-    ray_tasks = []
-    for node in ray.nodes():
-        node_id = node["NodeID"]
-        node_info = NodeInfo(node_id=node_id)
-        worker_metadata = WorkerMetadata(worker_id="", allocation=None)
-        if ignore_head_node and node_id == head_node_id:
-            logger.info(f"Ignoring setup on head node {node_id}")
-            continue
+    """Execute ``setup_on_node`` for every stage on every alive Ray node.
 
+    All ``(stage, node)`` setup tasks are submitted up front and awaited with a single
+    ``ray.get``, so total wall-clock time is bounded by the slowest stage rather than
+    the sum of per-stage times — important when setup is heavy (model downloads, weight
+    loads) and stages don't contend for the same resources.
+    """
+    for node in get_alive_ray_nodes(ignore_head_node=ignore_head_node):
+        node_id = node["NodeID"]
         logger.info(f"Executing setup on node {node_id} for {len(stages)} stages")
 
-        for stage in stages:
-            ray_tasks.append(
-                _setup_stage_on_node.options(
-                    num_cpus=stage.resources.cpus if stage.resources is not None else 1,
-                    num_gpus=stage.resources.gpus if stage.resources is not None else 0,
-                    scheduling_strategy=NodeAffinitySchedulingStrategy(node_id=node_id, soft=False),
-                ).remote(stage, node_info, worker_metadata)
+    refs: list = []
+    for stage in stages:
+        refs.extend(
+            submit_on_each_node(
+                _setup_stage_on_node,
+                stage,
+                ignore_head_node=ignore_head_node,
+                num_cpus=stage.resources.cpus if stage.resources is not None else 1,
+                num_gpus=stage.resources.gpus if stage.resources is not None else 0,
             )
-    ray.get(ray_tasks)
+        )
+    ray.get(refs)

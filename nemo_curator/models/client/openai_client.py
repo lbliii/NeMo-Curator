@@ -17,6 +17,7 @@ from collections.abc import Iterable
 
 from loguru import logger
 from openai import AsyncOpenAI, OpenAI
+from openai.types.chat import ChatCompletion
 
 from nemo_curator.models.client.llm_client import AsyncLLMClient, ConversationFormatter, GenerationConfig, LLMClient
 
@@ -75,6 +76,9 @@ class OpenAIClient(LLMClient):
                 logger.warning(f"extra_kwargs will overwrite existing parameter(s): {overlapping}")
             create_kwargs.update(generation_config.extra_kwargs)
 
+        if not hasattr(self, "client"):
+            self.setup()
+
         response = self.client.chat.completions.create(**create_kwargs)
 
         return [choice.message.content for choice in response.choices]
@@ -119,6 +123,41 @@ class AsyncOpenAIClient(AsyncLLMClient):
         """
         Internal implementation of query_model without retry/concurrency logic.
         """
+        response = await self._query_model_response_impl(
+            messages=messages,
+            model=model,
+            conversation_formatter=conversation_formatter,
+            generation_config=generation_config,
+        )
+
+        return [choice.message.content for choice in response.choices]
+
+    async def query_model_response(
+        self,
+        *,
+        messages: Iterable,
+        model: str,
+        conversation_formatter: ConversationFormatter | None = None,
+        generation_config: GenerationConfig | dict | None = None,
+    ) -> ChatCompletion:
+        """Query a model and return its raw response with retry and concurrency control."""
+        return await self._execute_with_retries(
+            lambda: self._query_model_response_impl(
+                messages=messages,
+                model=model,
+                conversation_formatter=conversation_formatter,
+                generation_config=generation_config,
+            )
+        )
+
+    async def _query_model_response_impl(
+        self,
+        *,
+        messages: Iterable,
+        model: str,
+        conversation_formatter: ConversationFormatter | None = None,
+        generation_config: GenerationConfig | dict | None = None,
+    ) -> ChatCompletion:
         if conversation_formatter is not None:
             warnings.warn("conversation_formatter is not used in an AsyncOpenAIClient", stacklevel=2)
 
@@ -149,6 +188,7 @@ class AsyncOpenAIClient(AsyncLLMClient):
                 logger.warning(f"extra_kwargs will overwrite existing parameter(s): {overlapping}")
             create_kwargs.update(generation_config.extra_kwargs)
 
-        response = await self.client.chat.completions.create(**create_kwargs)
+        if not hasattr(self, "client"):
+            self.setup()
 
-        return [choice.message.content for choice in response.choices]
+        return await self.client.chat.completions.create(**create_kwargs)
