@@ -25,7 +25,11 @@ Curator's Common Crawl processing pipeline consists of four sequential stages:
 
 The pipeline outputs structured data that you can write to JSONL or Parquet files for further processing.
 
-`CommonCrawlWarcIterator` reads WARC files from local paths or fsspec-compatible remote paths such as `s3://`. Pass credentials and other filesystem settings through `storage_options`; install the filesystem backend required by the path, such as `s3fs` for S3.
+`CommonCrawlWarcIterator` reads WARC files from local paths or fsspec-compatible
+remote paths such as `s3://`. For S3 paths, install the filesystem backend with
+`pip install "fsspec[s3]"`. Pass credentials and other filesystem settings
+through `storage_options`; for a public bucket such as Common Crawl, use
+`storage_options={"anon": True}`.
 
 ### WARC Record Reader
 
@@ -196,7 +200,7 @@ The pipeline processes Common Crawl data through several stages, ultimately prod
 ```json
 {
   "url": "http://example.com/page.html",
-  "warc_id": "a515a7b6-b6ec-4bed-998b-8be2f86f8eac", 
+  "warc_id": "a515a7b6-b6ec-4bed-998b-8be2f86f8eac",
   "source_id": "CC-MAIN-20201123153826-20201123183826-00000.warc.gz",
   "language": "ENGLISH",
   "text": "Extracted web page content..."
@@ -244,7 +248,7 @@ cc_stage = CommonCrawlDownloadExtractStage(
 
 # Or use Trafilatura with custom parameters
 cc_stage = CommonCrawlDownloadExtractStage(
-    start_snapshot="2020-50", 
+    start_snapshot="2020-50",
     end_snapshot="2020-50",
     download_dir="./downloads",
     html_extraction=TrafilaturaExtractor(
@@ -267,7 +271,7 @@ stop_lists = {
 
 cc_stage = CommonCrawlDownloadExtractStage(
     start_snapshot="2020-50",
-    end_snapshot="2020-50", 
+    end_snapshot="2020-50",
     download_dir="./downloads",
     stop_lists=stop_lists
 )
