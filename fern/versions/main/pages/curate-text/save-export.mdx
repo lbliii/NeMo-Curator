@@ -35,10 +35,11 @@ print(f"Published Lance dataset version {version}")
 ```
 
 Use `mode="create"` for a new dataset, `mode="append"` to add fragments, or
-`mode="overwrite"` to replace the dataset. Put Lance write options, including dataset
-`storage_options`, in `write_kwargs`. Put checkpoint `storage_options` in `write_kwargs` under
-`checkpoint_storage_options`, and pass matching `dataset_storage_options` and
-`checkpoint_storage_options` to `commit_lance_checkpoint` when those locations require them.
+`mode="overwrite"` to replace the dataset. For remote storage, pass dataset options to
+`LanceWriter` as `write_kwargs["storage_options"]` and commit-path options as
+`write_kwargs["checkpoint_storage_options"]`. Pass the same values to
+`commit_lance_checkpoint` as `dataset_storage_options` and `checkpoint_storage_options`,
+respectively.
 
 ## Megatron Tokenization
 
