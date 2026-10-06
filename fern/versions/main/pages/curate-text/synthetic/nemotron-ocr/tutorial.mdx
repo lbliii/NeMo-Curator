@@ -14,16 +14,16 @@ Run `tutorials/synthetic/omni/ocr_pipeline.py` over a Hugging Face dataset. Star
 
 ## 1. Start the GPU container
 
-From the repository root:
+Check out the NeMo Curator release tag you intend to use, or `main` for development, then build from the repository root. The repository Dockerfile compiles the required `nemotron-ocr` C++/CUDA extension against the image's Python and CUDA environment; installing the SDG or image extras alone is insufficient.
 
 ```bash
-docker pull nvcr.io/nvidia/nemo-curator:{{ container_version }}
+docker build -f docker/Dockerfile -t nemo-curator:local .
 
 docker run --gpus all -it --rm \
   -v "$PWD:/workspace" \
   -v "$HOME/.cache/huggingface:/root/.cache/huggingface" \
   -w /workspace \
-  nvcr.io/nvidia/nemo-curator:{{ container_version }}
+  nemo-curator:local bash
 ```
 
 Inside the container:

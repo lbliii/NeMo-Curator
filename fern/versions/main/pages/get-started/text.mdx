@@ -16,7 +16,7 @@ This guide provides step-by-step instructions for setting up NeMo Curator’s te
 
 To use NeMo Curator’s text curation modules, ensure your system meets the following requirements:
 
-* Python 3.10, 3.11, or 3.12
+* Python 3.11, 3.12, or 3.13
   * packaging &gt;= 22.0
 * uv (for package management and installation)
 * Ubuntu 22.04/20.04
@@ -28,7 +28,7 @@ To use NeMo Curator’s text curation modules, ensure your system meets the foll
 If `uv` is not installed, refer to the [Installation Guide](/get-started/installation) for setup instructions, or install it quickly using:
 
 ```bash
-curl -LsSf https://astral.sh/uv/0.8.22/install.sh | sh
+curl -LsSf https://astral.sh/uv/0.12.1/install.sh | sh
 source $HOME/.local/bin/env
 ```
 
@@ -41,7 +41,25 @@ source $HOME/.local/bin/env
 You can install NeMo Curator using one of the following methods:
 
 <Tabs>
+<Tab title="Source Installation (Recommended)">
+
+Install the latest development version directly from GitHub. For a released version, check out its published release tag before running `uv sync`:
+
+```bash
+git clone https://github.com/NVIDIA-NeMo/Curator.git
+cd Curator
+uv sync --extra text_cuda12 --all-groups
+source .venv/bin/activate
+```
+
+<Note>
+Replace `text_cuda12` with `text_cpu` for CPU-only text processing or `all` for all modalities.
+</Note>
+
+</Tab>
 <Tab title="PyPI Installation">
+
+For a specific release, verify that its package version is available on PyPI and matches the release notes.
 
 Install `text_cuda12` with uv and Curator's tested dependency override:
 
@@ -61,40 +79,18 @@ supported for `text_cuda12`. vLLM 0.22 requires `numba==0.65.0`, while RAPIDS
 </Warning>
 
 </Tab>
+<Tab title="Build a Container">
 
-<Tab title="Source Installation">
-
-Install the latest version directly from GitHub:
+Beginning with 26.09, NVIDIA will no longer publish NeMo Curator container images on NGC; existing images remain downloadable. Build a local image from the repository Dockerfile. For a released version, check out its published release tag before building:
 
 ```bash
 git clone https://github.com/NVIDIA-NeMo/Curator.git
 cd Curator
-uv sync --extra text_cuda12 --all-groups
-source .venv/bin/activate
+docker build -t nemo-curator:local -f docker/Dockerfile .
+docker run --gpus all -it --rm nemo-curator:local bash -lc "source /opt/venv/env.sh && exec bash"
 ```
 
-<Note>
-Replace `text_cuda12` with your desired extras: use `.` for CPU-only, `.[text_cpu]` for text processing only, or `.[all]` for all modules.
-</Note>
-
-</Tab>
-
-<Tab title="NeMo Curator Container">
-
-NeMo Curator is available as a standalone container:
-
-```bash
-# Pull the container
-docker pull nvcr.io/nvidia/nemo-curator:{{ container_version }}
-
-# Run the container
-docker run --gpus all -it --rm nvcr.io/nvidia/nemo-curator:{{ container_version }}
-```
-
-<Note>
-For details on container environments and configurations, see [Container Environments](/reference/infra/container-environments).
-
-</Note>
+See [Container Environments](/reference/infra/container-environments) for configuration details. Check whether your workflow needs system dependencies such as `ffmpeg`; do not assume they are installed in a locally built image.
 
 </Tab>
 </Tabs>

@@ -41,7 +41,7 @@ To use NeMo Curator's video curation capabilities, ensure your system meets thes
 * Other Linux distributions may work but are not officially supported
 
 #### Python Environment
-* **Python 3.10, 3.11, or 3.12**
+* **Python 3.11, 3.12, or 3.13**
 * **uv package manager** for dependency management
 * **Git** for model and repository dependencies
 
@@ -64,7 +64,7 @@ To use NeMo Curator's video curation capabilities, ensure your system meets thes
 If `uv` is not installed, refer to the [Installation Guide](/get-started/installation) for setup instructions, or install it quickly with:
 
 ```bash
-curl -LsSf https://astral.sh/uv/0.8.22/install.sh | sh
+curl -LsSf https://astral.sh/uv/0.12.1/install.sh | sh
 source $HOME/.local/bin/env
 ```
 
@@ -77,16 +77,9 @@ source $HOME/.local/bin/env
 Create and activate a virtual environment, then choose an install option:
 
 <Tabs>
-<Tab title="PyPI">
+<Tab title="Source (Recommended)">
 
-```bash
-uv pip install torch wheel_stub psutil setuptools setuptools_scm
-uv pip install --no-build-isolation "nemo-curator[video_cuda12]"
-```
-
-</Tab>
-
-<Tab title="Source">
+This installs the development branch. For a released version, check out its published release tag before running `uv sync`.
 
 ```bash
 git clone https://github.com/NVIDIA-NeMo/Curator.git
@@ -96,26 +89,30 @@ source .venv/bin/activate
 ```
 
 </Tab>
+<Tab title="PyPI">
 
-<Tab title="NeMo Curator Container">
-
-NeMo Curator is available as a standalone container:
+For a specific release, verify that its package version is available on PyPI and matches the release notes.
 
 ```bash
-# Pull the container
-docker pull nvcr.io/nvidia/nemo-curator:{{ container_version }}
-
-# Run the container
-docker run --gpus all -it --rm nvcr.io/nvidia/nemo-curator:{{ container_version }}
+uv pip install torch wheel_stub psutil setuptools setuptools_scm
+uv pip install --no-build-isolation "nemo-curator[video_cuda12]"
 ```
 
-<Note>
-For details on container environments and configurations, see [Container Environments](/reference/infra/container-environments).
+</Tab>
+<Tab title="Build a Container">
 
-</Note>
+Beginning with 26.09, NVIDIA will no longer publish NeMo Curator container images on NGC; existing images remain downloadable. Build a local image from the repository Dockerfile. For a released version, check out its published release tag before building:
+
+```bash
+git clone https://github.com/NVIDIA-NeMo/Curator.git
+cd Curator
+docker build -t nemo-curator:local -f docker/Dockerfile .
+docker run --gpus all -it --rm nemo-curator:local bash -lc "source /opt/venv/env.sh && exec bash"
+```
+
+See [Container Environments](/reference/infra/container-environments) for configuration details. Check whether your workflow needs system dependencies such as `ffmpeg`; do not assume they are installed in a locally built image.
 
 </Tab>
-
 </Tabs>
 
 ## Install FFmpeg and Encoders

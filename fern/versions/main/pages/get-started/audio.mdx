@@ -34,7 +34,7 @@ To use NeMo Curator's audio curation modules, ensure you meet the following requ
 If you don't have `uv` installed, refer to the [Installation Guide](/get-started/installation) for setup instructions, or install it quickly with:
 
 ```bash
-curl -LsSf https://astral.sh/uv/0.8.22/install.sh | sh
+curl -LsSf https://astral.sh/uv/0.12.1/install.sh | sh
 source $HOME/.local/bin/env
 ```
 
@@ -44,10 +44,28 @@ source $HOME/.local/bin/env
 
 ## Installation Options
 
-You can install NeMo Curator with audio support in four ways:
+You can install NeMo Curator with audio support in three ways:
 
 <Tabs>
+<Tab title="Source Installation (Recommended)">
+
+Install the latest development version directly from GitHub. For a released version, check out its published release tag before running `uv sync`:
+
+```bash
+git clone https://github.com/NVIDIA-NeMo/Curator.git
+cd Curator
+uv sync --extra audio_cuda12 --all-groups
+source .venv/bin/activate
+```
+
+<Note>
+Use `audio_cpu` for CPU-only audio processing, `audio_cuda12` for GPU acceleration, or `all` for all modalities.
+</Note>
+
+</Tab>
 <Tab title="PyPI Installation">
+
+For a specific release, verify that its package version is available on PyPI and matches the release notes.
 
 The simplest way to install NeMo Curator with audio support:
 
@@ -62,40 +80,18 @@ The extras do not install the `ffmpeg` command-line executable. For container an
 </Note>
 
 </Tab>
+<Tab title="Build a Container">
 
-<Tab title="Source Installation">
-
-Install the latest version directly from GitHub:
+Beginning with 26.09, NVIDIA will no longer publish NeMo Curator container images on NGC; existing images remain downloadable. Build a local image from the repository Dockerfile. For a released version, check out its published release tag before building:
 
 ```bash
 git clone https://github.com/NVIDIA-NeMo/Curator.git
 cd Curator
-uv sync --extra audio_cuda12 --all-groups
-source .venv/bin/activate
+docker build -t nemo-curator:local -f docker/Dockerfile .
+docker run --gpus all -it --rm nemo-curator:local bash -lc "source /opt/venv/env.sh && exec bash"
 ```
 
-<Note>
-Use `audio_cpu` for CPU-only audio processing, `audio_cuda12` for GPU acceleration, or `all` for all modalities.
-</Note>
-
-</Tab>
-
-<Tab title="NeMo Curator Container">
-
-NeMo Curator is available as a standalone container:
-
-```bash
-# Pull the container
-docker pull nvcr.io/nvidia/nemo-curator:{{ container_version }}
-
-# Run the container
-docker run --gpus all -it --rm nvcr.io/nvidia/nemo-curator:{{ container_version }}
-```
-
-<Note>
-For details on container environments and configurations, see [Container Environments](/reference/infra/container-environments).
-
-</Note>
+See [Container Environments](/reference/infra/container-environments) for configuration details. Check whether your workflow needs system dependencies such as `ffmpeg`; do not assume they are installed in a locally built image.
 
 </Tab>
 </Tabs>

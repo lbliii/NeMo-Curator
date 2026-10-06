@@ -65,9 +65,9 @@ checkout, install both dependency groups:
 uv sync --extra interleaved_cuda12 --extra inference_server
 ```
 
-Dynamo starts local `etcd` and `nats-server` processes. The NeMo Curator
-container includes both binaries; for a source environment outside the
-container, install them with
+Dynamo starts local `etcd` and `nats-server` processes. An image built from the
+current repository Dockerfile includes both binaries; for a source environment
+or another image, install them with
 [`docker/common/install_etcd_nats.sh`](https://github.com/NVIDIA-NeMo/Curator/blob/main/docker/common/install_etcd_nats.sh)
 before running the entry point.
 

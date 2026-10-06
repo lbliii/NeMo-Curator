@@ -120,6 +120,8 @@ python fern/substitute_variables.py versions/v25.09 --version 25.09
 
 Variables are defined at the top of `substitute_variables.py` (e.g. `{{ product_name }}`, `{{ github_repo }}`, `{{ container_version }}`). For `main/`, pass whatever release is *next on the train* — pages there should display the version they will ship as, not literal `main`.
 
+Do not infer an NGC container tag from a `YY.MM` release number. Current (`main`) installation guidance and future version snapshots should describe source installation or building from the repository Dockerfile. Keep `{{ container_version }}` only in archived pages that document historical container tags; those pages still use variable substitution.
+
 ## Authoring conventions
 
 ### Frontmatter

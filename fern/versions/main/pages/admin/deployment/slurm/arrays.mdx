@@ -41,7 +41,7 @@ The repository includes these reference files:
 
 ## Run a JSONL array
 
-The steps below show one bare-metal setup on a shared filesystem. The same array variables and checkpoint path also work with containerized SLURM launches, including NGC images and site-specific `.sqsh` files, through `tutorials/slurm/submit_array.sh`.
+The steps below show one bare-metal setup on a shared filesystem. The same array variables and checkpoint path also work with containerized SLURM launches through `tutorials/slurm/submit_array.sh`. Supply a registry image reachable by the cluster or a site-supported image file such as a `.sqsh` stored on a shared filesystem; a local Docker tag is not available to compute nodes unless you publish or transfer it using the site's workflow.
 
 Prepare a source checkout and editable environment:
 

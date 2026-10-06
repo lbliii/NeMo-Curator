@@ -17,6 +17,7 @@ Use this draft checklist to review applications and environments for the planned
 | Area | Action | Affected users |
 | --- | --- | --- |
 | Release status | Confirm the published package version and release tag before upgrading | Everyone |
+| Container distribution | Install from source or build your own image; NVIDIA will no longer publish new NeMo Curator images to NGC beginning with 26.09 | Container users |
 | Semantic deduplication | Review the new `float16` Pairwise default, `pairwise_batch_size=1024`, and precision requirements | Semantic deduplication workflows |
 | KMeans memory | Review `fit_data_fraction` and second-pass Parquet assignment behavior | Large semantic deduplication workflows |
 | Worker sizing | Consider `with_(num_workers_per_node=...)` for node-relative sizing | Multi-node pipelines |
@@ -41,6 +42,8 @@ Use `uv` 0.12 or later to satisfy the project requirement. For GB200 vLLM startu
 
 Use the installation command shown on the current [installation page](/get-started/installation).
 
+NVIDIA will not publish new NeMo Curator container images to NGC starting with 26.09. If you deploy with containers, build one from the source for the release you adopt and the repository Dockerfile. Existing NGC images remain available at this time; no removal date has been announced.
+
 The `all` extra no longer includes `cv2` directly, though OpenCV may be installed transitively through vLLM. Include the `cv2` extra for workflows that require it explicitly. Install FFmpeg separately when required by audio or video workflows.
 
 ## Update Nemotron-Parse Examples
@@ -49,8 +52,8 @@ Replace unsupported writer imports or constructor arguments with `InterleavedPar
 
 ## Validate Before Adoption
 
-1. Confirm the final release tag, package version, lockfile, and container image.
-2. Reinstall the extras used by your pipeline with the release lockfile.
+1. Confirm the final release tag, package version, and lockfile before upgrading.
+2. Reinstall the extras used by your pipeline with the release lockfile. For container deployments, build an image from that release's source and repository Dockerfile; do not assume a matching NVIDIA-published NGC image exists.
 3. Run semantic deduplication on a representative sample and compare duplicate IDs at the selected precision.
 4. Run a representative multi-node pipeline and verify worker placement and output manifests.
 5. Validate Nemotron-Parse output on each GPU architecture used in production.

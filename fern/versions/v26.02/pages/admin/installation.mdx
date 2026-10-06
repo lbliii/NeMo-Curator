@@ -10,6 +10,10 @@ modality: "universal"
 
 # Installation Guide
 
+<Note>
+**October 6, 2026:** NVIDIA will not publish new NeMo Curator container images to NGC starting with 26.09. Existing images remain available at this time; no removal date has been announced. For current installation instructions, including source installation and building a container from the repository Dockerfile, see [Install NeMo Curator](/main/get-started/installation).
+</Note>
+
 This guide covers installing NeMo Curator with support for **all modalities** and verifying your installation is working correctly.
 
 ## Before You Start
@@ -223,7 +227,7 @@ try:
         print(f"✓ GPU memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
     else:
         print("⚠ No GPU detected")
-    
+
     # Check cuDF for GPU deduplication
     import cudf
     print("✓ cuDF available for GPU-accelerated deduplication")

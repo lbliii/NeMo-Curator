@@ -96,12 +96,9 @@ that includes `text_cuda12`, including `nemo-curator[all]`, needs the override
 file. From a source checkout, `uv sync --extra text_cuda12` and `uv sync
 --extra all` apply the project override automatically.
 
-### Path C — Docker (recommended for video and audio)
+### Path C — Build a Docker image
 
-Video and audio pipelines depend on system codec libraries; the published container ships them preconfigured.
-
-- Container: [nemo-curator on NGC](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/nemo-curator)
-- Setup instructions: [Installation Guide](https://docs.nvidia.com/nemo/curator/latest/get-started/installation)
+Beginning with 26.09, NVIDIA will no longer publish NeMo Curator container images on NGC. Existing images remain downloadable; GitHub source and releases continue. To use a container, build one from the repository with the [Installation Guide](https://docs.nvidia.com/nemo/curator/latest/get-started/installation). Review the [Container Environments reference](https://docs.nvidia.com/nemo/curator/latest/reference/infra/container-environments) for configuration details.
 
 **Full setup for all paths:** [Installation Guide](https://docs.nvidia.com/nemo/curator/latest/get-started/installation) • [Tutorials](tutorials/)
 
@@ -173,7 +170,7 @@ See the [scaling concepts](https://docs.nvidia.com/nemo/curator/latest/about/con
 | Resource | Link |
 |----------|------|
 | Installation guide (CPU, GPU, Docker, source) | [docs.nvidia.com/nemo/curator/latest/get-started/installation](https://docs.nvidia.com/nemo/curator/latest/get-started/installation) |
-| Container image | [nemo-curator on NGC](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/nemo-curator) |
+| Container environments | [Build and configure a container](https://docs.nvidia.com/nemo/curator/latest/reference/infra/container-environments) |
 | Infrastructure (Slurm, Kubernetes, multi-node) | [Infrastructure docs](https://docs.nvidia.com/nemo/curator/latest/reference/infra) |
 | API reference | [API docs](https://docs.nvidia.com/nemo/curator/latest/api/reference/api-reference) |
 | Concepts | [Concepts](https://docs.nvidia.com/nemo/curator/latest/about/concepts) |

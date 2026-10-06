@@ -13,15 +13,15 @@ modality: "video-only"
 
 Learn how to package dependencies for NeMo Curator using a container image.
 
-The NeMo Curator container provides a primary `curator` conda environment with pre-installed dependencies. If your pipeline needs additional system or Python packages, create a custom image. Refer to the [container environments](/reference/infra/container-environments) reference for defaults and build arguments.
+The NeMo Curator repository Dockerfile creates a Python environment with the dependencies selected by its build arguments. Build that image from the source revision you plan to use, then create a custom image if your pipeline needs additional system or Python packages. Refer to the [container environments](/reference/infra/container-environments) reference for the build workflow and Dockerfile defaults.
 
 ## Before You Start
 
 Before you begin, make sure that you have:
 
-* Reviewed the [pipeline concepts and diagrams](/about/concepts/video).  
-* A base container image suitable for NeMo Curator.  
-* Optionally [created custom code](/curate-video/tutorials/pipeline-customization/add-cust-code) that defines your new requirements.  
+* Reviewed the [pipeline concepts and diagrams](/about/concepts/video).
+* A container image built from the NeMo Curator Dockerfile or another suitable base image.
+* Optionally [created custom code](/curate-video/tutorials/pipeline-customization/add-cust-code) that defines your new requirements.
 
 ---
 
@@ -29,9 +29,9 @@ Before you begin, make sure that you have:
 
 ### Define Build Steps
 
-1. Create an `environments` directory anywhere on your system to organize your custom pipeline stage environments.  
+1. Create an `environments` directory anywhere on your system to organize your custom pipeline stage environments.
 2. Create a new folder for your environment, for example: `my-env/`.
-3. Create a `Dockerfile` that installs your environment's dependencies on top of the base image.
+3. Create a `Dockerfile` that installs your environment's dependencies on top of your NeMo Curator image (for example, `FROM nemo-curator:local`).
 
    ```dockerfile
    FROM <your-base-image>

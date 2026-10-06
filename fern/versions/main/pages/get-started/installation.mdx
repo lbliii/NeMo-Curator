@@ -42,16 +42,40 @@ For comprehensive system requirements and production deployment specifications, 
 
 ## Installation Methods
 
-Choose one of the following installation methods based on your needs:
+For most users, start with a [modality quickstart](/get-started). For an all-modality setup, use the source installation below; it tracks the development branch by default. To install a released version, select a published release tag before syncing. PyPI installation is also available for package versions that have been published.
+
+<Warning>
+Beginning with 26.09, NVIDIA will no longer publish NeMo Curator container images on NGC. Existing images remain downloadable. GitHub source and releases continue.
+</Warning>
+
+Choose an installation method based on your needs:
 
 <Tip>
-**Docker is the recommended installation method** for video and audio workflows because it provides the Curator Python and CUDA dependency stack. Workflows that invoke the `ffmpeg` command-line executable must still verify that it is available in the image. Refer to the [Container Installation](#container-installation) tab below.
+For container configuration and environment details, see [Container Environments](/reference/infra/container-environments). Workflows that invoke the `ffmpeg` command-line executable must verify that it is available in the image.
 </Tip>
 
 <Tabs>
+<Tab title="Source Installation (Recommended)">
+
+Install the latest development version directly from GitHub. To install a released version, check out its published release tag before syncing:
+
+```bash
+# Clone the repository
+git clone https://github.com/NVIDIA-NeMo/Curator.git
+cd Curator
+
+# Install uv if not already available
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install with all extras using uv
+uv sync --all-extras --all-groups
+source .venv/bin/activate
+```
+
+</Tab>
 <Tab title="PyPI Installation">
 
-Install NeMo Curator from the Python Package Index using `uv` for proper dependency resolution.
+For a specific release, verify that its package version is available on PyPI and matches the release notes.
 
 1. Install uv:
 
@@ -84,65 +108,21 @@ Install NeMo Curator from the Python Package Index using `uv` for proper depende
    equivalent overrides directly from `pyproject.toml`.
 
 </Tab>
+<Tab title="Build a Container">
 
-<Tab title="Source Installation">
-
-Install the latest development version directly from GitHub:
+Beginning with 26.09, NVIDIA will no longer publish NeMo Curator container images on NGC; existing images remain downloadable. Build a local image from the repository Dockerfile. For a released version, check out its published release tag before building.
 
 ```bash
-# Clone the repository
 git clone https://github.com/NVIDIA-NeMo/Curator.git
 cd Curator
+docker build -t nemo-curator:local -f docker/Dockerfile .
 
-# Install uv if not already available
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Install with all extras using uv
-uv sync --all-extras --all-groups
+docker run --gpus all -it --rm nemo-curator:local bash -lc "source /opt/venv/env.sh && exec bash"
 ```
+
+Check whether your workflow needs system dependencies such as `ffmpeg`; do not assume they are installed in a locally built image.
 
 </Tab>
-
-<Tab title="Container Installation (Recommended for Video/Audio)">
-
-NeMo Curator is available as a standalone container on NGC: https://catalog.ngc.nvidia.com/orgs/nvidia/containers/nemo-curator. The container includes NeMo Curator and its Python and CUDA dependencies.
-
-```bash
-# Pull the container from NGC
-docker pull nvcr.io/nvidia/nemo-curator:{{ container_version }}
-
-# Run the container with GPU support
-docker run --gpus all -it --rm nvcr.io/nvidia/nemo-curator:{{ container_version }}
-```
-
-<Info>
-After entering the container, activate the virtual environment before running any NeMo Curator commands:
-
-    source /opt/venv/env.sh
-
-The container uses a virtual environment at `/opt/venv`. If you see `No module named nemo_curator`, the environment has not been activated.
-</Info>
-
-Alternatively, you can build the NeMo Curator container locally using the provided Dockerfile:
-
-```bash
-# Build the container locally
-git clone https://github.com/NVIDIA-NeMo/Curator.git
-cd Curator
-docker build -t nemo-curator:latest -f docker/Dockerfile .
-
-# Run the container with GPU support
-docker run --gpus all -it --rm nemo-curator:latest
-```
-
-**Benefits:**
-
-- Pre-configured Python environment and CUDA libraries
-- Consistent runtime across different systems
-- Ideal for production deployments
-
-</Tab>
-
 </Tabs>
 
 ### Install FFmpeg for Audio and Video Source Installs

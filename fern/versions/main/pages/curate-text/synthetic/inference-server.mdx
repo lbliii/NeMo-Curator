@@ -47,15 +47,15 @@ the NVIDIA package index.
 
 Local GPU serving through this extra supports **x86_64 Linux** and **aarch64
 Linux**. The vLLM, ai-dynamo, and NIXL dependencies are not installed on macOS.
-The NeMo Curator container also includes the `etcd` and `nats-server` binaries
-that Dynamo starts. When using a source environment outside the container,
-install them with
+The current repository Dockerfile installs the `etcd` and `nats-server` binaries
+that Dynamo starts. When using a source environment outside an image built from
+that Dockerfile, install them with
 [`docker/common/install_etcd_nats.sh`](https://github.com/NVIDIA-NeMo/Curator/blob/main/docker/common/install_etcd_nats.sh),
 or configure existing endpoints.
 
 The stack uses:
 
-- CUDA 12.9.1 in the NeMo Curator container.
+- CUDA 12.9.1 in images built with the repository Dockerfile's defaults.
 - PyTorch 2.11.
 - Ray Serve 2.57.0 or later.
 - vLLM 0.22.0 with CUDA 12.9.
@@ -514,7 +514,7 @@ Do not pass Ray Serve's `deployment_config` to `DynamoVLLMModelConfig`. Use `num
 
 ### Dynamo Cannot Start etcd or NATS
 
-Install the NeMo Curator container dependencies, or supply existing `etcd_endpoint` and `nats_url` values in `DynamoServerConfig`.
+Install `etcd` and `nats-server` using the provided script, or supply existing `etcd_endpoint` and `nats_url` values in `DynamoServerConfig`. An image built from the current repository Dockerfile already includes both binaries.
 
 ### Local Multi-GPU Startup Hangs
 
@@ -522,7 +522,7 @@ On PCIe systems without peer-to-peer GPU access, restart Ray or the Python kerne
 
 ### Runtime Environment Times Out
 
-Ensure cluster nodes can reach the package index and share compatible Python, CUDA, and Ray versions. Dynamo actor setup uses a 600-second timeout; prebuild the NeMo Curator container when workers cannot install packages at runtime.
+Ensure cluster nodes can reach the package index and share compatible Python, CUDA, and Ray versions. Dynamo actor setup uses a 600-second timeout; when workers cannot install packages at runtime, prebuild an image from the repository Dockerfile or another environment containing the required dependencies.
 
 ### General Debugging Tips for Dynamo Startup and Compatibility Issues
 
