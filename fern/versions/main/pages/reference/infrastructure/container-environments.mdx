@@ -10,41 +10,48 @@ modality: "universal"
 
 # Container Environments
 
-NeMo Curator source releases continue. Starting with the 26.09 release, NVIDIA no longer publishes NeMo Curator container images to NGC. Previously published images remain downloadable.
+NeMo Curator source releases continue. Starting with the 26.09 release, NVIDIA no longer publishes NeMo Curator container images to NGC. Previously published images remain downloadable. Build an image from a source release or the `main` development branch with the [repository Dockerfile](https://github.com/NVIDIA-NeMo/Curator/blob/main/docker/Dockerfile).
 
-The repository's `docker/Dockerfile` remains available for building an image from a source checkout. You can use a release tag for a released source version or the `main` branch for current development. The resulting image is your own build; tag it and publish or transfer it using the registry and container workflow available in your environment.
+## Build a Container
 
-## Build a container
+Build a local image from a source checkout, run it, then activate and verify the Curator environment.
 
-Check out a published release tag to build that released source version, or use `main` for current development. From the repository root, build and run a local image:
+1. Clone the [NeMo Curator repository](https://github.com/NVIDIA-NeMo/Curator) or enter an existing checkout. Use a source release tag available in the repository for released code, or keep `main` for current development.
 
-```bash
-docker build -f docker/Dockerfile -t nemo-curator:local .
+2. Build the image from the repository root:
 
-docker run --gpus all -it --rm \
-  -v "$PWD:/workspace" \
-  -w /workspace \
-  nemo-curator:local bash
-```
+   ```bash
+   docker build -f docker/Dockerfile -t nemo-curator:local .
+   ```
 
-Inside the container, activate the virtual environment created by the Dockerfile:
+3. Start a shell in the image:
 
-```bash
-source /opt/venv/env.sh
-python -c "import nemo_curator; print(nemo_curator.__version__)"
-```
+   ```bash
+   docker run --gpus all -it --rm \
+     -v "$PWD:/workspace" \
+     -w /workspace \
+     nemo-curator:local bash
+   ```
 
-Review `docker/Dockerfile` at the checked-out revision for the base image, optional extras, and additional components; build arguments affect the resulting image contents.
+4. Activate the virtual environment and verify the import:
 
-The current repository Dockerfile defaults to the `all` Curator extra, Python 3.13, CUDA 12.9.1, and Ubuntu 24.04. It installs `etcd` and `nats-server` for the Dynamo inference backend and builds the Nemotron OCR C++/CUDA extension. It does not install FFmpeg. Optional modality dependencies and external tools may differ if you change `CURATOR_EXTRA`, Dockerfile contents, or build arguments.
+   ```bash
+   source /opt/venv/env.sh
+   python -c "import nemo_curator; print(nemo_curator.__version__)"
+   ```
 
-## Use images on a cluster
+   The command prints the installed version and exits without an import error.
 
-A local Docker tag such as `nemo-curator:local` is available only to the Docker daemon where it was built. Cluster jobs need an image reference or file that the cluster's container integration can access from every allocated node. For example, push the image to a registry reachable by the cluster, or export/convert it using your site's Pyxis, enroot, or other container workflow and place the resulting image file on a shared filesystem. Configure the cluster job with that registry reference or shared image path.
+Default builds use the `all` Curator extra, Python 3.13, CUDA 12.9.1, and Ubuntu 24.04. The Dockerfile installs `etcd` and `nats-server` for Dynamo and builds the Nemotron OCR C++/CUDA extension. It does not install FFmpeg. If your workflow uses the `ffmpeg` executable, follow [Install FFmpeg in the Installation Guide](/get-started/installation#install-ffmpeg-for-audio-and-video-source-installs). Build arguments and Dockerfile revisions can change image contents.
 
-For SLURM examples, see [Multi-Node Ray on SLURM](/admin/deployment/slurm-multi-node-ray) and [SLURM Job Arrays](/admin/deployment/slurm-arrays). The submit scripts accept `CONTAINER_IMAGE` and pass it to the site's SLURM container plugin; they do not make a workstation-local Docker tag available to compute nodes.
+## Use Images on a Cluster
 
-## Image configuration
+A local Docker tag such as `nemo-curator:local` is available only to the Docker daemon where it was built. To use the image on a cluster:
+
+1. Push it to a registry reachable from every allocated node, or export it using your site's container workflow and place the image file on shared storage.
+2. Set the cluster job's image reference or path. The SLURM examples use `CONTAINER_IMAGE`; refer to [Multi-Node Ray on SLURM](/admin/deployment/slurm-multi-node-ray) or [SLURM Job Arrays](/admin/deployment/slurm-arrays).
+
+## Image Configuration
 
 The current Dockerfile accepts these build-time arguments:
 
@@ -58,10 +65,10 @@ The current Dockerfile accepts these build-time arguments:
 | `NVIDIA_BUILD_ID` | `<unknown>` | Optional build identifier label. |
 | `NVIDIA_BUILD_REF` | unset | Optional build reference label. |
 
-These defaults apply to builds using the matching Dockerfile revision and default arguments.
+These defaults apply when you build the matching Dockerfile revision without overriding its arguments.
 
-## Architecture notes
+## Architecture Notes
 
-The Dockerfile's Python dependencies and optional extras may be architecture-gated in `pyproject.toml`. In particular, audio dependencies that require x86_64 Linux are not available on arm64 builds. Check the package constraints for the source revision and target architecture before building a workload-specific image.
+Python dependencies and extras can depend on the target architecture in `pyproject.toml`. Some audio dependencies support only x86_64 Linux. Check the package markers before building for arm64.
 
-Ray is the execution framework for NeMo Curator pipelines. Dask-related packages, if present in a built environment, may be transitive dependencies and are not the pipeline execution backend.
+Ray executes NeMo Curator pipelines. Dask packages in the image can be transitive dependencies rather than an execution backend.

@@ -138,11 +138,11 @@ Contributions are strongly encouraged. Submit pull requests or join community di
 ## Deployment, Infrastructure, and Practicalities
 
 <Accordion title="How do I deploy NeMo Curator or Ray clusters?">
-Ray clusters can be deployed on major cloud platforms using standard Ray tools (see [Ray documentation](https://docs.ray.io/en/latest/cluster/getting-started.html)). NVIDIA will not publish new NeMo Curator container images to NGC starting with 26.09. Existing images remain available at this time; no removal date has been announced. For current installation options, including source installation and building a container from the repository Dockerfile, see [Install NeMo Curator](/get-started/installation). For deployment details, refer to [Production Deployment Requirements](/admin/deployment/requirements).
+Deploy Ray clusters using standard [Ray tools](https://docs.ray.io/en/latest/cluster/getting-started.html). Install Curator from source or build a container using the [Installation Guide](/get-started/installation). For hardware and cluster setup, refer to [Production Deployment Requirements](/admin/deployment/requirements).
 </Accordion>
 
 <Accordion title="Do I need to build custom Docker images?">
-For container deployments on 26.09 and later, build an image from the NeMo Curator source and repository Dockerfile, or install Curator in an organization-approved base image. The [Dockerfile](https://github.com/NVIDIA-NeMo/Curator/blob/main/docker/Dockerfile) remains available. See [Install NeMo Curator](/get-started/installation) for current instructions. NVIDIA-published NGC images from earlier releases remain available at this time; no removal date has been announced.
+Yes. For container deployments on 26.09 and later, [build a container](/reference/infra/container-environments#build-a-container) from the repository Dockerfile. NVIDIA no longer publishes new Curator images on NGC. Earlier images remain downloadable. Refer to the [Distribution Change](/about/release-notes#distribution-change).
 </Accordion>
 
 <Accordion title="Is there integration with existing cluster or orchestration tools like Airflow or Slurm?">

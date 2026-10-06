@@ -57,19 +57,13 @@ For the recommended topology, use a fixed HTTP stage pool of `4 * num_gpus` work
 
 ## Usage
 
-A runnable tutorial entry point starts Dynamo, waits for its OpenAI-compatible
-endpoint, runs the PDF pipeline, and stops the server. From a NeMo Curator
-checkout, install both dependency groups:
+The tutorial entry point starts Dynamo, waits for its OpenAI-compatible endpoint, runs the PDF pipeline, and stops the server. From a source checkout, install both dependency groups:
 
 ```bash
 uv sync --extra interleaved_cuda12 --extra inference_server
 ```
 
-Dynamo starts local `etcd` and `nats-server` processes. An image built from the
-current repository Dockerfile includes both binaries; for a source environment
-or another image, install them with
-[`docker/common/install_etcd_nats.sh`](https://github.com/NVIDIA-NeMo/Curator/blob/main/docker/common/install_etcd_nats.sh)
-before running the entry point.
+Dynamo starts local `etcd` and `nats-server` processes. Images built from the current repository Dockerfile include both binaries. For a source environment or another image, run the [Dynamo dependency installation script](https://github.com/NVIDIA-NeMo/Curator/blob/main/docker/common/install_etcd_nats.sh) before you run the entry point, or configure existing endpoints.
 
 Create a manifest with one PDF filename per line:
 

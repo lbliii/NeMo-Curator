@@ -8,90 +8,83 @@ content_type: "how-to"
 modality: "universal"
 ---
 
-# Install (All Modalities)
+<a id="install-all-modalities" />
+# Installation Guide for NeMo Curator
 
-This guide covers installing NeMo Curator with support for **all modalities** and verifying your installation is working correctly. For a single-modality install or a 30-minute walkthrough, start with one of the [modality quickstarts](/get-started) instead.
+Install NeMo Curator for text, image, video, and audio workflows, then verify the modules and GPU support your pipeline needs. For a single-modality path, start with a [modality quickstart](/get-started).
 
-## Before You Start
+<a id="before-you-start" />
+## Prerequisites
 
-### System Requirements
+Before installing, prepare a supported Python environment and the hardware required by your selected extras:
 
-For comprehensive system requirements and production deployment specifications, refer to [Production Deployment Requirements](/admin/deployment/requirements).
-
-**Quick Start Requirements:**
-
-- **OS**: Ubuntu 24.04/22.04/20.04 (recommended)
-- **Python**: 3.11, 3.12, or 3.13
-- **Memory**: 16GB+ RAM for basic text processing
-- **GPU** (optional): NVIDIA GPU with 16GB+ VRAM for acceleration
-- **CUDA 12** (required for `audio_cuda12`, `video_cuda12`, `image_cuda12`, and `text_cuda12` extras)
+<a id="system-requirements" />
+1. Use Ubuntu 20.04, 22.04, or 24.04 for the recommended Linux setup.
+2. Install Python 3.11, 3.12, or 3.13.
+3. Provide at least 16 GB RAM for basic text processing; GPU acceleration is optional and benefits from an NVIDIA GPU with 16 GB or more VRAM.
+4. Install CUDA 12 and a compatible NVIDIA driver when using a GPU extra.
 
 <Warning>
-**Python 3.10 support was removed in NeMo Curator 26.07.** 26.04 was the last release to support Python 3.10. Set up new environments on Python 3.11, 3.12, or 3.13. See the [26.07 migration checklist](/about/release-notes/26-07-migration#1-upgrade-python) for details.
+**Python 3.10 support ended in NeMo Curator 26.07.** 26.04 was the last release to support Python 3.10. Set up new environments on Python 3.11, 3.12, or 3.13. Refer to the [26.07 migration checklist](/about/release-notes/26-07-migration#1-upgrade-python) for details.
 </Warning>
 
-### Development vs Production
+<a id="development-vs-production" />
+### Development and Production Environments
 
-| Use Case | Requirements | See |
+Use the deployment guides to plan resources for production or multi-node clusters:
+
+**Deployment Paths**
+
+| Use Case | Requirements | Guide |
 |----------|-------------|-----|
 | **Local Development** | Minimum specs listed above | Continue below |
 | **Production Clusters** | Detailed hardware, network, storage specs | [Deployment Requirements](/admin/deployment/requirements) |
 | **Multi-node Setup** | Advanced infrastructure planning | [Deployment Options](/admin/deployment) |
 
----
-
 ## Installation Methods
 
-For most users, start with a [modality quickstart](/get-started). For an all-modality setup, use the source installation below; it tracks the development branch by default. To install a released version, select a published release tag before syncing. PyPI installation is also available for package versions that have been published.
+Start with the source installation. A source checkout of `main` tracks development; to install a release, check out its published release tag before syncing. For a specific PyPI release, verify that its package version is available and matches the release notes.
 
 <Warning>
-Beginning with 26.09, NVIDIA will no longer publish NeMo Curator container images on NGC. Existing images remain downloadable. GitHub source and releases continue.
+Starting with 26.09, NVIDIA no longer publishes new NeMo Curator container images on NGC. Existing images remain downloadable. GitHub source and releases continue.
 </Warning>
 
-Choose an installation method based on your needs:
-
-<Tip>
-For container configuration and environment details, see [Container Environments](/reference/infra/container-environments). Workflows that invoke the `ffmpeg` command-line executable must verify that it is available in the image.
-</Tip>
+Choose an installation method based on your environment:
 
 <Tabs>
 <Tab title="Source Installation (Recommended)">
 
-Install the latest development version directly from GitHub. To install a released version, check out its published release tag before syncing:
+1. Clone the repository. The default branch contains development code.
 
-```bash
-# Clone the repository
-git clone https://github.com/NVIDIA-NeMo/Curator.git
-cd Curator
+   ```bash
+   git clone https://github.com/NVIDIA-NeMo/Curator.git
+   cd Curator
+   ```
 
-# Install uv if not already available
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Install with all extras using uv
-uv sync --all-extras --all-groups
-source .venv/bin/activate
-```
-
-</Tab>
-<Tab title="PyPI Installation">
-
-For a specific release, verify that its package version is available on PyPI and matches the release notes.
-
-1. Install uv:
+2. For a released version, check out its published release tag before syncing. Install uv if needed, sync all extras and development groups, then activate the environment.
 
    ```bash
    curl -LsSf https://astral.sh/uv/0.12.1/install.sh | sh
    source $HOME/.local/bin/env
+   uv sync --all-extras --all-groups
+   source .venv/bin/activate
    ```
 
-2. Create and activate a virtual environment:
+</Tab>
+<Tab title="PyPI Installation">
+
+Install a specific package version only after confirming it is available on PyPI and matches the release notes.
+
+1. Install uv and create an environment.
 
    ```bash
+   curl -LsSf https://astral.sh/uv/0.12.1/install.sh | sh
+   source $HOME/.local/bin/env
    uv venv
    source .venv/bin/activate
    ```
 
-3. Install NeMo Curator:
+2. Install NeMo Curator with all extras. The `all` extra includes `text_cuda12`, so this command uses Curator's tested dependency override.
 
    ```bash
    curl -O https://raw.githubusercontent.com/NVIDIA-NeMo/Curator/main/requirements/text_cuda12-overrides.txt
@@ -103,31 +96,95 @@ For a specific release, verify that its package version is available on PyPI and
      "nemo-curator[all]"
    ```
 
-   The `all` extra includes `text_cuda12`, so `uv pip install` requires the
-   same override file. Source installs with `uv sync --all-extras` read the
-   equivalent overrides directly from `pyproject.toml`.
+Source installs with `uv sync --all-extras` read the equivalent override directly from `pyproject.toml`.
 
 </Tab>
 <Tab title="Build a Container">
 
-Beginning with 26.09, NVIDIA will no longer publish NeMo Curator container images on NGC; existing images remain downloadable. Build a local image from the repository Dockerfile. For a released version, check out its published release tag before building.
+Build an image from the repository Dockerfile. For a released version, check out its published release tag before building. Refer to [Build a Container](/reference/infra/container-environments#build-a-container) for the full procedure.
 
-```bash
-git clone https://github.com/NVIDIA-NeMo/Curator.git
-cd Curator
-docker build -t nemo-curator:local -f docker/Dockerfile .
+1. Clone the repository.
 
-docker run --gpus all -it --rm nemo-curator:local bash -lc "source /opt/venv/env.sh && exec bash"
-```
+   ```bash
+   git clone https://github.com/NVIDIA-NeMo/Curator.git
+   cd Curator
+   ```
 
-Check whether your workflow needs system dependencies such as `ffmpeg`; do not assume they are installed in a locally built image.
+2. Build and start the local image. The command activates the container's Python environment.
+
+   ```bash
+   docker build -t nemo-curator:local -f docker/Dockerfile .
+   docker run --gpus all -it --rm nemo-curator:local bash -lc "source /opt/venv/env.sh && exec bash"
+   ```
 
 </Tab>
 </Tabs>
 
+## Package Extras
+
+Use installation extras to add only the components your pipeline needs. The following table lists the available extras and install commands.
+
+**Available Package Extras**
+
+| Extra | Installation Command | Description |
+| --- | --- | --- |
+| **text_cpu** | `uv pip install "nemo-curator[text_cpu]"` | CPU-only text processing and filtering |
+| **text_cuda12** | `uv pip install --override text_cuda12-overrides.txt "nemo-curator[text_cuda12]"` | GPU-accelerated text processing with RAPIDS and vLLM; use the CUDA indexes shown below |
+| **audio_cpu** | `uv pip install "nemo-curator[audio_cpu]"` | CPU-only audio curation with NeMo Toolkit ASR |
+| **audio_cuda12** | `uv pip install "nemo-curator[audio_cuda12]"` | GPU-accelerated audio curation. `uv` installations require a `transformers==4.55.2` override. |
+| **image_cpu** | `uv pip install "nemo-curator[image_cpu]"` | CPU-only image processing |
+| **image_cuda12** | `uv pip install "nemo-curator[image_cuda12]"` | GPU-accelerated image processing with NVIDIA DALI |
+| **video_cpu** | `uv pip install "nemo-curator[video_cpu]"` | CPU-only video processing |
+| **video_cuda12** | `uv pip install --no-build-isolation "nemo-curator[video_cuda12]"` | GPU-accelerated video processing with CUDA libraries. Requires FFmpeg and additional build dependencies when using `uv`. |
+| **inference_server** | `uv pip install "nemo-curator[inference_server]"` | Ray Serve + vLLM for serving LLMs alongside curation pipelines |
+| **sdg_cpu** | `uv pip install "nemo-curator[sdg_cpu]"` | CPU-only synthetic data generation with Data Designer |
+| **sdg_cuda12** | `uv pip install "nemo-curator[sdg_cuda12]"` | GPU-accelerated synthetic data generation with local inference server support |
+
+When you install `inference_server` or an extra that includes it with pip, add
+the public PyTorch and vLLM CUDA 12.9 wheel indexes:
+
+```bash
+python -m pip install \
+  --extra-index-url https://download.pytorch.org/whl/cu129 \
+  --extra-index-url https://wheels.vllm.ai/0.22.0/cu129 \
+  "nemo-curator[inference_server]"
+```
+
+All remaining dependencies, including Dynamo, NIXL, and RAPIDS packages, are
+resolved from public PyPI.
+
+For `text_cuda12`, download Curator's override file and use `uv pip install`
+with the CUDA 12.9 wheel source:
+
+```bash
+curl -O https://raw.githubusercontent.com/NVIDIA-NeMo/Curator/main/requirements/text_cuda12-overrides.txt
+uv pip install \
+  --override text_cuda12-overrides.txt \
+  --torch-backend cu129 \
+  --extra-index-url https://wheels.vllm.ai/0.22.0/cu129 \
+  "nemo-curator[text_cuda12]"
+```
+
+<Note>
+For development tools such as pre-commit, ruff, and pytest, run `uv sync --group dev --group linting --group test`. The project manages these tools as dependency groups, not optional dependencies.
+</Note>
+
+<Warning>
+**Standard pip is not supported for `text_cuda12` or for installing all extras
+together.** vLLM 0.22 requires `numba==0.65.0`, while RAPIDS 25.10 declares
+`numba<0.62`. Use `uv pip install` with the explicit override shown above or
+`uv sync` from a source checkout. Refer to [Build a Container](/reference/infra/container-environments#build-a-container)
+for container installation guidance. Plain `uv pip install` without the
+override cannot resolve this combination either.
+</Warning>
+
+## Additional Setup
+
+Install external tools that your selected stages require.
+
 ### Install FFmpeg for Audio and Video Source Installs
 
-Some Curator audio and video stages invoke the `ffmpeg` command-line executable for resampling, decoding, encoding, or metadata extraction. The Python extras do not install that executable, and you should not assume that a container image provides it. Verify that `ffmpeg` is on `PATH` on every executor node or install it using one of the following options.
+Some Curator audio and video stages use the `ffmpeg` executable for resampling, decoding, encoding, or metadata extraction. Python extras do not install it, and a container image might not provide it. Verify that `ffmpeg` is on `PATH` on every executor node, or install it using one of these options.
 
 <Tabs>
 <Tab title="User-local (Audio)">
@@ -161,7 +218,7 @@ Install the package on every executor node, or include it in the image used by e
 
 <Tab title="Verify Audio">
 
-Run a short PCM/WAV resampling smoke test that exercises the operations used by `ResampleAudioStage`:
+Run a basic verification test for PCM/WAV resampling that exercises the operations used by `ResampleAudioStage`:
 
 ```bash
 ffmpeg -v error \
@@ -181,7 +238,7 @@ rm /tmp/nemo-curator-audio-smoke.wav
 
 Use the maintained script in the repository to build and install a strict-allowlist `FFmpeg` with NVIDIA NVENC/NVDEC and VP9 support. This system-wide installation requires root access. The default build excludes software H.264/HEVC/AV1 decoders and software H.264 encoders.
 
-This strict build is for Curator video workflows. It starts from `--disable-everything` and does not enable the audio codecs, WAV muxer, or audio filters required by `ResampleAudioStage`; install an audio-capable distribution or Conda build from one of the audio tabs when processing audio.
+This strict build supports Curator video workflows. It starts from `--disable-everything` and does not enable the audio codecs, WAV muxer, or audio filters required by `ResampleAudioStage`. Install an audio-capable distribution or Conda build from one of the audio tabs when you process audio.
 
 - Script source: [docker/common/install_ffmpeg.sh](https://github.com/NVIDIA-NeMo/Curator/blob/main/docker/common/install_ffmpeg.sh)
 
@@ -208,12 +265,13 @@ If encoders are missing, reinstall the video build with the required options or 
 </Tabs>
 
 <Note>
-**The repository video build requires the CUDA toolkit (`nvcc`):** If you encounter `ERROR: failed checking for nvcc` while running the video script, ensure that the CUDA toolkit is installed and `nvcc` is available on your `PATH`. You can verify with `nvcc --version`.
+**The repository video build requires the CUDA toolkit (`nvcc`):** If you encounter `ERROR: failed checking for nvcc` while running the video script, install the CUDA toolkit and make `nvcc` available on your `PATH`. Run `nvcc --version` to verify the installation.
 </Note>
 
-#### Software H.264/HEVC/AV1 Codec Support (Advanced)
+<a id="software-h264hevcav1-codec-support-advanced" />
+#### Advanced Software Codec Support
 
-Curator's strict FFmpeg build routes H.264/HEVC/AV1 decode through NVDEC and excludes software H.264 encoders by default. You may need extra software codec support when CPU-only stages run `ffprobe` on H.264/HEVC/AV1 inputs, or when using `--transcode-encoder=libopenh264`.
+Curator's strict FFmpeg build routes H.264/HEVC/AV1 decode through NVDEC and excludes software H.264 encoders by default. You can add software codec support when CPU-only stages run `ffprobe` on H.264/HEVC/AV1 inputs or when you use `--transcode-encoder=libopenh264`.
 
 Inside a container, run:
 
@@ -231,107 +289,58 @@ With `--with-libopenh264`, the resulting FFmpeg binary links Cisco OpenH264. You
 
 ---
 
-## Package Extras
-
-NeMo Curator provides several installation extras to install only the components you need:
-
-| Extra | Installation Command | Description |
-| --- | --- | --- |
-| **text_cpu** | `uv pip install nemo-curator[text_cpu]` | CPU-only text processing and filtering |
-| **text_cuda12** | `uv pip install --override text_cuda12-overrides.txt nemo-curator[text_cuda12]` | GPU-accelerated text processing with RAPIDS and vLLM; use the CUDA indexes shown below |
-| **audio_cpu** | `uv pip install nemo-curator[audio_cpu]` | CPU-only audio curation with NeMo Toolkit ASR |
-| **audio_cuda12** | `uv pip install nemo-curator[audio_cuda12]` | GPU-accelerated audio curation. When using `uv`, requires `transformers==4.55.2` override. |
-| **image_cpu** | `uv pip install nemo-curator[image_cpu]` | CPU-only image processing |
-| **image_cuda12** | `uv pip install nemo-curator[image_cuda12]` | GPU-accelerated image processing with NVIDIA DALI |
-| **video_cpu** | `uv pip install nemo-curator[video_cpu]` | CPU-only video processing |
-| **video_cuda12** | `uv pip install --no-build-isolation nemo-curator[video_cuda12]` | GPU-accelerated video processing with CUDA libraries. Requires FFmpeg and additional build dependencies when using `uv`. |
-| **inference_server** | `uv pip install nemo-curator[inference_server]` | Ray Serve + vLLM for serving LLMs alongside curation pipelines |
-| **sdg_cpu** | `uv pip install nemo-curator[sdg_cpu]` | CPU-only synthetic data generation with Data Designer |
-| **sdg_cuda12** | `uv pip install nemo-curator[sdg_cuda12]` | GPU-accelerated synthetic data generation with local inference server support |
-
-For pip installations of `inference_server` or an extra that includes it, add
-the public PyTorch and vLLM CUDA 12.9 wheel indexes:
-
-```bash
-python -m pip install \
-  --extra-index-url https://download.pytorch.org/whl/cu129 \
-  --extra-index-url https://wheels.vllm.ai/0.22.0/cu129 \
-  "nemo-curator[inference_server]"
-```
-
-All remaining dependencies, including Dynamo, NIXL, and RAPIDS packages, are
-resolved from public PyPI.
-
-For `text_cuda12`, download Curator's override file and use uv's pip-compatible
-installer with the CUDA 12.9 wheel source:
-
-```bash
-curl -O https://raw.githubusercontent.com/NVIDIA-NeMo/Curator/main/requirements/text_cuda12-overrides.txt
-uv pip install \
-  --override text_cuda12-overrides.txt \
-  --torch-backend cu129 \
-  --extra-index-url https://wheels.vllm.ai/0.22.0/cu129 \
-  "nemo-curator[text_cuda12]"
-```
-
-<Note>
-**Development Dependencies**: For development tools (pre-commit, ruff, pytest), use `uv sync --group dev --group linting --group test` instead of pip extras. Development dependencies are managed as dependency groups, not optional dependencies.
-</Note>
-
-<Warning>
-**Standard pip is not supported for `text_cuda12` or for installing all extras
-together.** vLLM 0.22 requires `numba==0.65.0`, while RAPIDS 25.10 declares
-`numba<0.62`. Use `uv pip install` with the explicit override shown above, `uv
-sync` from a source checkout, or the [NeMo Curator
-container](#container-installation). Plain `uv pip install` without the
-override cannot resolve this combination either.
-</Warning>
-
----
-
 ## Installation Verification
 
-After installation, verify that NeMo Curator is working correctly:
+After installation, run an import check. A successful check prints the installed version and confirms core modules can be imported:
 
-### 1. Basic Import Test
+1. <a id="1-basic-import-test" />Import NeMo Curator and core pipeline modules.
 
-```python
-# Test basic imports
-import nemo_curator
-print(f"NeMo Curator version: {nemo_curator.__version__}")
+   ```python
+   import nemo_curator
+   print(f"NeMo Curator version: {nemo_curator.__version__}")
+   from nemo_curator.pipeline import Pipeline
+   from nemo_curator.tasks import DocumentBatch
+   print("Core modules imported successfully")
+   ```
 
-# Test core modules
-from nemo_curator.pipeline import Pipeline
-from nemo_curator.tasks import DocumentBatch
-print("✓ Core modules imported successfully")
-```
+2. <a id="2-gpu-availability-check" />If you installed GPU support, check that the driver and GPU modules are available. A GPU-enabled environment prints the device and cuDF confirmation. A CPU-only environment can report that no GPU was detected.
 
-### 2. GPU Availability Check
+   ```python
+   try:
+       import torch
+       if torch.cuda.is_available():
+           print(f"GPU available: {torch.cuda.get_device_name(0)}")
+           print(f"GPU memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
+       else:
+           print("No GPU detected")
+       import cudf
+       print("cuDF available for GPU-accelerated deduplication")
+   except ImportError as e:
+       print(f"Some GPU modules not available: {e}")
+   ```
 
-If you installed GPU support, verify GPU access:
+## Next Steps
 
-```python
-# Check GPU availability
-try:
-    import torch
-    if torch.cuda.is_available():
-        print(f"✓ GPU available: {torch.cuda.get_device_name(0)}")
-        print(f"✓ GPU memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
-    else:
-        print("⚠ No GPU detected")
+Run a modality quickstart or review the deployment guidance for your target environment:
 
-    # Check cuDF for GPU deduplication
-    import cudf
-    print("✓ cuDF available for GPU-accelerated deduplication")
-except ImportError as e:
-    print(f"⚠ Some GPU modules not available: {e}")
-```
+<a id="3-run-a-quickstart-tutorial" />
 
-### 3. Run a Quickstart Tutorial
+<CardGroup cols={2}>
 
-Try a modality-specific quickstart to see NeMo Curator in action:
+<Card title="Text Quickstart" href="/get-started/text">
+Run a text curation pipeline.
+</Card>
 
-- [Text Curation Quickstart](/get-started/text) - Set up and run your first text curation pipeline
-- [Audio Curation Quickstart](/get-started/audio) - Get started with audio dataset curation
-- [Image Curation Quickstart](/get-started/image) - Curate image-text datasets for generative models
-- [Video Curation Quickstart](/get-started/video) - Split, encode, and curate video clips at scale
+<Card title="Audio Quickstart" href="/get-started/audio">
+Prepare and evaluate an audio dataset.
+</Card>
+
+<Card title="Image Quickstart" href="/get-started/image">
+Build an image curation pipeline.
+</Card>
+
+<Card title="Video Quickstart" href="/get-started/video">
+Split and process video clips.
+</Card>
+
+</CardGroup>

@@ -9,12 +9,10 @@ content_type: "how-to"
 modality: "universal"
 ---
 
-{/* Note: This documentation has been verified against NeMo Curator source code for technical accuracy */}
-
 `SlurmRayClient` is a drop-in replacement for `RayClient` that bootstraps a multi-node Ray cluster under SLURM. The head node starts `ray start --head`, writes the assigned GCS port to a shared file, and waits for workers to join. Worker nodes block on the port file and call `ray start --block`. Only the head returns from `start()`, so your pipeline code runs on the head while workers stay attached to the cluster.
 
 <Note>
-For details on container environments and SLURM-specific environment variables, refer to [Container Environments](/reference/infra/container-environments).
+For image build instructions, refer to [Build a Container](/reference/infra/container-environments#build-a-container).
 </Note>
 
 ## When to Use It
@@ -55,6 +53,8 @@ The head/worker split is determined automatically from `SLURM_NODEID`. Workers s
 
 ## Required Environment
 
+`SlurmRayClient` reads these variables to identify nodes and share Ray connection details:
+
 | Variable | Required | Description |
 | --- | --- | --- |
 | `SLURM_NODEID` | Yes (set by SLURM) | Identifies the head node (`SLURM_NODEID=0`) vs workers. |
@@ -69,9 +69,9 @@ The repository ships two reference submit scripts at `tutorials/slurm/`:
 
 <Tabs>
 
-<Tab title="1. User-built container (Pyxis)">
+<Tab title="1. User-Built Container (Pyxis)">
 
-`submit_container.sh` — launches a container via [Pyxis](https://github.com/NVIDIA/pyxis) on each allocated node. Build an image from the repository's `docker/Dockerfile`, then make it available to the cluster through a registry or your site's shared image-file workflow. A local Docker tag on the submission host is not automatically available on compute nodes.
+`submit_container.sh` launches an image on each allocated node with [Pyxis](https://github.com/NVIDIA/pyxis). Build an image by following [Build a Container](/reference/infra/container-environments#build-a-container), then provide a registry reference or a shared image file.
 
 ```bash
 #!/bin/bash
@@ -117,9 +117,9 @@ sbatch --nodes=2 --gpus-per-node=8 tutorials/slurm/submit_container.sh
 
 </Tab>
 
-<Tab title="2. Bare-metal (uv)">
+<Tab title="2. Bare-Metal (uv)">
 
-`submit.sh` — activates a `uv`-managed virtualenv and runs the pipeline directly on the node. Useful for development and quick iteration without rebuilding containers.
+`submit.sh` activates a `uv`-managed virtualenv and runs the pipeline directly on the node. Useful for development and quick iteration without rebuilding containers.
 
 ```bash
 #!/bin/bash
@@ -176,7 +176,7 @@ Both scripts default `RAY_PORT_BROADCAST_DIR` to `${CURATOR_DIR}/logs`. Change t
 
 ## Verified Configurations
 
-End-to-end tested on H100 nodes using the `nvcr.io/nvidia/nemo-curator:26.02` container at the time `SlurmRayClient` was introduced. This records the image and environment used for that test; it does not certify later published images or user-built images. The reference workload is a word-count + GPU-tagging pipeline shipped in the `tutorials/slurm/` directory.
+The reference workload in `tutorials/slurm/` runs a word-count and GPU-tagging pipeline. It was tested on H100 nodes with `nvcr.io/nvidia/nemo-curator:26.02` when `SlurmRayClient` was introduced.
 
 | Nodes | GPUs / node | Status | Notes |
 | --- | --- | --- | --- |

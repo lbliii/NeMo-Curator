@@ -74,9 +74,9 @@ python tutorials/slurm/pipeline.py
 
 ---
 
-## SLURM run — container (Pyxis/enroot)
+## SLURM Run — Container (Pyxis/Enroot)
 
-On clusters that support Pyxis, this script runs a container on each allocated node. Build an image from the NeMo Curator [Dockerfile](../../docker/Dockerfile), then make it available to the cluster through a reachable registry or the site's shared image-file workflow. See the [Container Environments reference](/reference/infra/container-environments) for the build workflow. A Docker tag built on your laptop or login node is not automatically visible to compute nodes. The local virtualenv on the shared filesystem is activated inside the container so the source checkout supplies the Curator version used by the example.
+Use this path when your cluster supports Pyxis. Build an image from the NeMo Curator [Dockerfile](../../docker/Dockerfile), then make it available through a cluster registry or shared image path. Refer to [Build a Container](/reference/infra/container-environments#build-a-container) for image steps. The script activates a shared virtual environment so the source checkout supplies the Curator version.
 
 ### Prerequisites
 
@@ -89,7 +89,7 @@ srun --help | grep container-image
 
 If this flag is missing, ask your cluster admin or see the [bare-metal section](#slurm-run--bare-metal-shared-virtualenv) below.
 
-### 1. Build the virtualenv on a shared filesystem
+### 1. Build the Virtual Environment on a Shared Filesystem
 
 ```bash
 # From the NeMo Curator root on a login node (or wherever the shared FS is mounted)
@@ -98,9 +98,9 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-### 2. Submit the job
+### 2. Submit the Job
 
-`CONTAINER_IMAGE` is required. Set it to a registry reference the cluster can access, or to a shared image path supported by Pyxis/enroot. For example:
+Set `CONTAINER_IMAGE` to a registry reference or image path that Pyxis can access from every allocated node:
 
 ```bash
 export CONTAINER_IMAGE=/shared/containers/nemo-curator.sqsh
@@ -119,7 +119,7 @@ sbatch --nodes=1 --gpus-per-node=8 tutorials/slurm/submit_container.sh
 sbatch --nodes=4 --cpus-per-task=32 --time=00:30:00 tutorials/slurm/submit_container.sh
 ```
 
-### 3. Check the output
+### 3. Check the Output
 
 ```bash
 tail -f logs/slurm_demo_container_<JOB_ID>.log
@@ -133,7 +133,7 @@ Tasks processed by 2 distinct node(s):
   node-002: 2 GPU(s): NVIDIA A100-SXM4-80GB, 81251 MiB; NVIDIA A100-SXM4-80GB, 81251 MiB
 ```
 
-### Singularity / Apptainer
+### Singularity and Apptainer
 
 If your cluster uses Singularity or Apptainer instead of Pyxis:
 
@@ -151,7 +151,7 @@ srun singularity exec \
 
 ---
 
-## SLURM run — bare metal (shared virtualenv)
+## SLURM Run — Bare Metal (Shared Virtual Environment)
 
 Use this if your cluster does not have a container runtime.
 
@@ -186,15 +186,15 @@ tail -f logs/slurm_demo_<JOB_ID>.log
 
 ---
 
-## SLURM job arrays — JSONL or Parquet file sharding
+## SLURM Job Arrays — JSONL or Parquet File Sharding
 
-Use `submit_array.sh` when you already have a large directory of text data files and want to split the file set across many independent Slurm jobs. Each array task starts its own Curator pipeline; source stages still produce the full deterministic task list, and the backend adapter filters that list to only the tasks assigned to the current Slurm task.
+Use `submit_array.sh` to split a directory of text files across independent SLURM jobs. Each array task starts a Curator pipeline, builds the deterministic source task list, and processes only its assigned tasks.
 
 This pattern is useful when the dataset is naturally represented as many JSONL or Parquet files and you want simple horizontal scaling without coordination between jobs.
 
-### 1. Build the virtualenv on a shared filesystem
+### 1. Build the Virtual Environment on a Shared Filesystem
 
-The array example activates your local checkout inside the container, so the shared virtualenv supplies the Curator source and dependencies used by the job:
+The array script activates the virtual environment on the shared checkout:
 
 ```bash
 cd /path/to/Curator
@@ -205,10 +205,10 @@ pip install -e .
 
 Make sure `CURATOR_DIR`, `INPUT_DIR`, `OUTPUT_DIR`, and `CHECKPOINT_PATH` are visible from every compute node, either because they are on a shared filesystem or because you set `CONTAINER_MOUNTS` to expose the right host paths inside the container.
 
-### 2. Submit a JSONL array job
+### 2. Submit a JSONL Array Job
 
 By default, `submit_array.sh` reads JSONL files and writes JSONL output.
-`CONTAINER_IMAGE` is required. Set it to a registry reference reachable by the cluster or a site-supported shared image path:
+Set `CONTAINER_IMAGE` to a registry reference or shared image path that the cluster can access:
 
 ```bash
 export CURATOR_DIR=/path/to/Curator
@@ -239,7 +239,7 @@ Single-node array tasks use `RayClient`. If you override the allocation to use m
 sbatch --array=0-9 --nodes=2 --cpus-per-task=32 tutorials/slurm/submit_array.sh
 ```
 
-### 3. Use Parquet instead
+### 3. Use Parquet Instead
 
 Set the input and output file types to `parquet`:
 
