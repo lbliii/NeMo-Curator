@@ -59,8 +59,9 @@ the number of GPUs each worker receives.
 Each `AudioTask` must provide an audio path under the key configured by
 `audio_filepath_key`. The default key is `resampled_audio_filepath`, so place a
 `ResampleAudioStage` before `ASRStage`, or point the stage at an existing audio
-path. The stage loads audio for the current batch and normalizes it to mono at
-`target_sample_rate` (16 kHz by default) before inference.
+path. For in-memory audio, set `waveform_key` and provide the sample rate under
+`sample_rate_key` (default `sampling_rate`) instead. The stage normalizes either
+input to mono at `target_sample_rate` (16 kHz by default) before inference.
 
 For manifest pipelines, each JSONL row can contain an audio path and optional
 language metadata:
@@ -76,10 +77,11 @@ language skip reason instead of being sent to the adapter.
 
 ## Read Output
 
-The stage preserves input fields and writes the transcript to `pred_text_key`,
-which defaults to `pred_text`. Set `extras_key` to store adapter-specific
-serializable metadata in one nested field. The stage can also write these
-control fields:
+The stage preserves input metadata and writes the transcript to `pred_text_key`,
+which defaults to `pred_text`. With waveform input, the waveform is removed
+after inference by default; set `keep_waveform=True` when a downstream stage
+needs it. Set `extras_key` to store adapter-specific serializable metadata in
+one nested field. The stage can also write these control fields:
 
 | Field | Meaning |
 | --- | --- |
@@ -98,5 +100,6 @@ Model loading and adapter inference errors propagate to the pipeline. Inspect
 
 Set `batch_size` to control how many tasks the executor sends to one adapter
 call. Start with the tutorial value, then reduce it when the model exceeds GPU
-memory. Use the tutorial's documented CPU configuration when the selected
-adapter supports CPU inference.
+memory. The stage does not split an individual recording, so long files may
+still require manual chunking when batch size is one. Use the tutorial's
+documented CPU configuration when the selected adapter supports CPU inference.
