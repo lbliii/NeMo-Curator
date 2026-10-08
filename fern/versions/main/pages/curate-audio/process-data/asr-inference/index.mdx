@@ -43,6 +43,9 @@ from nemo_curator.stages.resources import Resources
 asr = ASRStage(
     adapter_target="nemo_curator.models.asr.nemo_asr.NeMoASRAdapter",
     model_id="nvidia/stt_en_fastconformer_ctc_large",
+    max_audio_sec_per_actor=240.0,
+    max_inference_duration_s=120.0,
+    local_bucketing=True,
     audio_filepath_key="audio_filepath",
     pred_text_key="pred_text",
     batch_size=16,
@@ -98,8 +101,13 @@ Model loading and adapter inference errors propagate to the pipeline. Inspect
 
 ## Tune Batching and Resources
 
-Set `batch_size` to control how many tasks the executor sends to one adapter
-call. Start with the tutorial value, then reduce it when the model exceeds GPU
-memory. The stage does not split an individual recording, so long files may
-still require manual chunking when batch size is one. Use the tutorial's
+`batch_size` controls how many candidate rows the backend groups for a call to
+`process_batch`. The stage splits recordings longer than
+`max_inference_duration_s` into segments, then packs those segments into adapter
+calls bounded by `max_audio_sec_per_actor`. Set
+`max_audio_sec_per_actor` to control padded adapter-call memory; it must be at
+least as large as `max_inference_duration_s`. Use `local_bucketing=True` to
+group segments with similar durations and reduce padding. The stage stitches
+segment transcripts into one result per input row. Pre-segment files only when
+you need application-specific or semantic boundaries. Use the tutorial's
 documented CPU configuration when the selected adapter supports CPU inference.
