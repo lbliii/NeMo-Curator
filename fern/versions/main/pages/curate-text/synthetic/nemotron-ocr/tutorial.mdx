@@ -14,7 +14,7 @@ Run `tutorials/synthetic/omni/ocr_pipeline.py` over a Hugging Face dataset. Star
 
 ## 1. Start the GPU Container
 
-Build an image from a NeMo Curator source checkout by following [Build a Container](/reference/infra/container-environments#build-a-container). Use a published release tag or `main` for development. The Dockerfile builds the required OCR C++/CUDA extension. Installing only the SDG or image extras does not provide it.
+Build an image from a NeMo Curator source checkout by following [Build an Image](/reference/infra/container-environments#build-an-image). Use a published release tag or `main` for development. The Dockerfile builds the required OCR C++/CUDA extension. Installing only the SDG or image extras does not provide it.
 
 ```bash
 docker run --gpus all -it --rm \

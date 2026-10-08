@@ -76,7 +76,7 @@ python tutorials/slurm/pipeline.py
 
 ## SLURM Run — Container (Pyxis/Enroot)
 
-Use this path when your cluster supports Pyxis. Build an image from the NeMo Curator [Dockerfile](../../docker/Dockerfile), then make it available through a cluster registry or shared image path. Refer to [Build a Container](/reference/infra/container-environments#build-a-container) for image steps. The script activates a shared virtual environment so the source checkout supplies the Curator version.
+Use this path when your cluster supports Pyxis. Build an image from the NeMo Curator [Dockerfile](../../docker/Dockerfile), then make it available through a cluster registry or shared image path. Refer to [Build an Image](https://docs.nvidia.com/nemo/curator/main/reference/infra/container-environments#build-an-image) and [Create a SquashFS Image for Pyxis](https://docs.nvidia.com/nemo/curator/main/reference/infra/container-environments#create-a-squashfs-image-for-pyxis). The script activates a shared virtual environment so the source checkout supplies the Curator version.
 
 ### Prerequisites
 
@@ -131,22 +131,6 @@ On a 2-node run you should see both hostnames in the processed-by summary:
 Tasks processed by 2 distinct node(s):
   node-001: 2 GPU(s): NVIDIA A100-SXM4-80GB, 81251 MiB; NVIDIA A100-SXM4-80GB, 81251 MiB
   node-002: 2 GPU(s): NVIDIA A100-SXM4-80GB, 81251 MiB; NVIDIA A100-SXM4-80GB, 81251 MiB
-```
-
-### Singularity and Apptainer
-
-If your cluster uses Singularity or Apptainer instead of Pyxis:
-
-```bash
-# Make your user-built image available as a SIF file on shared storage using
-# your site's documented Apptainer/Singularity image-build or import process.
-
-# In your sbatch script, replace the srun flags with:
-srun singularity exec \
-    --nv \
-    --bind /lustre:/lustre \
-    /shared/containers/nemo-curator.sif \
-    bash -c "source /path/to/Curator/.venv/bin/activate && python pipeline.py --slurm"
 ```
 
 ---

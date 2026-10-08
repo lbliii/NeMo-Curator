@@ -50,7 +50,17 @@ This extra supports local GPU serving on x86_64 Linux and aarch64 Linux. It does
 not install vLLM, ai-dynamo, or NIXL on macOS. The current repository Dockerfile
 installs `etcd` and `nats-server` for Dynamo. For a source environment or other
 image, run the [Dynamo dependency installation script](https://github.com/NVIDIA-NeMo/Curator/blob/main/docker/common/install_etcd_nats.sh)
-or configure existing endpoints.
+or configure existing endpoints with `DynamoServerConfig`. Both services must
+be reachable from every Ray node that can run Dynamo actors:
+
+```python
+from nemo_curator.core.serve import DynamoServerConfig
+
+DynamoServerConfig(
+    etcd_endpoint="http://etcd.example.com:2379",
+    nats_url="nats://nats.example.com:4222",
+)
+```
 
 The current dependency stack uses:
 
@@ -513,7 +523,9 @@ Do not pass Ray Serve's `deployment_config` to `DynamoVLLMModelConfig`. Use `num
 
 ### Dynamo Cannot Start etcd or NATS
 
-For setup options, refer to [Prerequisites](#prerequisites). Images built from the current repository Dockerfile include both binaries.
+For setup options, refer to [Prerequisites](#prerequisites). When using
+existing services, set `etcd_endpoint` and `nats_url` on `DynamoServerConfig`;
+both endpoints must be reachable from all Ray nodes that may run Dynamo actors.
 
 ### Local Multi-GPU Startup Hangs
 
@@ -521,7 +533,7 @@ On PCIe systems without peer-to-peer GPU access, restart Ray or the Python kerne
 
 ### Runtime Environment Times Out
 
-Confirm that cluster nodes can reach the package index and use compatible Python, CUDA, and Ray versions. Dynamo actor setup times out after 600 seconds. If workers cannot install packages at runtime, [build an image from the repository Dockerfile](/reference/infra/container-environments#build-a-container) or prepare another environment with the required dependencies.
+Confirm that cluster nodes can reach the package index and use compatible Python, CUDA, and Ray versions. Dynamo actor setup times out after 600 seconds. If runtime installation is too slow or unavailable, [build a custom image with the required additional packages](/reference/infra/container-environments#build-an-image) or prepare another environment with those dependencies.
 
 ### General Debugging Tips for Dynamo Startup and Compatibility Issues
 

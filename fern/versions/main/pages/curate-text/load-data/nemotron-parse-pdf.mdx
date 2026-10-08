@@ -63,7 +63,7 @@ The tutorial entry point starts Dynamo, waits for its OpenAI-compatible endpoint
 uv sync --extra interleaved_cuda12 --extra inference_server
 ```
 
-Dynamo starts local `etcd` and `nats-server` processes. Images built from the current repository Dockerfile include both binaries. For a source environment or another image, run the [Dynamo dependency installation script](https://github.com/NVIDIA-NeMo/Curator/blob/main/docker/common/install_etcd_nats.sh) before you run the entry point, or configure existing endpoints.
+Dynamo starts local `etcd` and `nats-server` processes. Images built from the current repository Dockerfile include both binaries. For a source environment or another image, run the [Dynamo dependency installation script](https://github.com/NVIDIA-NeMo/Curator/blob/main/docker/common/install_etcd_nats.sh) before you run the entry point.
 
 Create a manifest with one PDF filename per line:
 

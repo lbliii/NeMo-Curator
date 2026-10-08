@@ -12,7 +12,7 @@ modality: "universal"
 `SlurmRayClient` is a drop-in replacement for `RayClient` that bootstraps a multi-node Ray cluster under SLURM. The head node starts `ray start --head`, writes the assigned GCS port to a shared file, and waits for workers to join. Worker nodes block on the port file and call `ray start --block`. Only the head returns from `start()`, so your pipeline code runs on the head while workers stay attached to the cluster.
 
 <Note>
-For image build instructions, refer to [Build a Container](/reference/infra/container-environments#build-a-container).
+For image build instructions, refer to [Build an Image](/reference/infra/container-environments#build-an-image).
 </Note>
 
 ## When to Use It
@@ -71,7 +71,7 @@ The repository ships two reference submit scripts at `tutorials/slurm/`:
 
 <Tab title="1. User-Built Container (Pyxis)">
 
-`submit_container.sh` launches an image on each allocated node with [Pyxis](https://github.com/NVIDIA/pyxis). Build an image by following [Build a Container](/reference/infra/container-environments#build-a-container), then provide a registry reference or a shared image file.
+`submit_container.sh` launches an image on each allocated node with [Pyxis](https://github.com/NVIDIA/pyxis). Build an image by following [Build an Image](/reference/infra/container-environments#build-an-image), then provide a registry reference or a shared image file.
 
 ```bash
 #!/bin/bash

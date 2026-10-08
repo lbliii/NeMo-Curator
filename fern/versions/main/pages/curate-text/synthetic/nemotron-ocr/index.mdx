@@ -41,7 +41,7 @@ The included runner starts a Ray cluster and uses `XennaExecutor`; it does not e
 
 ## Installation and Model Access
 
-Build and run an image as described in [Build a Container](/reference/infra/container-environments#build-a-container). The repository Dockerfile builds the `nemotron-ocr` C++/CUDA extension from `nvidia/nemotron-ocr-v2`. Installing `sdg_cuda12` or `image_cuda12` alone does not provide this extension.
+Build and run an image as described in [Build an Image](/reference/infra/container-environments#build-an-image). The [Curator Dockerfile](https://github.com/NVIDIA-NeMo/Curator/blob/main/docker/Dockerfile) builds the `nemotron-ocr` C++/CUDA extension from the upstream [`nvidia/nemotron-ocr-v2` source](https://huggingface.co/nvidia/nemotron-ocr-v2). Installing `sdg_cuda12` or `image_cuda12` alone does not provide this extension.
 
 After you activate `/opt/venv`, verify the extension import:
 
@@ -51,7 +51,7 @@ python -c "from nemotron_ocr.inference.pipeline_v2 import NemotronOCRV2; print('
 
 The default OCR stage downloads `nvidia/nemotron-ocr-v2` from Hugging Face and uses its `v2_multilingual` subdirectory. Mount a persistent Hugging Face cache, or pass a pre-downloaded `v2_multilingual` directory with `--nemotron-model-dir`.
 
-The repository Dockerfile compiles for CUDA architectures 8.0, 8.6, 8.9, and 9.0. GPU memory use depends on image size, model version, and worker concurrency. The stage does not enforce a minimum VRAM value.
+The [Curator Dockerfile](https://github.com/NVIDIA-NeMo/Curator/blob/main/docker/Dockerfile) compiles the upstream extension for CUDA architectures 8.0, 8.6, 8.9, and 9.0. GPU memory use depends on image size, model version, and worker concurrency. The stage does not enforce a minimum VRAM value.
 
 The optional verifier reads `NVIDIA_API_KEY` from each worker's environment during setup. It also accepts the legacy `NVINFERENCE_API_KEY`. Set the key for every Ray worker. Do not store it in source code, command-line arguments, or serialized stage configuration. Get a key from [NVIDIA Build](https://build.nvidia.com/settings/api-keys).
 

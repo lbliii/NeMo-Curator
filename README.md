@@ -99,9 +99,9 @@ file. From a source checkout, `uv sync --extra text_cuda12` and `uv sync
 --extra all` apply the project override automatically.
 
 <a id="path-c-build-a-docker-image" />
-### Path C — Build a Docker Image (Recommended for Audio/Video)
+### Path C — Build an Image (Recommended for Audio/Video)
 
-For audio and video workflows that use FFmpeg, a locally built image packages the system dependency for every worker. The repository Dockerfile remains maintained; add the appropriate FFmpeg build using the [Container Environments reference](https://docs.nvidia.com/nemo/curator/latest/reference/infra/container-environments). Starting with 26.09, NVIDIA no longer publishes new NeMo Curator container images on NGC. Existing images remain downloadable. GitHub source and releases continue. Refer to the [Installation Guide](https://docs.nvidia.com/nemo/curator/latest/get-started/installation) for setup instructions.
+For audio and video workflows that use FFmpeg, a locally built image packages the system dependency for every worker. The repository Dockerfile remains maintained; add the appropriate FFmpeg build using the [Container Environments reference](https://docs.nvidia.com/nemo/curator/main/reference/infra/container-environments). Starting with 26.09, NVIDIA no longer publishes new NeMo Curator container images on NGC. Existing images remain downloadable. GitHub source and releases continue. Refer to the [Installation Guide](https://docs.nvidia.com/nemo/curator/latest/get-started/installation) for setup instructions.
 
 **Full setup for all paths:** [Installation Guide](https://docs.nvidia.com/nemo/curator/latest/get-started/installation) • [Tutorials](tutorials/)
 
@@ -173,7 +173,7 @@ See the [scaling concepts](https://docs.nvidia.com/nemo/curator/latest/about/con
 | Resource | Link |
 |----------|------|
 | Installation guide (CPU, GPU, Docker, source) | [docs.nvidia.com/nemo/curator/latest/get-started/installation](https://docs.nvidia.com/nemo/curator/latest/get-started/installation) |
-| Container environments | [Build and configure a container](https://docs.nvidia.com/nemo/curator/latest/reference/infra/container-environments) |
+| Container environments | [Build and configure a container image](https://docs.nvidia.com/nemo/curator/main/reference/infra/container-environments) |
 | Infrastructure (Slurm, Kubernetes, multi-node) | [Infrastructure docs](https://docs.nvidia.com/nemo/curator/latest/reference/infra) |
 | API reference | [API docs](https://docs.nvidia.com/nemo/curator/latest/api/reference/api-reference) |
 | Concepts | [Concepts](https://docs.nvidia.com/nemo/curator/latest/about/concepts) |

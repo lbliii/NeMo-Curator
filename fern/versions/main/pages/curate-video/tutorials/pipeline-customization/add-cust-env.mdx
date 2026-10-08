@@ -13,7 +13,7 @@ modality: "video-only"
 
 Package additional dependencies for a NeMo Curator pipeline in a container image.
 
-The repository Dockerfile creates a Python environment with dependencies selected by its build arguments. Build it from the source revision you plan to use, then add system or Python packages your pipeline needs. Follow the [container build procedure](/reference/infra/container-environments#build-a-container) and check the Dockerfile for its defaults.
+The repository Dockerfile creates a Python environment with dependencies selected by its build arguments. Build it from the source revision you plan to use, then add system or Python packages your pipeline needs. Follow the [image build procedure](/reference/infra/container-environments#build-an-image) and check the Dockerfile for its defaults.
 
 ## Before You Start
 
@@ -60,7 +60,7 @@ Use these steps to create and build the image:
    WORKDIR /workspace
    ```
 
-### Build the Container
+### Build the Image
 
 Build and tag the image from the directory containing the Dockerfile:
 

@@ -142,7 +142,7 @@ Deploy Ray clusters using standard [Ray tools](https://docs.ray.io/en/latest/clu
 </Accordion>
 
 <Accordion title="Do I need to build custom Docker images?">
-No for general workflows; use the Python package when the needed release is available. Audio and video workflows, and deployments that require containers, can [build a container](/reference/infra/container-environments#build-a-container) from the maintained repository Dockerfile. Add FFmpeg as described in [Add FFmpeg for Audio or Video](/reference/infra/container-environments#add-ffmpeg-for-audio-or-video). NVIDIA no longer publishes new Curator images on NGC starting with 26.09; earlier images remain downloadable. Refer to the [Distribution Change](/about/release-notes#distribution-change).
+No for general workflows; use the Python package when the needed release is available. Audio and video workflows, and deployments that require containers, can [build a container image](/reference/infra/container-environments#build-an-image) from the maintained repository Dockerfile. Add FFmpeg as described in [Add FFmpeg for Audio or Video](/reference/infra/container-environments#add-ffmpeg-for-audio-or-video). NVIDIA no longer publishes new Curator images on NGC starting with 26.09; earlier images remain downloadable. Refer to the [Distribution Change](/about/release-notes#distribution-change).
 </Accordion>
 
 <Accordion title="Is there integration with existing cluster or orchestration tools like Airflow or Slurm?">
@@ -186,7 +186,7 @@ Regular community calls and check-ins are also offered to connect with the team 
 <Note>
 - [Ray Documentation and Getting Started](https://docs.ray.io/)
 - [Migration Guide ](/about/release-notes/migration-guide) for step-by-step migration instructions
-- [Install NeMo Curator](/get-started/installation) for source and container build instructions
+- [Install NeMo Curator](/get-started/installation) for setup instructions
 
 </Note>
 

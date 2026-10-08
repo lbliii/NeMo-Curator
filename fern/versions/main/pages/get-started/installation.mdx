@@ -99,9 +99,9 @@ Source installs with `uv sync --all-extras` read the equivalent override directl
    ```
 
 </Tab>
-<Tab title="Build a Container (Recommended for Audio/Video)">
+<Tab title="Build an Image (Recommended for Audio/Video)">
 
-Build an image from the repository Dockerfile. For a released version, check out its published release tag before building. The base image does not include FFmpeg; audio and video workflows need a modality-specific FFmpeg layer before use. Refer to [Build a Container](/reference/infra/container-environments#build-a-container) and [Add FFmpeg for Audio or Video](/reference/infra/container-environments#add-ffmpeg-for-audio-or-video) for the full procedure.
+Build an image from the repository Dockerfile. For a released version, check out its published release tag before building. The base image does not include FFmpeg; audio and video workflows need a modality-specific FFmpeg layer before use. Refer to [Build an Image](/reference/infra/container-environments#build-an-image) and [Add FFmpeg for Audio or Video](/reference/infra/container-environments#add-ffmpeg-for-audio-or-video) for the full procedure.
 
 1. Clone the repository.
 
@@ -110,11 +110,11 @@ Build an image from the repository Dockerfile. For a released version, check out
    cd Curator
    ```
 
-2. Build and start the local image. The command activates the container's Python environment.
+2. Build and start the local image with the repository mounted at `/workspace`. Use paths under `/workspace` for inputs and outputs so files persist after the container exits. The command activates the container's Python environment.
 
    ```bash
    docker build -t nemo-curator:local -f docker/Dockerfile .
-   docker run --gpus all -it --rm nemo-curator:local bash -lc "source /opt/venv/env.sh && exec bash"
+   docker run --gpus all -it --rm -v "$PWD:/workspace" -w /workspace nemo-curator:local bash -lc "source /opt/venv/env.sh && exec bash"
    ```
 
 </Tab>
@@ -173,7 +173,7 @@ For development tools such as pre-commit, ruff, and pytest, run `uv sync --group
 **Standard pip is not supported for `text_cuda12` or for installing all extras
 together.** vLLM 0.22 requires `numba==0.65.0`, while RAPIDS 25.10 declares
 `numba<0.62`. Use `uv pip install` with the explicit override shown above or
-`uv sync` from a source checkout. Refer to [Build a Container](/reference/infra/container-environments#build-a-container)
+`uv sync` from a source checkout. Refer to [Build an Image](/reference/infra/container-environments#build-an-image)
 for container installation guidance. Plain `uv pip install` without the
 override cannot resolve this combination either.
 </Warning>
@@ -237,16 +237,16 @@ rm /tmp/nemo-curator-audio-smoke.wav
 
 <Tab title="Debian/Ubuntu (Video Script)">
 
-Use the maintained script in the repository to build and install a strict-allowlist `FFmpeg` with NVIDIA NVENC/NVDEC and VP9 support. This system-wide installation requires root access. The default build excludes software H.264/HEVC/AV1 decoders and software H.264 encoders.
+Use the maintained support script to build and install a strict-allowlist `FFmpeg` with NVIDIA NVENC/NVDEC, VP9, and software H.264/HEVC/AV1 decoders. This system-wide installation requires root access. It does not enable the software H.264 encoder by default.
 
 This strict build supports Curator video workflows. It starts from `--disable-everything` and does not enable the audio codecs, WAV muxer, or audio filters required by `ResampleAudioStage`. Install an audio-capable distribution or Conda build from one of the audio tabs when you process audio.
 
-- Script source: [docker/common/install_ffmpeg.sh](https://github.com/NVIDIA-NeMo/Curator/blob/main/docker/common/install_ffmpeg.sh)
+- Script source: [docker/common/install_h264_support.sh](https://github.com/NVIDIA-NeMo/Curator/blob/main/docker/common/install_h264_support.sh)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NVIDIA-NeMo/Curator/main/docker/common/install_ffmpeg.sh -o install_ffmpeg.sh
-chmod +x install_ffmpeg.sh
-sudo bash install_ffmpeg.sh
+curl -fsSL https://raw.githubusercontent.com/NVIDIA-NeMo/Curator/main/docker/common/install_h264_support.sh -o install_h264_support.sh
+chmod +x install_h264_support.sh
+sudo bash install_h264_support.sh
 ```
 
 </Tab>
@@ -257,10 +257,11 @@ Confirm that `FFmpeg` is on your `PATH` and that the expected encoders are avail
 
 ```bash
 ffmpeg -hide_banner -version | head -n 5
-ffmpeg -encoders | grep -E "h264_nvenc|libvpx-vp9|libopenh264" | cat
+ffmpeg -encoders | grep -E "h264_nvenc|libvpx-vp9"
+ffmpeg -decoders | grep -E '^[[:space:]]+V[^[:space:]]+[[:space:]]+h264[[:space:]]'
 ```
 
-If encoders are missing, reinstall the video build with the required options or use the Debian/Ubuntu video script above. `libopenh264` appears only after opting in with `install_h264_support.sh --with-libopenh264`.
+If the encoder or software H.264 decoder is missing, reinstall the video build with the required options or use the Debian/Ubuntu scripts above. `libopenh264` appears only after opting in with `install_h264_support.sh --with-libopenh264`.
 
 </Tab>
 </Tabs>

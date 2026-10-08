@@ -12,9 +12,11 @@ modality: "universal"
 
 NeMo Curator source releases continue, and the repository [Dockerfile](https://github.com/NVIDIA-NeMo/Curator/blob/main/docker/Dockerfile) remains maintained. Starting with the 26.09 release, NVIDIA no longer publishes NeMo Curator container images to NGC. Previously published images remain downloadable. Build an image from a source release or the `main` development branch.
 
-## Build a Container
+<a id="build-a-container" />
+<a id="build-an-image" />
+## Build an Image
 
-Build a local image from a source checkout, run it, then activate and verify the Curator environment.
+Build a local Docker image from a source checkout, run it, then activate and verify the Curator environment.
 
 1. Clone the [NeMo Curator repository](https://github.com/NVIDIA-NeMo/Curator) or enter an existing checkout. Use a source release tag available in the repository for released code, or keep `main` for current development.
 
@@ -24,7 +26,7 @@ Build a local image from a source checkout, run it, then activate and verify the
    docker build -f docker/Dockerfile -t nemo-curator:local .
    ```
 
-3. Start a shell in the image:
+3. Start a container with a shell:
 
    ```bash
    docker run --gpus all -it --rm \
@@ -46,7 +48,7 @@ Default builds use the `all` Curator extra, Python 3.13, CUDA 12.9.1, and Ubuntu
 
 ## Add FFmpeg for Audio or Video
 
-Build the base image first as described in [Build a Container](#build-a-container), then create one of these Dockerfiles in the repository root. The audio image uses Ubuntu's FFmpeg package for audio resampling and PCM/WAV operations. The video image runs Curator's maintained encoder-focused script, which includes NVENC and `libvpx-vp9` support but omits audio codecs and WAV filters; use it for video-only workflows.
+Build the base image first as described in [Build an Image](#build-an-image), then create one of these Dockerfiles in the repository root. The audio image uses Ubuntu's FFmpeg package for audio resampling and PCM/WAV operations. The video image runs Curator's maintained FFmpeg builder and adds software H.264/HEVC/AV1 decoders while retaining NVENC and `libvpx-vp9` support; it omits audio codecs and WAV filters, so use it for video-only workflows.
 
 For audio, save this as `Dockerfile.audio`:
 
@@ -59,8 +61,12 @@ Build the image, then start a shell inside it. Add `--gpus all` when audio proce
 
 ```bash
 docker build -f Dockerfile.audio -t nemo-curator:audio .
-docker run -it --rm nemo-curator:audio bash
+docker run -it --rm \
+  -v "$PWD:/workspace" -w /workspace \
+  nemo-curator:audio bash
 ```
+
+Put input data and desired results under the mounted workspace (or mount their host directories too) so files persist after the container exits.
 
 Run the following smoke commands inside the container. They verify PCM encoding, 16 kHz resampling, and WAV output:
 
@@ -81,23 +87,28 @@ For video, save this as `Dockerfile.video`:
 
 ```dockerfile
 FROM nemo-curator:local
-RUN bash /opt/Curator/docker/common/install_ffmpeg.sh
+RUN bash /opt/Curator/docker/common/install_h264_support.sh
 ```
 
 Build the image and start a shell inside it:
 
 ```bash
 docker build -f Dockerfile.video -t nemo-curator:video .
-docker run --gpus all -it --rm nemo-curator:video bash
+docker run --gpus all -it --rm \
+  -v "$PWD:/workspace" -w /workspace \
+  nemo-curator:video bash
 ```
 
-Run these encoder checks inside the container:
+Run these checks inside the container. Confirm that the output lists the NVENC and VP9 encoders and the software H.264 decoder used by CPU-side probing:
 
 ```bash
 source /opt/venv/env.sh
 ffmpeg -hide_banner -version | head -n 5
 ffmpeg -encoders | grep -E "h264_nvenc|libvpx-vp9"
+ffmpeg -decoders | grep -E '^[[:space:]]+V[^[:space:]]+[[:space:]]+h264[[:space:]]'
 ```
+
+Keep input videos and output clips under `/workspace` (or mount their host directories too) so they persist after the container exits. Activate the Curator environment with `source /opt/venv/env.sh` before running Python commands.
 
 `h264_nvenc` requires NVIDIA hardware with NVENC support. NVIDIA A100 and H100 GPUs do not include NVENC hardware; use `libvpx-vp9` on those GPUs. For Python package installs, the [Installation Guide](/get-started/installation#install-ffmpeg-for-audio-and-video-source-installs) also documents user-local and host-level FFmpeg options.
 
@@ -105,8 +116,28 @@ ffmpeg -encoders | grep -E "h264_nvenc|libvpx-vp9"
 
 A local Docker tag such as `nemo-curator:local` is available only to the Docker daemon where it was built. To use the image on a cluster:
 
-1. Push it to a registry reachable from every allocated node, or export it using your site's container workflow and place the image file on shared storage.
-2. Set the cluster job's image reference or path. The SLURM examples use `CONTAINER_IMAGE`; refer to [Multi-Node Ray on SLURM](/admin/deployment/slurm-multi-node-ray) or [SLURM Job Arrays](/admin/deployment/slurm-arrays).
+1. Push it to a registry reachable from every allocated node, or create a SquashFS image with Enroot and place it on shared storage using [these Pyxis instructions](#create-a-squashfs-image-for-pyxis). Enroot also supports registry references such as `docker://REGISTRY#PATH:TAG`; see the [Enroot import documentation](https://github.com/NVIDIA/enroot/blob/main/doc/cmd/import.md). Use an image built for the cluster's CPU architecture. For media jobs, export the corresponding audio or video image tag instead.
+2. Set the cluster job's image reference or path. The SLURM examples use `CONTAINER_IMAGE`; refer to [Multi-Node Ray on SLURM](/admin/deployment/slurm-multi-node-ray), [SLURM Job Arrays](/admin/deployment/slurm-arrays), or the [SLURM tutorial](https://github.com/NVIDIA-NeMo/Curator/tree/main/tutorials/slurm).
+
+<a id="create-a-squashfs-image-for-pyxis" />
+### Create a SquashFS Image for Pyxis
+
+On a Linux machine with Enroot and access to the local Docker daemon, export the image and copy the resulting file to storage visible to the cluster:
+
+```bash
+enroot import --output nemo-curator.sqsh dockerd://nemo-curator:local
+mkdir -p /shared/containers
+cp nemo-curator.sqsh /shared/containers/nemo-curator.sqsh
+```
+
+On the cluster, confirm that the file is readable and set the path used by the SLURM scripts:
+
+```bash
+ls -lh /shared/containers/nemo-curator.sqsh
+export CONTAINER_IMAGE=/shared/containers/nemo-curator.sqsh
+```
+
+For a media image, replace `nemo-curator:local` with the appropriate local image tag before importing it. Ensure the image architecture matches the cluster nodes.
 
 ## Image Configuration
 
@@ -128,4 +159,4 @@ These defaults apply when you build the matching Dockerfile revision without ove
 
 Python dependencies and extras can depend on the target architecture in `pyproject.toml`. Some audio dependencies support only x86_64 Linux. Check the package markers before building for arm64.
 
-Ray executes NeMo Curator pipelines. Dask packages in the image can be transitive dependencies rather than an execution backend.
+Ray executes NeMo Curator pipelines.

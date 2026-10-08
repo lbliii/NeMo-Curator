@@ -47,9 +47,9 @@ Complete these five steps to install Curator, verify FFmpeg, run the splitting e
 1. Install NeMo Curator. A locally built container is recommended for video workflows so the maintained FFmpeg build and its encoders are available on every worker.
 
    <Tabs>
-   <Tab title="Build a Container (Recommended)">
+   <Tab title="Build an Image (Recommended)">
 
-   Follow [Build a Container](/reference/infra/container-environments#build-a-container), then build the video image using [Add FFmpeg for Audio or Video](/reference/infra/container-environments#add-ffmpeg-for-audio-or-video). Check out a published release tag first when you need a released version.
+   Follow [Build an Image](/reference/infra/container-environments#build-an-image), then build the video image using [Add FFmpeg for Audio or Video](/reference/infra/container-environments#add-ffmpeg-for-audio-or-video). Check out a published release tag first when you need a released version.
 
    </Tab>
    <Tab title="Source Installation">
@@ -78,14 +78,15 @@ Complete these five steps to install Curator, verify FFmpeg, run the splitting e
    </Tab>
    </Tabs>
 
-2. Verify that FFmpeg provides the encoder you plan to use.
+2. Verify that FFmpeg provides the encoder you plan to use and the software H.264 decoder required for CPU-side probing.
 
    ```bash
    ffmpeg -hide_banner -version | head -n 5
-   ffmpeg -encoders | grep -E "h264_nvenc|libvpx-vp9|libopenh264" | cat
+   ffmpeg -encoders | grep -E "h264_nvenc|libvpx-vp9"
+   ffmpeg -decoders | grep -E '^[[:space:]]+V[^[:space:]]+[[:space:]]+h264[[:space:]]'
    ```
 
-   If an encoder is missing, follow [Install FFmpeg and Encoders](#install-ffmpeg-and-encoders). Use `libvpx-vp9` on GPUs without NVENC, including NVIDIA A100 and H100.
+   If an encoder or decoder is missing, follow [Install FFmpeg and Encoders](#install-ffmpeg-and-encoders). Use `libvpx-vp9` on GPUs without NVENC, including NVIDIA A100 and H100.
 
 <a id="prepare-model-weights" />
 <a id="set-up-data-directories" />
@@ -93,13 +94,13 @@ Complete these five steps to install Curator, verify FFmpeg, run the splitting e
 3. Create a model directory and set the input and output paths.
 
    ```bash
-   DATA_DIR=/path/to/videos
-   OUT_DIR=/path/to/output_clips
-   MODEL_DIR=/path/to/models
+   DATA_DIR=/workspace/videos
+   OUT_DIR=/workspace/output_clips
+   MODEL_DIR=/workspace/models
    mkdir -p "$MODEL_DIR"
    ```
 
-   Curator downloads the selected model files to `MODEL_DIR` on first use. You can reuse this directory across runs. For S3 paths and credentials, refer to [Data Directories and S3](#data-directories-and-s3).
+   The container examples mount the host repository at `/workspace`; keep input videos, output clips, and model files under that directory so they persist after the container exits. For source installs outside a container, replace these values with accessible host directories. Curator downloads selected model files to `MODEL_DIR` on first use. For S3 paths and credentials, refer to [Data Directories and S3](#data-directories-and-s3).
 
 <a id="run-the-splitting-pipeline-example" />
 
@@ -129,33 +130,34 @@ Use the following reference sections to configure storage, FFmpeg, models, and p
 
 ## Install FFmpeg and Encoders
 
-Video pipelines use FFmpeg to decode and encode clips. Install FFmpeg 8.0 or later with an encoder supported by your GPU. The maintained script below builds FFmpeg with NVENC and `libvpx-vp9` support.
+Video pipelines use FFmpeg to decode and encode clips. Install FFmpeg 8.0 or later with an encoder supported by your GPU and a software H.264 decoder. The maintained script below builds FFmpeg with NVENC, `libvpx-vp9`, and software H.264/HEVC/AV1 decoders.
 
 <Tabs>
    <Tab title="Debian/Ubuntu (Script)">
 
-Run the maintained script to build and install FFmpeg with NVIDIA NVENC and `libvpx-vp9` support. It enables dynamic CUDA and NVIDIA codec support through `--enable-cuda`, `--enable-cuvid`, `--enable-nvdec`, `--enable-nvenc`, and `--enable-ffnvcodec`, plus `--enable-libvpx`.
+Run the maintained software decoder support script. It builds FFmpeg with NVIDIA NVENC, `libvpx-vp9`, and software H.264/HEVC/AV1 decoders in one step.
 
-- Script source: [FFmpeg installation script](https://github.com/NVIDIA-NeMo/Curator/blob/main/docker/common/install_ffmpeg.sh).
+- Script source: [software decoder support script](https://github.com/NVIDIA-NeMo/Curator/blob/main/docker/common/install_h264_support.sh).
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NVIDIA-NeMo/Curator/main/docker/common/install_ffmpeg.sh -o install_ffmpeg.sh
-chmod +x install_ffmpeg.sh
-sudo bash install_ffmpeg.sh
+curl -fsSL https://raw.githubusercontent.com/NVIDIA-NeMo/Curator/main/docker/common/install_h264_support.sh -o install_h264_support.sh
+chmod +x install_h264_support.sh
+sudo bash install_h264_support.sh
 ```
 
 </Tab>
 
    <Tab title="Verify Installation">
 
-Run these commands to confirm that FFmpeg is on your `PATH` and the required video encoders are available:
+Run these commands to confirm that FFmpeg is on your `PATH`, the required video encoder is available, and the software H.264 decoder is registered:
 
 ```bash
 ffmpeg -hide_banner -version | head -n 5
-ffmpeg -encoders | grep -E "h264_nvenc|libvpx-vp9|libopenh264" | cat
+ffmpeg -encoders | grep -E "h264_nvenc|libvpx-vp9"
+ffmpeg -decoders | grep -E '^[[:space:]]+V[^[:space:]]+[[:space:]]+h264[[:space:]]'
 ```
 
-If an encoder is missing, reinstall FFmpeg with the required options or use the Debian/Ubuntu script above.
+If an encoder or decoder is missing, reinstall FFmpeg with the required options or use the Debian/Ubuntu script above.
 
 </Tab>
 
@@ -164,7 +166,7 @@ If an encoder is missing, reinstall FFmpeg with the required options or use the 
 Refer to [Clip Encoding](/curate-video/process-data/transcoding) to select an encoder and verify NVENC support on your system.
 
 <Note>
-On GPUs without NVENC hardware, such as NVIDIA A100 and NVIDIA H100, use `--transcode-encoder libvpx-vp9` or install software H.264 support and use `--transcode-encoder libopenh264`.
+On GPUs without NVENC hardware, such as NVIDIA A100 and NVIDIA H100, use `--transcode-encoder libvpx-vp9`. Software H.264 decoding is provided by `install_h264_support.sh`; the optional `libopenh264` encoder is separate.
 </Note>
 
 ## Available Models
@@ -232,7 +234,7 @@ The example uses fixed-stride splitting. The `transnetv2` option supports scene-
 | **Embedding** | &nbsp; | &nbsp; |
 | `--embedding-algorithm` | `cosmos-embed1-224p`, `cosmos-embed1-336p`, `cosmos-embed1-448p` | Embedding model to use |
 | **Encoding** | &nbsp; | &nbsp; |
-| `--transcode-encoder` | `h264_nvenc`, `libvpx-vp9`, `libopenh264` | Video encoder for output clips. Use `libvpx-vp9` (CPU) on GPUs without NVENC such as A100/H100. `libopenh264` is accepted but requires a user-installed FFmpeg build. Refer to [BYO H.264](../admin/installation.md#bring-your-own-h264-software-encoder-advanced). |
+| `--transcode-encoder` | `h264_nvenc`, `libvpx-vp9`, `libopenh264` | Video encoder for output clips. Use `libvpx-vp9` (CPU) on GPUs without NVENC such as A100/H100. `libopenh264` is accepted but requires a user-installed FFmpeg build. Refer to [software codec support](/get-started/installation#software-h264hevcav1-codec-support-advanced). |
 | `--transcode-use-hwaccel` | Flag | Enable hardware acceleration for encoding (only valid with `h264_nvenc`). |
 | **Optional Features** | &nbsp; | &nbsp; |
 | `--generate-captions` | Flag | Generate text captions for each clip |

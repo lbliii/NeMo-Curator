@@ -87,7 +87,7 @@ Per-stage runtime environments work with all three execution backends:
 
 ## Container Setup
 
-Images built by following [Build a Container](/reference/infra/container-environments#build-a-container) create their virtualenv with `uv venv --seed`, which makes `pip` available for Ray's pip-based runtime environments. Ray clones the current virtualenv and uses `pip` to install stage-specific packages in the clone.
+Images built by following [Build an Image](/reference/infra/container-environments#build-an-image) create their virtualenv with `uv venv --seed`, which makes `pip` available for Ray's pip-based runtime environments. Ray clones the current virtualenv and uses `pip` to install stage-specific packages in the clone.
 
 For a source install or another image, create a seeded virtual environment before syncing dependencies:
 
