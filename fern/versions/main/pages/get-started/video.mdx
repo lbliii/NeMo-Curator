@@ -44,9 +44,14 @@ Complete these five steps to install Curator, verify FFmpeg, run the splitting e
 
 <a id="install" />
 
-1. Install NeMo Curator with an option that matches your environment.
+1. Install NeMo Curator. A locally built container is recommended for video workflows so the maintained FFmpeg build and its encoders are available on every worker.
 
    <Tabs>
+   <Tab title="Build a Container (Recommended)">
+
+   Follow [Build a Container](/reference/infra/container-environments#build-a-container), then build the video image using [Add FFmpeg for Audio or Video](/reference/infra/container-environments#add-ffmpeg-for-audio-or-video). Check out a published release tag first when you need a released version.
+
+   </Tab>
    <Tab title="Source Installation">
 
    This installs the development branch. To install a release, check out its published GitHub tag before running `uv sync`.
@@ -69,11 +74,6 @@ Complete these five steps to install Curator, verify FFmpeg, run the splitting e
    uv pip install torch wheel_stub psutil setuptools setuptools_scm
    uv pip install --no-build-isolation "nemo-curator[video_cuda12]"
    ```
-
-   </Tab>
-   <Tab title="Build a Container">
-
-   Follow [Build a Container](/reference/infra/container-environments#build-a-container) to build and run a local image from the repository Dockerfile. Check out a published release tag first when you need a released version.
 
    </Tab>
    </Tabs>
@@ -132,7 +132,7 @@ Use the following reference sections to configure storage, FFmpeg, models, and p
 Video pipelines use FFmpeg to decode and encode clips. Install FFmpeg 8.0 or later with an encoder supported by your GPU. The maintained script below builds FFmpeg with NVENC and `libvpx-vp9` support.
 
 <Tabs>
-<Tab title="Debian/Ubuntu (Script)">
+   <Tab title="Debian/Ubuntu (Script)">
 
 Run the maintained script to build and install FFmpeg with NVIDIA NVENC and `libvpx-vp9` support. It enables dynamic CUDA and NVIDIA codec support through `--enable-cuda`, `--enable-cuvid`, `--enable-nvdec`, `--enable-nvenc`, and `--enable-ffnvcodec`, plus `--enable-libvpx`.
 
@@ -146,7 +146,7 @@ sudo bash install_ffmpeg.sh
 
 </Tab>
 
-<Tab title="Verify Installation">
+   <Tab title="Verify Installation">
 
 Run these commands to confirm that FFmpeg is on your `PATH` and the required video encoders are available:
 

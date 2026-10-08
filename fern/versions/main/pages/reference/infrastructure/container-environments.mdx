@@ -10,7 +10,7 @@ modality: "universal"
 
 # Container Environments
 
-NeMo Curator source releases continue. Starting with the 26.09 release, NVIDIA no longer publishes NeMo Curator container images to NGC. Previously published images remain downloadable. Build an image from a source release or the `main` development branch with the [repository Dockerfile](https://github.com/NVIDIA-NeMo/Curator/blob/main/docker/Dockerfile).
+NeMo Curator source releases continue, and the repository [Dockerfile](https://github.com/NVIDIA-NeMo/Curator/blob/main/docker/Dockerfile) remains maintained. Starting with the 26.09 release, NVIDIA no longer publishes NeMo Curator container images to NGC. Previously published images remain downloadable. Build an image from a source release or the `main` development branch.
 
 ## Build a Container
 
@@ -42,7 +42,64 @@ Build a local image from a source checkout, run it, then activate and verify the
 
    The command prints the installed version and exits without an import error.
 
-Default builds use the `all` Curator extra, Python 3.13, CUDA 12.9.1, and Ubuntu 24.04. The Dockerfile installs `etcd` and `nats-server` for Dynamo and builds the Nemotron OCR C++/CUDA extension. It does not install FFmpeg. If your workflow uses the `ffmpeg` executable, follow [Install FFmpeg in the Installation Guide](/get-started/installation#install-ffmpeg-for-audio-and-video-source-installs). Build arguments and Dockerfile revisions can change image contents.
+Default builds use the `all` Curator extra, Python 3.13, CUDA 12.9.1, and Ubuntu 24.04. The Dockerfile installs `etcd` and `nats-server` for Dynamo and builds the Nemotron OCR C++/CUDA extension. The base image does not include FFmpeg. For audio or video, use the derived image instructions below to package system dependencies with Curator rather than updating each host. Build arguments and Dockerfile revisions can change image contents.
+
+## Add FFmpeg for Audio or Video
+
+Build the base image first as described in [Build a Container](#build-a-container), then create one of these Dockerfiles in the repository root. The audio image uses Ubuntu's FFmpeg package for audio resampling and PCM/WAV operations. The video image runs Curator's maintained encoder-focused script, which includes NVENC and `libvpx-vp9` support but omits audio codecs and WAV filters; use it for video-only workflows.
+
+For audio, save this as `Dockerfile.audio`:
+
+```dockerfile
+FROM nemo-curator:local
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
+```
+
+Build the image, then start a shell inside it. Add `--gpus all` when audio processing will use a GPU; omit that flag for CPU-only audio:
+
+```bash
+docker build -f Dockerfile.audio -t nemo-curator:audio .
+docker run -it --rm nemo-curator:audio bash
+```
+
+Run the following smoke commands inside the container. They verify PCM encoding, 16 kHz resampling, and WAV output:
+
+```bash
+source /opt/venv/env.sh
+ffmpeg -v error \
+  -f lavfi -i "sine=frequency=1000:duration=0.1" \
+  -ar 16000 -ac 1 -acodec pcm_s16le -y \
+  /tmp/nemo-curator-audio-smoke.wav
+ffprobe -v error \
+  -show_entries stream=codec_name,sample_rate,channels \
+  -of default=noprint_wrappers=1 \
+  /tmp/nemo-curator-audio-smoke.wav
+rm /tmp/nemo-curator-audio-smoke.wav
+```
+
+For video, save this as `Dockerfile.video`:
+
+```dockerfile
+FROM nemo-curator:local
+RUN bash /opt/Curator/docker/common/install_ffmpeg.sh
+```
+
+Build the image and start a shell inside it:
+
+```bash
+docker build -f Dockerfile.video -t nemo-curator:video .
+docker run --gpus all -it --rm nemo-curator:video bash
+```
+
+Run these encoder checks inside the container:
+
+```bash
+source /opt/venv/env.sh
+ffmpeg -hide_banner -version | head -n 5
+ffmpeg -encoders | grep -E "h264_nvenc|libvpx-vp9"
+```
+
+`h264_nvenc` requires NVIDIA hardware with NVENC support. NVIDIA A100 and H100 GPUs do not include NVENC hardware; use `libvpx-vp9` on those GPUs. For Python package installs, the [Installation Guide](/get-started/installation#install-ffmpeg-for-audio-and-video-source-installs) also documents user-local and host-level FFmpeg options.
 
 ## Use Images on a Cluster
 

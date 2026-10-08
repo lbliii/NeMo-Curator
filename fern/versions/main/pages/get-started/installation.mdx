@@ -43,7 +43,7 @@ Use the deployment guides to plan resources for production or multi-node cluster
 
 ## Installation Methods
 
-Start with the source installation. A source checkout of `main` tracks development; to install a release, check out its published release tag before syncing. For a specific PyPI release, verify that its package version is available and matches the release notes.
+For most workflows, install NeMo Curator from PyPI when the package version you need is available. Use a source checkout for development or an unpublished release. Audio and video workflows are easiest to reproduce in a locally built container, where you can include the required FFmpeg system packages on every worker.
 
 <Warning>
 Starting with 26.09, NVIDIA no longer publishes new NeMo Curator container images on NGC. Existing images remain downloadable. GitHub source and releases continue.
@@ -52,25 +52,6 @@ Starting with 26.09, NVIDIA no longer publishes new NeMo Curator container image
 Choose an installation method based on your environment:
 
 <Tabs>
-<Tab title="Source Installation (Recommended)">
-
-1. Clone the repository. The default branch contains development code.
-
-   ```bash
-   git clone https://github.com/NVIDIA-NeMo/Curator.git
-   cd Curator
-   ```
-
-2. For a released version, check out its published release tag before syncing. Install uv if needed, sync all extras and development groups, then activate the environment.
-
-   ```bash
-   curl -LsSf https://astral.sh/uv/0.12.1/install.sh | sh
-   source $HOME/.local/bin/env
-   uv sync --all-extras --all-groups
-   source .venv/bin/activate
-   ```
-
-</Tab>
 <Tab title="PyPI Installation">
 
 Install a specific package version only after confirming it is available on PyPI and matches the release notes.
@@ -99,9 +80,28 @@ Install a specific package version only after confirming it is available on PyPI
 Source installs with `uv sync --all-extras` read the equivalent override directly from `pyproject.toml`.
 
 </Tab>
-<Tab title="Build a Container">
+<Tab title="Source Installation">
 
-Build an image from the repository Dockerfile. For a released version, check out its published release tag before building. Refer to [Build a Container](/reference/infra/container-environments#build-a-container) for the full procedure.
+1. Clone the repository. The default branch contains development code.
+
+   ```bash
+   git clone https://github.com/NVIDIA-NeMo/Curator.git
+   cd Curator
+   ```
+
+2. For a released version, check out its published release tag before syncing. Install uv if needed, sync all extras and development groups, then activate the environment.
+
+   ```bash
+   curl -LsSf https://astral.sh/uv/0.12.1/install.sh | sh
+   source $HOME/.local/bin/env
+   uv sync --all-extras --all-groups
+   source .venv/bin/activate
+   ```
+
+</Tab>
+<Tab title="Build a Container (Recommended for Audio/Video)">
+
+Build an image from the repository Dockerfile. For a released version, check out its published release tag before building. The base image does not include FFmpeg; audio and video workflows need a modality-specific FFmpeg layer before use. Refer to [Build a Container](/reference/infra/container-environments#build-a-container) and [Add FFmpeg for Audio or Video](/reference/infra/container-environments#add-ffmpeg-for-audio-or-video) for the full procedure.
 
 1. Clone the repository.
 
@@ -182,9 +182,10 @@ override cannot resolve this combination either.
 
 Install external tools that your selected stages require.
 
-### Install FFmpeg for Audio and Video Source Installs
+<a id="install-ffmpeg-for-audio-and-video-source-installs" />
+### Install FFmpeg for Python Package Installs
 
-Some Curator audio and video stages use the `ffmpeg` executable for resampling, decoding, encoding, or metadata extraction. Python extras do not install it, and a container image might not provide it. Verify that `ffmpeg` is on `PATH` on every executor node, or install it using one of these options.
+Some Curator audio and video stages use the `ffmpeg` executable for resampling, decoding, encoding, or metadata extraction. Python extras do not install it. For audio and video workflows, the [container guide](/reference/infra/container-environments#add-ffmpeg-for-audio-or-video) shows how to package FFmpeg in an image used by every worker. For Python package installs, verify that `ffmpeg` is on `PATH` on every executor node, or install it using one of these options.
 
 <Tabs>
 <Tab title="User-local (Audio)">
@@ -212,7 +213,7 @@ command -v ffmpeg
 ffmpeg -version
 ```
 
-Install the package on every executor node, or include it in the image used by every worker.
+Install the package on every executor node. For audio and video containers, use the [container FFmpeg instructions](/reference/infra/container-environments#add-ffmpeg-for-audio-or-video).
 
 </Tab>
 

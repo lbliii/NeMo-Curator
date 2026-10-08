@@ -26,22 +26,8 @@ Prepare the following environment:
 
 Complete these steps to install Curator, prepare input data, and run a filtering pipeline.
 
-1. <a id="installation-options" />Install NeMo Curator from source, PyPI, or a local container image.
+1. <a id="installation-options" />Install NeMo Curator from PyPI when the needed release is available; use source for development or an unpublished release. A local container is also available for deployments that require one.
    <Tabs>
-   <Tab title="Source Installation (Recommended)">
-
-   The repository clone tracks development. For CPU-only text processing, use the `text_cpu` extra. For a released version, check out its published release tag before running `uv sync`.
-
-   ```bash
-   curl -LsSf https://astral.sh/uv/0.12.1/install.sh | sh
-   source $HOME/.local/bin/env
-   git clone https://github.com/NVIDIA-NeMo/Curator.git
-   cd Curator
-   uv sync --extra text_cuda12 --all-groups
-   source .venv/bin/activate
-   ```
-
-   </Tab>
    <Tab title="PyPI Installation">
 
    For a specific release, verify that its package version is available on PyPI and matches the release notes.
@@ -60,6 +46,20 @@ Complete these steps to install Curator, prepare input data, and run a filtering
    ```
 
    For `text_cuda12`, use this tested dependency override. Standard `pip install` and plain `uv pip install` without the override are not supported.
+
+   </Tab>
+   <Tab title="Source Installation">
+
+   The repository clone tracks development. For CPU-only text processing, use the `text_cpu` extra. For a released version, check out its published release tag before running `uv sync`.
+
+   ```bash
+   curl -LsSf https://astral.sh/uv/0.12.1/install.sh | sh
+   source $HOME/.local/bin/env
+   git clone https://github.com/NVIDIA-NeMo/Curator.git
+   cd Curator
+   uv sync --extra text_cuda12 --all-groups
+   source .venv/bin/activate
+   ```
 
    </Tab>
    <Tab title="Build a Container">

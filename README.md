@@ -98,9 +98,10 @@ that includes `text_cuda12`, including `nemo-curator[all]`, needs the override
 file. From a source checkout, `uv sync --extra text_cuda12` and `uv sync
 --extra all` apply the project override automatically.
 
-### Path C — Build a Docker Image
+<a id="path-c-build-a-docker-image" />
+### Path C — Build a Docker Image (Recommended for Audio/Video)
 
-Starting with 26.09, NVIDIA no longer publishes new NeMo Curator container images on NGC. Existing images remain downloadable. GitHub source and releases continue. Refer to the [Installation Guide](https://docs.nvidia.com/nemo/curator/latest/get-started/installation) to build a local image and the [Container Environments reference](https://docs.nvidia.com/nemo/curator/latest/reference/infra/container-environments) for configuration.
+For audio and video workflows that use FFmpeg, a locally built image packages the system dependency for every worker. The repository Dockerfile remains maintained; add the appropriate FFmpeg build using the [Container Environments reference](https://docs.nvidia.com/nemo/curator/latest/reference/infra/container-environments). Starting with 26.09, NVIDIA no longer publishes new NeMo Curator container images on NGC. Existing images remain downloadable. GitHub source and releases continue. Refer to the [Installation Guide](https://docs.nvidia.com/nemo/curator/latest/get-started/installation) for setup instructions.
 
 **Full setup for all paths:** [Installation Guide](https://docs.nvidia.com/nemo/curator/latest/get-started/installation) • [Tutorials](tutorials/)
 
